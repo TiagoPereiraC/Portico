@@ -1,7 +1,7 @@
 # Aplicación Desktop ➔ Portico.
 
 ## Tecnologias
-- **Frontend:** HTML, C# (?)
+- **Frontend:** HTML, C#
 - **Backend:** Java, MySQL
 
 ---
