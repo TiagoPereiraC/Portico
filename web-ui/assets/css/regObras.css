@@ -1,0 +1,177 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:           #9b4b4b;
+  --card-bg:      #e8e3df;
+  --input-bg:     #f5f5f5;
+  --input-border: #e0e0e0;
+  --text-dark:    #666;
+  --text-muted:   #888;
+  --btn-bg:       #b54747;
+  --btn-hover:    #9e3c3c;
+  --accent:       #b54747;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+nav {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 10px 24px 10px;
+  background-color: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,.12);
+}
+
+.logo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+}
+
+.logo-wrap img {
+  width: 130px;
+  height: auto;
+}
+
+.user-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-dark);
+  padding-top: 4px;
+}
+
+.user-pill svg {
+  width: 20px;
+  height: 20px;
+  fill: var(--text-muted);
+}
+
+/* ── Main ── */
+main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 18px;
+  padding: 36px 40px 40px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.22);
+}
+
+.card h1 {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 26px;
+  letter-spacing: .4px;
+}
+
+/* ── Inputs ── */
+.field {
+  margin-bottom: 14px;
+}
+
+.field input[type="text"] {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1.5px solid var(--input-border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-dark);
+  outline: none;
+  transition: border-color .2s;
+}
+
+.field input[type="text"]::placeholder { color: var(--text-muted); }
+.field input[type="text"]:focus        { border-color: var(--accent); }
+
+
+.date-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.date-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.date-group label {
+  font-size: 13px;
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+.date-group input[type="date"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--input-border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-dark);
+  outline: none;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+
+.date-group input[type="date"]:focus { border-color: var(--accent); }
+
+.file-field {
+  margin-bottom: 24px;
+}
+
+.file-field input[type="file"] {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid var(--input-border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-dark);
+  cursor: pointer;
+  outline: none;
+}
+
+.btn-save {
+  width: 100%;
+  padding: 14px;
+  background: var(--btn-bg);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  cursor: pointer;
+  transition: background .2s, transform .1s;
+}
+
+.btn-save:hover  { background: var(--btn-hover); }
+.btn-save:active { transform: scale(.98); }
