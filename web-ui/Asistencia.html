@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Registrar Asistencia</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="asis.css">
+</head>
+
+<body>
+
+<div class="main">
+    <div class="form">
+        <h2>Registrar Asistencia</h2>
+
+        <div class="grid">
+
+            <div>
+                <label class="label">Obrero</label>
+                <select>
+                    <option>Seleccionar Obrero</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="label">Obra</label>
+                <input type="text" placeholder="Nombre de la obra">
+            </div>
+
+            <div>
+                <label class="label">Fecha</label>
+                <input type="date">
+            </div>
+
+            <div>
+                <label class="label">Estado</label>
+                <select>
+                    <option>Seleccionar estado</option>
+                    <option>En progreso</option>
+                    <option>Completa</option>
+                </select>
+            </div>
+
+            <div class="full">
+                <label class="label">Horario</label>
+                <div class="row">
+                    <input type="time">
+                    <input type="time">
+                </div>
+            </div>
+
+            <div class="full">
+                <label class="label">Herramientas usadas</label>
+                <textarea placeholder="Ej: pala, martillo..."></textarea>
+            </div>
+
+            <div class="full">
+                <label class="label">Materiales usados</label>
+                <textarea placeholder="Ej: cemento, ladrillos..."></textarea>
+            </div>
+
+        </div>
+
+        <a href="PanelInicio.html" class="btn">Guardar</a>
+        <a href="PanelInicio.html" class="btn btn-secondary">Volver</a>
+
+    </div>
+</div>
+
+</body>
+</html>

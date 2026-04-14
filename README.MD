@@ -8,7 +8,6 @@
 
 ## Pantallas y asignaciones
 - **Irina:** Login y Consultas.
-- **Natasha:** Asistencia y Panel de inicio.
-- **Angela:** Registrar obrero.
+- **Natasha:** Registrar obrero
+- **Angela:** Asistencia y Panel de inicio.
 - **Santiago:** Registrar obra.
-
