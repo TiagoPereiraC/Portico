@@ -4,13 +4,27 @@
 <meta charset="UTF-8">
 <title>Registrar Asistencia</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="asis.css">
+<link rel="stylesheet" href="assets/css/asis.css">
 </head>
 
 <body>
 
-<div class="main">
+<nav>
+  <div class="logo-wrap">
+    <img src="assets/img/logo.png" alt="Pórtico Construcciones y Servicios">
+  </div>
+
+  <div class="user-pill">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4
+               7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6
+               1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+    </svg>
+    Admin
+  </div>
+</nav>
+
+<main>
     <div class="form">
         <h2>Registrar Asistencia</h2>
 
@@ -39,6 +53,7 @@
                     <option>Seleccionar estado</option>
                     <option>En progreso</option>
                     <option>Completa</option>
+                    <option>Cancelada</option>
                 </select>
             </div>
 
@@ -66,7 +81,7 @@
         <a href="PanelInicio.html" class="btn btn-secondary">Volver</a>
 
     </div>
-</div>
+</main>
 
 </body>
 </html>

@@ -103,6 +103,9 @@ main {
 }
 
 .field input[type="text"]::placeholder { color: var(--text-muted); }
+.field input[type="text"]:hover {
+  border-color: var(--accent);
+}
 .field input[type="text"]:focus {
   border-color: var(--accent);
   box-shadow: 0 2px 12px rgba(181,71,71,.20);
@@ -140,6 +143,10 @@ main {
   cursor: pointer;
   transition: border-color .2s, box-shadow .2s;
   box-shadow: var(--input-shadow);
+}
+
+.date-group input[type="date"]:hover {
+  border-color: var(--accent);
 }
 
 .date-group input[type="date"]:focus {

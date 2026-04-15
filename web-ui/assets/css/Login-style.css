@@ -1,11 +1,11 @@
-* {
+*, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: Arial, sans-serif;
 }
 
 body {
+  font-family: Arial, sans-serif;
   height: 100vh;
   display: flex;
   justify-content: center;
@@ -47,16 +47,22 @@ body {
   height: 50px;
   padding: 12px 40px;
   border-radius: 10px;
-  border: none;
+  border: 1.5px solid #e0e0e0;
   outline: none;
   background: #f5f5f5;
-  box-shadow: inset 0 2px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  font-family: inherit;
   font-size: 14px;
-  transition: background 0.3s;
+  transition: 0.2s;
 }
 
-.card .input-group input:hover{
-  background: #e0e0e0;
+.card .input-group input:hover {
+  border-color: #b54747;
+}
+
+.card .input-group input:focus {
+  border: 1.5px solid #b54747;
+  box-shadow: 0 0 5px rgba(181,71,71,0.5);
 }
 
 

@@ -1,23 +1,78 @@
-* {
+*, *::before, *::after {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+  --bg:           #954043;
+  --card-bg:      #e8e3df;
+  --input-bg:     #f5f5f5;
+  --input-border: #e0e0e0;
+  --text-dark:    #666;
+  --text-muted:   #888;
+  --btn-bg:       #b54747;
+  --btn-hover:    #9e3c3c;
+  --accent:       #b54747;
+  --input-shadow: 0 2px 8px rgba(0,0,0,.12);
 }
 
 body {
     margin: 0;
-    font-family: 'Poppins', sans-serif;
-    background: linear-gradient(200deg, #7a2d2d, #2a1212);
+    font-family: Arial, sans-serif;
+    background-color: var(--bg);
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-.main {
-    min-height: 100vh;
+nav {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 10px 24px;
+    background-color: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,.12);
+}
+
+.logo-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1;
+}
+
+.logo-wrap img {
+    width: 120px;
+    height: auto;
+}
+
+.user-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-dark);
+    padding-top: 4px;
+}
+
+.user-pill svg {
+    width: 20px;
+    height: 20px;
+    fill: var(--text-muted);
+}
+
+main {
+    flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 48px 16px;
 }
 
 .form {
-    background: #f0f0f0;
+    background: var(--card-bg);
     padding: 45px;
     border-radius: 20px;
     width: 700px;
@@ -39,6 +94,7 @@ h2 {
     margin-bottom: 25px;
     text-align: center;
     font-weight: 600;
+    color: var(--text-dark);
 }
 
 .label {
@@ -46,6 +102,7 @@ h2 {
     font-weight: 500;
     margin-top: 10px;
     display: block;
+    color: var(--text-dark);
 }
 
 input, select, textarea {
@@ -53,16 +110,21 @@ input, select, textarea {
     padding: 12px;
     margin-top: 5px;
     border-radius: 10px;
-    border: 1px solid #ccc;
-    background: #fff;
+    border: 1.5px solid var(--input-border);
+    background: var(--input-bg);
+    font-family: inherit;
     font-size: 13px;
     transition: 0.2s;
 }
 
+input:hover, select:hover, textarea:hover {
+    border-color: var(--accent);
+}
+
 input:focus, select:focus, textarea:focus {
     outline: none;
-    border: 1px solid #c13b3b;
-    box-shadow: 0 0 5px rgba(193,59,59,0.5);
+    border: 1.5px solid var(--accent);
+    box-shadow: 0 0 5px rgba(181,71,71,0.5);
 }
 
 .row {
@@ -78,7 +140,7 @@ textarea {
 .btn {
     display: block;
     text-align: center;
-    background:#7a2d2d;
+    background: var(--btn-bg);
     color: white;
     padding: 14px;
     border-radius: 10px;
@@ -89,14 +151,14 @@ textarea {
 }
 
 .btn:hover {
-    background: #3a1a1a;
+    background: var(--btn-hover);
     transform: scale(1.02);
 }
 
 .btn-secondary {
-    background: #555;
+    background: var(--text-muted);
 }
 
 .btn-secondary:hover {
-    background: #333;
+    background: var(--text-dark);
 }

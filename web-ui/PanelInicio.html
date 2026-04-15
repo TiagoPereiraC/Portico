@@ -4,22 +4,31 @@
 <meta charset="UTF-8">
 <title>Pórtico - Panel</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="inicio.css">
+<link rel="stylesheet" href="assets/css/inicio.css">
 </head>
 
 <body>
 
-<div class="main">
+<nav>
+  <div class="logo-wrap">
+    <img src="assets/img/logo.png" alt="Pórtico Construcciones y Servicios">
+  </div>
 
-    <div class="header">
-        <div class="title">
-            <h1>Panel de Administración</h1>
-            <p>Gestión de obras y personal</p>
-        </div>
+  <div class="user-pill">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4
+               7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6
+               1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+    </svg>
+    Admin
+  </div>
+</nav>
 
-        <div><i class="fa-solid fa-user"></i> Admin</div>
+<main>
+    <div class="title">
+        <h1>Panel de Administración</h1>
+        <p>Gestión de obras y personal</p>
     </div>
 
     <div class="grid">
@@ -29,19 +38,19 @@
             <p>Registrar y gestionar clientes</p>
         </a>
 
-        <a href="obra.html" class="card">
+        <a href="RegistrarObra.html" class="card">
             <div class="icon"><i class="fa-solid fa-building"></i></div>
             <h3>Obras</h3>
             <p>Control de construcciones</p>
         </a>
 
-        <a href="obrero.html" class="card">
+        <a href="RegistrarObrero.html" class="card">
             <div class="icon"><i class="fa-solid fa-helmet-safety"></i></div>
             <h3>Obreros</h3>
             <p>Gestión del personal</p>
         </a>
 
-        <a href="asistencia.html" class="card">
+        <a href="Asistencia.html" class="card">
             <div class="icon"><i class="fa-solid fa-clipboard-list"></i></div>
             <h3>Asistencia</h3>
             <p>Registro diario</p>
@@ -53,14 +62,14 @@
             <p>Informes y datos</p>
         </a>
 
-        <a href="login.html" class="card">
+        <a href="Login.html" class="card">
             <div class="icon"><i class="fa-solid fa-right-from-bracket"></i></div>
             <h3>Salir</h3>
             <p>Cerrar sesión</p>
         </a>
     </div>
 
-</div>
+</main>
 
 </body>
 </html>
