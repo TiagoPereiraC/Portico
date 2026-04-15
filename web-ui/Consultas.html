@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultas</title>
+    <link rel="stylesheet" href="assets/css/Consultas-style.css">
+</head>
+<body>
+    
+ <nav>
+    <div class="logo-wrap">
+      <img src="assets/img/logo.png" alt="Pórtico Construcciones y Servicios" />
+    </div>
+
+    <div class="user-pill">
+      <!-- Person icon -->
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4
+                 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6
+                 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+      </svg>
+      Admin
+    </div>
+  </nav>
+
+  <main>
+    <div class="card">
+
+  <!-- IZQUIERDA -->
+  <div class="form-section">
+
+     <h1>Consultas</h1>
+
+    <select name="obra">
+      <option value="">Seleccionar obra</option>
+      <option value="1">Obra A</option>
+      <option value="2">Obra B</option>
+      <option value="3">Obra C</option>
+    </select>
+
+    <select name="obrero">
+      <option value="">Seleccionar obrero</option>
+      <option value="1">Obrero 1</option>
+      <option value="2">Obrero 2</option>
+      <option value="3">Obrero 3</option>
+    </select>
+
+    <label>Periodo de Busqueda</label>
+
+    <br>
+
+     <!-- FECHAS CON TEXTO -->
+    <div class="date-range">
+      <div class="date-group">
+        <span>Desde</span>
+        <input type="date">
+      </div>
+
+      <div class="date-group">
+        <span>Hasta</span>
+        <input type="date">
+      </div>
+    </div>
+
+    <br>
+
+    <button class="btn-search">Buscar</button>
+
+  </div>
+
+  <!-- DERECHA -->
+  <div class="table">
+    <table>
+      <thead>
+        <tr>
+          <th>Obra</th>
+          <th>Obreros</th>
+          <th>Fecha</th>
+          <th>Entrada</th>
+          <th>Salida</th>
+          <th>Horas Trabajadas</th>
+          <th>Materiales</th>
+          <th>Herramientas</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Obra A</td>
+          <td>Obrero 1</td>
+          <td>2024-06-01</td>
+          <td>08:00</td>
+          <td>17:00</td>
+          <td>9</td>
+          <td>
+            Cemento: 2 bolsas<br>
+            Arena: 1 m³
+          </td>
+          <td>
+            Martillo: 1<br>
+            Taladro: 1
+          </td>
+        </tr>
+
+        <tr>
+          <td>Obra A</td>
+          <td>Obrero 2</td>
+          <td>2024-06-01</td>
+          <td>10:00</td>
+          <td>18:00</td>
+          <td>8</td>
+          <td>
+            Ladrillos: 500<br>
+            Madera: 10 tablas
+          </td>
+          <td>
+            Sierra: 1<br>
+            Nivel: 1
+          </td>
+        </tr>
+
+        <tr>
+          <td>Obra B</td>
+          <td>Obrero 3</td>
+          <td>2024-06-02</td>
+          <td>09:00</td>
+          <td>17:00</td>
+          <td>8</td>
+          <td>
+            Cemento: 1 bolsa
+          </td>
+          <td>
+            Taladro: 1
+          </td>
+        </tr>
+
+      <tr>
+        <td>Obra B</td>
+        <td>Obrero 4</td>
+        <td>2024-06-02</td>
+        <td>07:00</td>
+        <td>15:00</td>
+        <td>8</td>
+        <td>
+          Arena: 2 m³<br>
+          Piedra: 1 m³
+        </td>
+        <td>
+          Pala: 1<br>
+          Carretilla: 1
+        </td>
+      </tr>
+
+      <tr>
+        <td>Obra C</td>
+        <td>Obrero 5</td>
+        <td>2024-06-03</td>
+        <td>08:30</td>
+        <td>16:30</td>
+        <td>8</td>
+        <td>
+          Pintura: 3 litros
+        </td>
+        <td>
+          Rodillo: 1<br>
+          Brocha: 2
+        </td>
+      </tr>
+
+      <tr>
+        <td>Obra C</td>
+        <td>Obrero 6</td>
+        <td>2024-06-03</td>
+        <td>11:00</td>
+        <td>17:00</td>
+        <td>6</td>
+        <td>
+          Yeso: 2 bolsas<br>
+          Agua: 20 L
+        </td>
+        <td>
+          Espátula: 1
+        </td>
+      </tr>
+
+      <tr>
+        <td>Obra D</td>
+        <td>Obrero 7</td>
+        <td>2024-06-04</td>
+        <td>08:00</td>
+        <td>14:00</td>
+        <td>6</td>
+        <td>
+          Hierro: 50 kg<br>
+          Cemento: 2 bolsas
+        </td>
+        <td>
+          Soldadora: 1<br>
+          Martillo: 1
+        </td>
+      </tr>
+  </tr>
+      </tbody>
+    </table>
+  </div>
+  
+</div>
+  </main>
+    
+</body>
+</html>
