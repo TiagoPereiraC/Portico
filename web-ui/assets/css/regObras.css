@@ -173,17 +173,42 @@ main {
 }
 
 .btn-save {
+  display: block;
+  text-align: center;
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   border: none;
-  border-radius: 12px;
-  background: #b54747;
+  border-radius: 10px;
+  background: var(--btn-bg);
   color: white;
-  font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
-  margin-top: 10px;
-  transition: 0.3s;
+  margin-top: 15px;
+  transition: 0.2s;
 }
 
-.btn-save:hover  { background: var(--btn-hover); }
-.btn-save:active { transform: scale(.98); }
+.btn-save:hover {
+  background: var(--btn-hover);
+  transform: scale(1.02);
+}
+
+.btn-back {
+  display: block;
+  text-align: center;
+  background: var(--text-muted);
+  color: white;
+  padding: 14px;
+  border-radius: 10px;
+  margin-top: 12px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: 0.2s;
+  width: 100%;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-back:hover {
+  background: var(--text-dark);
+  transform: scale(1.02);
+}

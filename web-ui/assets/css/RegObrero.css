@@ -171,23 +171,23 @@ main {
 
 /* BOTON */
 .btn {
+  display: block;
+  text-align: center;
   width: 100%;
-  padding: 15px;
+  padding: 14px;
   border: none;
-  border-radius: 20px;
+  border-radius: 10px;
   background: var(--btn-bg);
   color: white;
-  font-weight: bold;
-  font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
+  margin-top: 15px;
+  transition: 0.2s;
 }
 
 .btn:hover {
   background: var(--btn-hover);
+  transform: scale(1.02);
 }
 
 /* FOOTER */
@@ -200,4 +200,25 @@ main {
 
 .footer i {
   margin: 0 5px;
+}
+
+.btn-back {
+  display: block;
+  text-align: center;
+  background: var(--text-muted);
+  color: white;
+  padding: 14px;
+  border-radius: 10px;
+  margin-top: 12px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: 0.2s;
+  width: 100%;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-back:hover {
+  background: var(--text-dark);
+  transform: scale(1.02);
 }
