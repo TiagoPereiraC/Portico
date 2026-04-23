@@ -1,8 +1,9 @@
 # Aplicación Desktop ➔ Portico.
 
 ## Tecnologias
-- **Frontend:** HTML, C#
-- **Backend:** Java, MySQL
+- **Frontend:** HTML, CSS, PHP (?)
+- **Backend:** Java
+- **Base de datos:** MySQL
 
 ---
 
@@ -11,6 +12,18 @@
 - **Natasha:** Registrar obrero
 - **Angela:** Asistencia y Panel de inicio.
 - **Santiago:** Registrar obra.
+
+---
+
+## Build
+
+Para compilar la aplicación `.exe`:
+
+```bash
+dotnet build .\desktop-csharp\PorticoDesktop.csproj -c Release
+```
+
+El ejecutable quedará en `desktop-csharp/bin/Release/`.
 
 ---
 
@@ -27,3 +40,4 @@
 | `--btn-bg`        | `#b54747` | Botón primario             |
 | `--btn-hover`     | `#9e3c3c` | Hover botón primario       |
 | `--accent`        | `#b54747` | Color de acento / focus    |
+
