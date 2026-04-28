@@ -14,7 +14,6 @@ desktop-csharp/obj/
 
 # Environment / credentials
 .env
-.env.*
 
 # OS
 Thumbs.db

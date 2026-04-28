@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -5,7 +7,7 @@
 }
 
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 :root {
@@ -31,9 +33,11 @@ body {
 
 nav {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   padding: 10px 24px;
+  height: 140px;
+  box-sizing: border-box;
   background-color: #fff;
   box-shadow: 0 2px 6px rgba(0,0,0,.12);
 }
@@ -179,6 +183,7 @@ main {
   border-radius: 10px;
   background: var(--btn-bg);
   color: white;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   margin-top: 15px;
@@ -211,6 +216,7 @@ main {
   border-radius: 10px;
   margin-top: 12px;
   text-decoration: none;
+  font-size: 14px;
   font-weight: 500;
   transition: 0.2s;
   width: 100%;

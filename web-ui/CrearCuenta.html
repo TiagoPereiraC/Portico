@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Cuenta</title>
+
+    <link rel="stylesheet" href="assets/css/CrearCuenta.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="card">
+         <img src="assets/img/logo.png" alt="Logo" class="logo">
+
+        <h2>Crear Cuenta</h2>
+
+        <form>
+
+            <div class="input-group">
+                <i class="fas fa-user"></i>
+                <input type="text" placeholder="Nombre completo" required>
+            </div>
+
+            <div class="input-group">
+                <i class="fas fa-envelope"></i>
+                <input type="email" placeholder="Correo electrónico" required>
+            </div>
+
+            <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" placeholder="Contraseña" required>
+            </div>
+
+            <div class="input-group select-rol">
+                <i class="fas fa-users"></i>
+                <select required>
+                    <option value="">Seleccionar rol</option>
+                    <option value="admin">Administrador</option>
+                    <option value="obrero">Obrero</option>
+                </select>
+            </div>
+
+            <button class="btn" type="submit">Crear Cuenta</button>
+
+            <p class="extra-texto">
+                ¿Ya tienes una cuenta?
+                <a href="Login.html">Ir al login</a>
+            </p>
+
+        </form>
+    </div>
+</body>
+
+</html>
