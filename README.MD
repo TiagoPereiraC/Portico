@@ -41,3 +41,5 @@ El ejecutable quedará en `desktop-csharp/bin/Release/`.
 | `--btn-hover`     | `#9e3c3c` | Hover botón primario       |
 | `--accent`        | `#b54747` | Color de acento / focus    |
 
+ToDo: 
+- Protección de sesiones en todas las paginas.

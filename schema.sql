@@ -83,3 +83,13 @@ CREATE TABLE herramientas (
     FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
         ON UPDATE CASCADE ON DELETE CASCADE
 );
+
+CREATE TABLE intentos_login (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    ip_address VARCHAR(45) NOT NULL,
+    fecha DATETIME NOT NULL,
+    exitoso TINYINT(1) DEFAULT 0,
+    INDEX idx_username_fecha (username, fecha),
+    INDEX idx_ip_fecha (ip_address, fecha)
+);

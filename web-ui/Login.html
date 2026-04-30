@@ -12,10 +12,10 @@
     <div class="card">
         <img src="assets/img/logo.png" alt="Logo" class="logo">
         <h2>Iniciar Sesión</h2>
-        <form>
+        <form id="login-form" novalidate>
             <div class="input-group">
                 <i class="fas fa-user"></i> 
-                <input type="text" placeholder="Usuario" required>
+                <input type="text" id="usuario" name="usuario" placeholder="Usuario" autocomplete="username" required>
             </div>
             <div class="input-group">
                 <i class="fas fa-lock"></i>
@@ -24,7 +24,8 @@
                     <i class="fas fa-eye"></i>
                 </button>
             </div>
-            <button class="btn" type="submit">Iniciar Sesión</button>
+            <p id="error-msg" class="error-msg" aria-live="polite"></p>
+            <button class="btn" type="submit" id="btn-login">Iniciar Sesión</button>
         </form>
     </div>
 
@@ -40,6 +41,47 @@ function togglePassword(inputId, btn) {
         icon.classList.replace('fa-eye-slash', 'fa-eye');
     }
 }
+
+const errorEl = document.getElementById('error-msg');
+const btnLogin = document.getElementById('btn-login');
+
+// Recibe la respuesta de C# y actúa en consecuencia
+window.chrome?.webview?.addEventListener('message', function (e) {
+    const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+    if (data.type !== 'login_response') return;
+
+    if (data.success) {
+        // La navegación a PanelInicio la hace C#, pero por si acaso:
+        window.location.href = 'PanelInicio.html';
+    } else {
+        errorEl.textContent = data.error || 'Error desconocido';
+        btnLogin.disabled   = false;
+        btnLogin.textContent = 'Iniciar Sesión';
+    }
+});
+
+document.getElementById('login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    errorEl.textContent  = '';
+    btnLogin.disabled    = true;
+    btnLogin.textContent = 'Verificando...';
+
+    const payload = JSON.stringify({
+        type:     'login',
+        usuario:  document.getElementById('usuario').value.trim(),
+        password: document.getElementById('password').value
+    });
+
+    // Verifica que estamos dentro de la app C# con WebView2
+    if (window.chrome?.webview) {
+        window.chrome.webview.postMessage(payload);
+    } else {
+        errorEl.textContent  = 'Esta pantalla solo funciona dentro de la aplicación.';
+        btnLogin.disabled    = false;
+        btnLogin.textContent = 'Iniciar Sesión';
+    }
+});
+</script>
 </script>
 
 </body>
