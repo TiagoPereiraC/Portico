@@ -167,3 +167,77 @@ textarea {
 .btn-secondary:hover {
     background: var(--text-dark);
 }
+
+/* ===== OBREROS ===== */
+.obreros-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.obrero-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f7f7f7;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.obrero-item button {
+    border: none;
+    background: transparent;
+    color: red;
+    cursor: pointer;
+}
+
+/* ===== HORARIOS ===== */
+.worker-row {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    padding: 10px;
+    background: #f7f7f7;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.worker-row strong {
+    width: 140px;
+    font-size: 13px;
+    color: var(--text-dark);
+}
+
+.worker-row label {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* ===== MATERIALES / HERRAMIENTAS ===== */
+.smart-box {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 10px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
+    .full {
+        grid-column: span 1;
+    }
+
+    .worker-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .smart-box {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Usuarios Registrados</title>
+
+<link rel="stylesheet" href="assets/css/TablaUsuarios.css">
+<link rel="stylesheet" href="assets/css/nav-sidebar.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+
+<div class="nav-dropdown">
+  <button class="nav-menu-btn"><i class="fas fa-bars"></i> Menú</button>
+  <ul class="nav-dropdown-menu">
+    <li><a href="PanelInicio.html"><i class="fas fa-home"></i> Panel</a></li>
+    <li><a href="RegistrarObra.html"><i class="fas fa-building"></i> Obras</a></li>
+    <li><a href="RegistrarObrero.html"><i class="fas fa-helmet-safety"></i> Obreros</a></li>
+    <li><a href="Asistencia.html"><i class="fas fa-clipboard-list"></i> Asistencia</a></li>
+    <li><a href="Consultas.html"><i class="fas fa-chart-column"></i> Consultas</a></li>
+    <li><a href="Login.html"><i class="fas fa-right-from-bracket"></i> Salir</a></li>
+  </ul>
+</div>
+
+<nav>
+  <div class="logo-wrap">
+    <img src="assets/img/logo.png" alt="Pórtico Construcciones y Servicios">
+  </div>
+  <div class="user-pill">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+    </svg>
+    Admin
+  </div>
+</nav>
+
+<main>
+  <div class="card">
+
+    <h2>Usuarios Registrados</h2>
+
+    <a href="CrearCuenta.html" class="btn-new">
+      <i class="fas fa-user-plus"></i> Nueva Cuenta
+    </a>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Contraseña</th>
+            <th>Rol</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Juan Pérez</td>
+            <td>juan@email.com</td>
+            <td>********</td>
+            <td>Administrador</td>
+            <td>
+              <button class="btn-edit"><i class="fas fa-pen"></i></button>
+              <button class="btn-delete"><i class="fas fa-trash"></i></button>
+            </td>
+          </tr>
+
+          <tr>
+            <td>2</td>
+            <td>María López</td>
+            <td>maria@email.com</td>
+            <td>********</td>
+            <td>Obrero</td>
+            <td>
+              <button class="btn-edit"><i class="fas fa-pen"></i></button>
+              <button class="btn-delete"><i class="fas fa-trash"></i></button>
+            </td>
+          </tr>
+
+          <tr>
+            <td>3</td>
+            <td>Carlos Gómez</td>
+            <td>carlos@email.com</td>
+            <td>********</td>
+            <td>Obrero</td>
+            <td>
+              <button class="btn-edit"><i class="fas fa-pen"></i></button>
+              <button class="btn-delete"><i class="fas fa-trash"></i></button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <a href="PanelInicio.html" class="btn-back">Volver</a>
+
+  </div>
+</main>
+
+</body>
+</html>

@@ -2,11 +2,12 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Registrar Asistencia</title>
 
 <link rel="stylesheet" href="assets/css/Asistencias.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="stylesheet" href="assets/css/nav-sidebar.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
 <body>
@@ -36,63 +37,162 @@
 </nav>
 
 <main>
-    <div class="form">
-        <h2>Registrar Asistencia</h2>
 
-        <div class="grid">
+<form class="form">
 
-            <div>
-                <label class="label">Obrero</label>
-                <select>
-                    <option>Seleccionar Obrero</option>
-                </select>
-            </div>
+<h2>Registrar Asistencia</h2>
 
-            <div>
-                <label class="label">Obra</label>
-                <input type="text" placeholder="Nombre de la obra">
-            </div>
+<div class="grid">
 
-            <div>
-                <label class="label">Fecha</label>
-                <input type="date">
-            </div>
+  <!-- OBRA -->
+  <div class="full">
+    <label class="label">Obra</label>
+    <select>
+      <option>Seleccionar obra</option>
+      <option>Casa Central</option>
+      <option>Edificio Norte</option>
+    </select>
+  </div>
 
-            <div>
-                <label class="label">Estado</label>
-                <select>
-                    <option>Seleccionar estado</option>
-                    <option>En progreso</option>
-                    <option>Completa</option>
-                    <option>Cancelada</option>
-                </select>
-            </div>
+  <!-- FECHA -->
+  <div>
+    <label class="label">Fecha</label>
+    <input type="date">
+  </div>
 
-            <div class="full">
-                <label class="label">Horario</label>
-                <div class="row">
-                    <input type="time">
-                    <input type="time">
-                </div>
-            </div>
-
-            <div class="full">
-                <label class="label">Herramientas usadas</label>
-                <textarea placeholder="Ej: pala, martillo..."></textarea>
-            </div>
-
-            <div class="full">
-                <label class="label">Materiales usados</label>
-                <textarea placeholder="Ej: cemento, ladrillos..."></textarea>
-            </div>
-
-        </div>
-
-        <a href="PanelInicio.html" class="btn">Guardar</a>
-        <a href="PanelInicio.html" class="btn btn-secondary">Volver</a>
-
+  <!-- OBREROS -->
+  <div class="full">
+    <label class="label">Obreros</label>
+    <div class="obreros-selector">
+      <select id="selectObrero">
+        <option value="">Seleccionar obrero</option>
+        <option value="juan">Juan Pérez</option>
+        <option value="pedro">Pedro López</option>
+        <option value="carlos">Carlos Ruiz</option>
+      </select>
     </div>
+  </div>
+
+  <!-- LISTA OBREROS -->
+  <div class="full">
+    <label class="label">Obreros seleccionados</label>
+    <div id="listaObreros"></div>
+  </div>
+
+  <!-- HORARIOS -->
+  <div class="full">
+    <label class="label">Horarios por obrero</label>
+    <div id="contenedorHorarios"></div>
+  </div>
+
+  <!-- FINALIZA OBRA -->
+  <div>
+    <label class="label">¿Finaliza obra?</label>
+    <select>
+      <option>No</option>
+      <option>Sí</option>
+    </select>
+  </div>
+
+  <!-- MATERIALES -->
+  <div class="full">
+    <label class="label">Materiales</label>
+    <div class="smart-box">
+      <select id="selectMaterial">
+        <option value="">Material existente</option>
+        <option value="cemento">Cemento</option>
+        <option value="arena">Arena</option>
+        <option value="ladrillo">Ladrillo</option>
+      </select>
+      <input type="text" id="nuevoMaterial" placeholder="O escribir nuevo material">
+      <input type="number" id="cantidadMaterial" name="cantidad" placeholder="Cantidad" min="0" step="0.01">
+      <input type="number" id="costoUnitario" name="costo_unitario" placeholder="Costo unitario ($)" min="0" step="0.01">
+    </div>
+  </div>
+
+  <!-- HERRAMIENTAS -->
+  <div class="full">
+    <label class="label">Herramientas</label>
+    <div class="smart-box">
+      <select id="selectHerramienta">
+        <option value="">Herramienta existente</option>
+        <option value="pala">Pala</option>
+        <option value="martillo">Martillo</option>
+        <option value="taladro">Taladro</option>
+      </select>
+      <input type="text" id="nuevaHerramienta" placeholder="O escribir nueva herramienta">
+      <input type="number" id="cantidadHerramienta" name="cantidad_herramienta" placeholder="Cantidad" min="1" step="1">
+    </div>
+  </div>
+
+</div>
+
+<button class="btn" type="submit">Guardar</button>
+
+</form>
+
 </main>
+
+<script>
+const selectObrero = document.getElementById("selectObrero");
+const lista = document.getElementById("listaObreros");
+const horarios = document.getElementById("contenedorHorarios");
+
+const nombres = {
+  juan: "Juan Pérez",
+  pedro: "Pedro López",
+  carlos: "Carlos Ruiz"
+};
+
+let obrerosSeleccionados = [];
+
+selectObrero.addEventListener("change", () => {
+  const id = selectObrero.value;
+  if (!id || obrerosSeleccionados.includes(id)) {
+    selectObrero.value = "";
+    return;
+  }
+  obrerosSeleccionados.push(id);
+  crearObrero(id);
+  crearHorario(id);
+  selectObrero.value = "";
+});
+
+function crearObrero(id) {
+  const div = document.createElement("div");
+  div.classList.add("obrero-item");
+  div.id = `obrero-${id}`;
+  div.innerHTML = `
+    ${nombres[id]}
+    <button type="button" onclick="eliminarObrero('${id}')">✕</button>
+  `;
+  lista.appendChild(div);
+}
+
+function crearHorario(id) {
+  const div = document.createElement("div");
+  div.classList.add("worker-row");
+  div.id = `horario-${id}`;
+  div.innerHTML = `
+    <strong>${nombres[id]}</strong>
+    <div>
+      <label>Entrada</label>
+      <input type="time" name="entrada_${id}">
+    </div>
+    <div>
+      <label>Salida</label>
+      <input type="time" name="salida_${id}">
+    </div>
+  `;
+  horarios.appendChild(div);
+}
+
+function eliminarObrero(id) {
+  obrerosSeleccionados = obrerosSeleccionados.filter(o => o !== id);
+  document.getElementById(`obrero-${id}`)?.remove();
+  document.getElementById(`horario-${id}`)?.remove();
+}
+</script>
 
 </body>
 </html>

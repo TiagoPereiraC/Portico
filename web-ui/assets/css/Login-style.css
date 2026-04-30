@@ -72,12 +72,55 @@ body {
 }
 
 
-.card .input-group i {
+.card .input-group > i {
   position: absolute;
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
   color: #888;
+  pointer-events: none;
+}
+
+.card .input-group:has(.toggle-password) input {
+  padding-right: 46px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 0 10px 10px 0;
+  cursor: pointer;
+  color: #888;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.toggle-password:hover {
+  color: #b54747;
+}
+
+@media (max-width: 600px) {
+  .card {
+    width: 100%;
+    padding: 25px 15px;
+  }
+
+  .logo {
+    width: 150px;
+    height: 150px;
+  }
+
+  .toggle-password {
+    width: 40px;
+  }
 }
 
 .card .btn {
