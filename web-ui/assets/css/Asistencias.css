@@ -144,14 +144,17 @@ textarea {
 .btn {
     display: block;
     text-align: center;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
     background: var(--btn-bg);
     color: white;
-    padding: 14px;
-    border-radius: 10px;
-    margin-top: 15px;
-    text-decoration: none;
     font-size: 14px;
     font-weight: 500;
+    cursor: pointer;
+    margin-top: 15px;
+    text-decoration: none;
     transition: 0.2s;
 }
 
@@ -160,12 +163,26 @@ textarea {
     transform: scale(1.02);
 }
 
-.btn-secondary {
+.btn-back {
+    display: block;
+    text-align: center;
+    width: 100%;
     background: var(--text-muted);
+    color: white;
+    padding: 14px;
+    border-radius: 10px;
+    margin-top: 12px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: 0.2s;
+    cursor: pointer;
+    border: none;
 }
 
-.btn-secondary:hover {
+.btn-back:hover {
     background: var(--text-dark);
+    transform: scale(1.02);
 }
 
 /* ===== OBREROS ===== */

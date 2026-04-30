@@ -9,14 +9,15 @@
 
 :root {
   --bg:           #954043;
-  --card-bg:      #e6d6d1;
+  --card-bg:      #e8e3df;
   --input-bg:     #f5f5f5;
   --input-border: #e0e0e0;
-  --text-dark:    #555;
+  --text-dark:    #666;
   --text-muted:   #888;
   --btn-bg:       #b54747;
   --btn-hover:    #9e3c3c;
   --accent:       #b54747;
+  --input-shadow: 0 2px 8px rgba(0,0,0,.12);
 }
 
 body {

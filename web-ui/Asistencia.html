@@ -47,17 +47,15 @@
   <!-- OBRA -->
   <div class="full">
     <label class="label">Obra</label>
-    <select>
-      <option>Seleccionar obra</option>
-      <option>Casa Central</option>
-      <option>Edificio Norte</option>
+    <select id="id_obra" name="id_obra">
+      <option value="">Seleccionar obra</option>
     </select>
   </div>
 
   <!-- FECHA -->
   <div>
     <label class="label">Fecha</label>
-    <input type="date">
+    <input type="date" id="fecha" name="fecha">
   </div>
 
   <!-- OBREROS -->
@@ -128,6 +126,7 @@
 </div>
 
 <button class="btn" type="submit">Guardar</button>
+<a href="PanelInicio.html" class="btn-back">Volver</a>
 
 </form>
 
@@ -163,7 +162,7 @@ function crearObrero(id) {
   div.classList.add("obrero-item");
   div.id = `obrero-${id}`;
   div.innerHTML = `
-    ${nombres[id]}
+    ${nombres[id] ?? id}
     <button type="button" onclick="eliminarObrero('${id}')">✕</button>
   `;
   lista.appendChild(div);
@@ -174,14 +173,14 @@ function crearHorario(id) {
   div.classList.add("worker-row");
   div.id = `horario-${id}`;
   div.innerHTML = `
-    <strong>${nombres[id]}</strong>
+    <strong>${nombres[id] ?? id}</strong>
     <div>
       <label>Entrada</label>
-      <input type="time" name="entrada_${id}">
+      <input type="time" name="hora_entrada_${id}">
     </div>
     <div>
       <label>Salida</label>
-      <input type="time" name="salida_${id}">
+      <input type="time" name="hora_salida_${id}">
     </div>
   `;
   horarios.appendChild(div);
