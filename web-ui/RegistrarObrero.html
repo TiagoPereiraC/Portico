@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Registrar Obrero</title>
+<title>Obreros</title>
 
 <!-- ICONOS -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -39,32 +39,123 @@
 
 <main>
   <div class="card">
-   <h2>Registrar Obrero</h2>
+    <section id="panelObreros" class="panel-view active">
+      <h2>Obreros</h2>
 
-    <div class="grupo">
-      <div class="label">Nombre completo</div>
-      <input type="text" id="nombre" name="nombre" class="input" placeholder="Ej: Juan Carlos Mendoza">
-    </div>
+      <button type="button" class="btn-new" id="openRegisterPanel">
+        <i class="fas fa-user-plus"></i> Registrar
+      </button>
 
-    <div class="grupo">
-      <div class="label">DNI / Cédula</div>
-      <input type="text" id="documento" name="documento" class="input" placeholder="Ej: 5.123.456-7">
-    </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>DNI / Cédula</th>
+              <th>Teléfono</th>
+              <th>Fecha contratación</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="obreroTableBody">
+            <tr>
+              <td>Juan Carlos Mendoza</td>
+              <td>5.123.456-7</td>
+              <td>099 123 456</td>
+              <td>2026-04-18</td>
+              <td>
+                <button type="button" class="btn-edit" aria-label="Editar obrero">
+                  <i class="fas fa-pen"></i>
+                </button>
+                <button type="button" class="btn-delete" aria-label="Remover obrero">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>María Fernanda Silva</td>
+              <td>4.987.654-3</td>
+              <td>+598 98 456 321</td>
+              <td>2026-04-22</td>
+              <td>
+                <button type="button" class="btn-edit" aria-label="Editar obrero">
+                  <i class="fas fa-pen"></i>
+                </button>
+                <button type="button" class="btn-delete" aria-label="Remover obrero">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-    <div class="grupo">
-      <div class="label">Teléfono</div>
-      <input type="text" id="telefono" name="telefono" class="input" placeholder="Ej: 099 123 456 o +598 99 123 456">
-    </div>
+      <a href="PanelInicio.html" class="btn-back">Volver</a>
+    </section>
 
-    <div class="fecha">
-      <label>Fecha Contratación</label>
-      <input type="date" id="fecha_contratacion" name="fecha_contratacion" value="2026-04-30">
-    </div>
+    <section id="panelRegistro" class="panel-view hidden">
+      <div class="form-wrap">
+        <h2 class="form-title">Registrar Obrero</h2>
 
-    <button class="btn">Guardar</button>
-    <a href="PanelInicio.html" class="btn-back">Volver</a>
+        <form id="obreroForm">
+          <div class="grupo">
+            <div class="label">Nombre completo</div>
+            <input type="text" id="nombre" name="nombre" class="input" placeholder="Ej: Juan Carlos Mendoza" required>
+          </div>
+
+          <div class="grupo">
+            <div class="label">DNI / Cédula</div>
+            <input type="text" id="documento" name="documento" class="input" placeholder="Ej: 5.123.456-7" required>
+          </div>
+
+          <div class="grupo">
+            <div class="label">Teléfono</div>
+            <input type="text" id="telefono" name="telefono" class="input" placeholder="Ej: 099 123 456 o +598 99 123 456" required>
+          </div>
+
+          <div class="fecha">
+            <label for="fecha_contratacion">Fecha Contratación</label>
+            <input type="date" id="fecha_contratacion" name="fecha_contratacion" value="2026-04-30" required>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn">Guardar</button>
+            <button type="button" class="btn-back" id="cancelRegisterPanel">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </section>
   </div>
 </main>
+
+<script>
+  const panelObreros = document.getElementById('panelObreros');
+  const panelRegistro = document.getElementById('panelRegistro');
+  const openRegisterPanel = document.getElementById('openRegisterPanel');
+  const cancelRegisterPanel = document.getElementById('cancelRegisterPanel');
+  const obreroForm = document.getElementById('obreroForm');
+
+  function togglePanels(showRegister) {
+    panelObreros.classList.toggle('hidden', showRegister);
+    panelObreros.classList.toggle('active', !showRegister);
+    panelRegistro.classList.toggle('hidden', !showRegister);
+    panelRegistro.classList.toggle('active', showRegister);
+  }
+
+  function resetFormAndBack() {
+    obreroForm.reset();
+    document.getElementById('fecha_contratacion').value = '2026-04-30';
+    togglePanels(false);
+  }
+
+  openRegisterPanel.addEventListener('click', () => togglePanels(true));
+  cancelRegisterPanel.addEventListener('click', resetFormAndBack);
+
+  obreroForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    resetFormAndBack();
+  });
+</script>
 
 </body>
 </html>

@@ -203,11 +203,32 @@ textarea {
     font-size: 13px;
 }
 
-.obrero-item button {
+.obrero-name {
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+.obrero-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-delete {
     border: none;
-    background: transparent;
-    color: red;
+    padding: 7px 10px;
+    border-radius: 8px;
     cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-delete {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-delete:hover {
+    background: #c0392b;
+    transform: scale(1.05);
 }
 
 /* ===== HORARIOS ===== */

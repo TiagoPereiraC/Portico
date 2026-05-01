@@ -162,8 +162,12 @@ function crearObrero(id) {
   div.classList.add("obrero-item");
   div.id = `obrero-${id}`;
   div.innerHTML = `
-    ${nombres[id] ?? id}
-    <button type="button" onclick="eliminarObrero('${id}')">✕</button>
+    <span class="obrero-name">${nombres[id] ?? id}</span>
+    <div class="obrero-actions">
+      <button type="button" class="btn-delete" aria-label="Remover obrero seleccionado" onclick="eliminarObrero('${id}')">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
   `;
   lista.appendChild(div);
 }
