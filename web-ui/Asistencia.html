@@ -28,12 +28,7 @@
   <div class="logo-wrap">
     <img src="assets/img/logo.png" alt="Pórtico Construcciones y Servicios">
   </div>
-  <div class="user-pill">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-    </svg>
-    Admin
-  </div>
+  <div class="user-pill">Admin</div>
 </nav>
 
 <main>
@@ -44,84 +39,96 @@
 
 <div class="grid">
 
-  <!-- OBRA -->
-  <div class="full">
-    <label class="label">Obra</label>
-    <select id="id_obra" name="id_obra">
-      <option value="">Seleccionar obra</option>
+<!-- OBRA -->
+<div class="full">
+  <label class="label">Obra</label>
+  <select id="id_obra" name="id_obra">
+    <option value="">Seleccionar obra</option>
+  </select>
+</div>
+
+<!-- FECHA -->
+<div>
+  <label class="label">Fecha</label>
+  <input type="date" id="fecha" name="fecha">
+</div>
+
+<!-- OBREROS -->
+<div class="full">
+  <label class="label">Obreros</label>
+  <div class="obreros-selector">
+    <select id="selectObrero">
+      <option value="">Seleccionar obrero</option>
+      <option value="juan">Juan Pérez</option>
+      <option value="pedro">Pedro López</option>
+      <option value="carlos">Carlos Ruiz</option>
     </select>
   </div>
+</div>
 
-  <!-- FECHA -->
-  <div>
-    <label class="label">Fecha</label>
-    <input type="date" id="fecha" name="fecha">
-  </div>
+<!-- LISTA OBREROS -->
+<div class="full">
+  <label class="label">Obreros seleccionados</label>
+  <div id="listaObreros"></div>
+</div>
 
-  <!-- OBREROS -->
-  <div class="full">
-    <label class="label">Obreros</label>
-    <div class="obreros-selector">
-      <select id="selectObrero">
-        <option value="">Seleccionar obrero</option>
-        <option value="juan">Juan Pérez</option>
-        <option value="pedro">Pedro López</option>
-        <option value="carlos">Carlos Ruiz</option>
-      </select>
-    </div>
-  </div>
+<!-- HORARIOS -->
+<div class="full">
+  <label class="label">Horarios por obrero</label>
+  <div id="contenedorHorarios"></div>
+</div>
 
-  <!-- LISTA OBREROS -->
-  <div class="full">
-    <label class="label">Obreros seleccionados</label>
-    <div id="listaObreros"></div>
-  </div>
+<!-- FINALIZA OBRA -->
+<div>
+  <label class="label">¿Finaliza obra?</label>
+  <select>
+    <option>No</option>
+    <option>Sí</option>
+  </select>
+</div>
 
-  <!-- HORARIOS -->
-  <div class="full">
-    <label class="label">Horarios por obrero</label>
-    <div id="contenedorHorarios"></div>
-  </div>
+<!-- MATERIALES -->
+<div class="full">
+  <label class="label">Materiales</label>
 
-  <!-- FINALIZA OBRA -->
-  <div>
-    <label class="label">¿Finaliza obra?</label>
-    <select>
-      <option>No</option>
-      <option>Sí</option>
+  <div class="smart-box">
+    <select id="selectMaterial">
+      <option value="">Material existente</option>
+      <option value="cemento">Cemento</option>
+      <option value="arena">Arena</option>
+      <option value="ladrillo">Ladrillo</option>
     </select>
+
+    <input type="text" id="nuevoMaterial" placeholder="O escribir nuevo material">
+    <input type="number" id="cantidadMaterial" placeholder="Cantidad">
+    <input type="number" id="costoUnitario" placeholder="Costo unitario ($)">
   </div>
 
-  <!-- MATERIALES -->
-  <div class="full">
-    <label class="label">Materiales</label>
-    <div class="smart-box">
-      <select id="selectMaterial">
-        <option value="">Material existente</option>
-        <option value="cemento">Cemento</option>
-        <option value="arena">Arena</option>
-        <option value="ladrillo">Ladrillo</option>
-      </select>
-      <input type="text" id="nuevoMaterial" placeholder="O escribir nuevo material">
-      <input type="number" id="cantidadMaterial" name="cantidad" placeholder="Cantidad" min="0" step="0.01">
-      <input type="number" id="costoUnitario" name="costo_unitario" placeholder="Costo unitario ($)" min="0" step="0.01">
-    </div>
+  <button type="button" class="btn" onclick="agregarMaterial()">Agregar material</button>
+
+  <div id="listaMateriales"></div>
+</div>
+
+<!-- HERRAMIENTAS -->
+<div class="full">
+  <label class="label">Herramientas</label>
+
+  <div class="smart-box">
+    <select id="selectHerramienta">
+      <option value="">Herramienta existente</option>
+      <option value="pala">Pala</option>
+      <option value="martillo">Martillo</option>
+      <option value="taladro">Taladro</option>
+    </select>
+
+    <input type="text" id="nuevaHerramienta" placeholder="O escribir nueva herramienta">
+    <input type="number" id="cantidadHerramienta" placeholder="Cantidad">
   </div>
 
-  <!-- HERRAMIENTAS -->
-  <div class="full">
-    <label class="label">Herramientas</label>
-    <div class="smart-box">
-      <select id="selectHerramienta">
-        <option value="">Herramienta existente</option>
-        <option value="pala">Pala</option>
-        <option value="martillo">Martillo</option>
-        <option value="taladro">Taladro</option>
-      </select>
-      <input type="text" id="nuevaHerramienta" placeholder="O escribir nueva herramienta">
-      <input type="number" id="cantidadHerramienta" name="cantidad_herramienta" placeholder="Cantidad" min="1" step="1">
-    </div>
-  </div>
+  <button type="button" class="btn" onclick="agregarHerramienta()">Agregar herramienta</button>
+
+  <div id="listaHerramientas"></div>
+</div>
 
 </div>
 
@@ -133,6 +140,8 @@
 </main>
 
 <script>
+
+// ===== OBREROS =====
 const selectObrero = document.getElementById("selectObrero");
 const lista = document.getElementById("listaObreros");
 const horarios = document.getElementById("contenedorHorarios");
@@ -147,10 +156,12 @@ let obrerosSeleccionados = [];
 
 selectObrero.addEventListener("change", () => {
   const id = selectObrero.value;
+
   if (!id || obrerosSeleccionados.includes(id)) {
     selectObrero.value = "";
     return;
   }
+
   obrerosSeleccionados.push(id);
   crearObrero(id);
   crearHorario(id);
@@ -162,9 +173,9 @@ function crearObrero(id) {
   div.classList.add("obrero-item");
   div.id = `obrero-${id}`;
   div.innerHTML = `
-    <span class="obrero-name">${nombres[id] ?? id}</span>
+    <span class="obrero-name">${nombres[id]}</span>
     <div class="obrero-actions">
-      <button type="button" class="btn-delete" aria-label="Remover obrero seleccionado" onclick="eliminarObrero('${id}')">
+      <button type="button" class="btn-delete" onclick="eliminarObrero('${id}')">
         <i class="fas fa-trash"></i>
       </button>
     </div>
@@ -177,7 +188,7 @@ function crearHorario(id) {
   div.classList.add("worker-row");
   div.id = `horario-${id}`;
   div.innerHTML = `
-    <strong>${nombres[id] ?? id}</strong>
+    <strong>${nombres[id]}</strong>
     <div>
       <label>Entrada</label>
       <input type="time" name="hora_entrada_${id}">
@@ -195,6 +206,105 @@ function eliminarObrero(id) {
   document.getElementById(`obrero-${id}`)?.remove();
   document.getElementById(`horario-${id}`)?.remove();
 }
+
+// ===== MATERIALES =====
+let materialesSeleccionados = [];
+const listaMateriales = document.getElementById("listaMateriales");
+
+function agregarMaterial() {
+  const select = document.getElementById("selectMaterial");
+  const nuevoInput = document.getElementById("nuevoMaterial");
+  const cantidadInput = document.getElementById("cantidadMaterial");
+  const costoInput = document.getElementById("costoUnitario");
+
+  const nuevo = nuevoInput.value.trim();
+  const cantidad = cantidadInput.value;
+  const costo = costoInput.value;
+
+  // Obtener TEXTO del select (no value)
+  const textoSelect = select.options[select.selectedIndex].text;
+  const valorSelect = select.value;
+
+  const nombre = nuevo || (valorSelect ? textoSelect : "");
+
+  if (!nombre || !cantidad || !costo) {
+    alert("Completa material, cantidad y costo");
+    return;
+  }
+
+  const id = nombre.toLowerCase();
+
+  if (materialesSeleccionados.includes(id)) {
+    alert("Material ya agregado");
+    return;
+  }
+
+  materialesSeleccionados.push(id);
+
+  const div = document.createElement("div");
+  div.classList.add("obrero-item");
+  div.id = `material-${id}`;
+
+  div.innerHTML = `
+    <span class="obrero-name">${nombre} (${cantidad} x $${costo})</span>
+    <div class="obrero-actions">
+      <button type="button" class="btn-delete" onclick="eliminarMaterial('${id}')">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  `;
+
+  listaMateriales.appendChild(div);
+
+  // limpiar
+  select.value = "";
+  nuevoInput.value = "";
+  cantidadInput.value = "";
+  costoInput.value = "";
+}
+
+// ===== HERRAMIENTAS =====
+let herramientasSeleccionadas = [];
+const listaHerramientas = document.getElementById("listaHerramientas");
+
+function agregarHerramienta() {
+  const select = document.getElementById("selectHerramienta");
+  const nuevo = document.getElementById("nuevaHerramienta").value.trim();
+  const cantidad = document.getElementById("cantidadHerramienta").value;
+
+  const nombre = nuevo || select.value;
+
+  if (!nombre || !cantidad) return;
+
+  const id = nombre.toLowerCase();
+
+  if (herramientasSeleccionadas.includes(id)) return;
+
+  herramientasSeleccionadas.push(id);
+
+  const div = document.createElement("div");
+  div.classList.add("obrero-item");
+  div.id = `herramienta-${id}`;
+  div.innerHTML = `
+    <span class="obrero-name">${nombre} (x${cantidad})</span>
+    <div class="obrero-actions">
+      <button type="button" class="btn-delete" onclick="eliminarHerramienta('${id}')">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  `;
+  listaHerramientas.appendChild(div);
+
+  select.value = "";
+  document.getElementById("nuevaHerramienta").value = "";
+  document.getElementById("cantidadHerramienta").value = "";
+}
+
+function eliminarHerramienta(id) {
+  herramientasSeleccionadas = herramientasSeleccionadas.filter(h => h !== id);
+  document.getElementById(`herramienta-${id}`)?.remove();
+}
+
 </script>
 
 </body>
