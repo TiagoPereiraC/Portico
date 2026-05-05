@@ -85,6 +85,18 @@ body {
   padding-right: 46px;
 }
 
+/* Ocultar el botón nativo de mostrar contraseña del navegador */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input[type="text"]::-ms-reveal,
+input[type="text"]::-ms-clear {
+  display: none;
+}
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-strong-password-auto-fill-button {
+  display: none !important;
+}
+
 .toggle-password {
   position: absolute;
   right: 0;

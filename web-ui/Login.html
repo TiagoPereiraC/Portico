@@ -51,8 +51,11 @@ window.chrome?.webview?.addEventListener('message', function (e) {
     if (data.type !== 'login_response') return;
 
     if (data.success) {
-        // La navegación a PanelInicio la hace C#, pero por si acaso:
-        window.location.href = 'PanelInicio.html';
+        sessionStorage.setItem('rol',    data.rol);
+        sessionStorage.setItem('nombre', data.nombre);
+        // La navegación la hace C#; este fallback solo aplica fuera del escritorio
+        const destino = data.rol === 'Capataz' ? 'Asistencia.html' : 'PanelInicio.html';
+        window.location.href = destino;
     } else {
         errorEl.textContent = data.error || 'Error desconocido';
         btnLogin.disabled   = false;

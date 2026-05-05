@@ -149,12 +149,13 @@ public sealed class MainWindow : Form
 
 			PostToJs(new { type = "login_response", success = true, nombre, rol });
 
-			// Navegar al panel principal en el hilo de UI
+			// Navegar según rol en el hilo de UI
 			Invoke(() =>
 			{
-				var panelPath = ResolveHtmlPath("PanelInicio.html");
-				if (panelPath is not null)
-					_webView.Source = new Uri(panelPath);
+				var destino = rol == "Capataz" ? "Asistencia.html" : "PanelInicio.html";
+				var path = ResolveHtmlPath(destino);
+				if (path is not null)
+					_webView.Source = new Uri(path);
 			});
 		}
 		catch (MySqlException ex)
