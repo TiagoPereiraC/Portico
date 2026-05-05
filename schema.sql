@@ -72,7 +72,7 @@ CREATE TABLE recursos (
     fecha DATE NOT NULL,
     nombre VARCHAR(150) NOT NULL,
     cantidad DECIMAL(10,2) NOT NULL,
-    costo_unitario DECIMAL(10,2) NULL,
+    precio_unitario DECIMAL(10,2) NULL,
     es_material BOOLEAN NOT NULL DEFAULT 0,
 
     FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
