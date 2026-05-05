@@ -41,5 +41,8 @@ El ejecutable quedará en `desktop-csharp/bin/Release/`.
 | `--btn-hover`     | `#9e3c3c` | Hover botón primario       |
 | `--accent`        | `#b54747` | Color de acento / focus    |
 
+- Para clonar tal como esta en github (Se pierden los cambios, caso tengas uno en local): git reset --hard origin/main
+- Para traer los cambios de la rama main del repositorio remoto y mezclar con tu rama local actual: git pull origin main
+
 ToDo: 
 - Protección de sesiones en todas las paginas.

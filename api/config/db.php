@@ -1,8 +1,9 @@
 <?php
 
-function getDB(): PDO
+function conectar(): PDO
 {
     static $pdo = null;
+
     if ($pdo !== null) {
         return $pdo;
     }
@@ -14,32 +15,43 @@ function getDB(): PDO
             if ($line === '' || str_starts_with($line, '#')) {
                 continue;
             }
-            // Split only on the first = to support passwords with = inside
             $pos = strpos($line, '=');
             if ($pos === false) {
                 continue;
             }
             $key   = trim(substr($line, 0, $pos));
             $value = trim(substr($line, $pos + 1));
-            // Strip inline comments
+            // Eliminar comentarios inline
             $value = preg_replace('/\s+#.*$/', '', $value);
-            $_ENV[$key] = $value;
+            if (!array_key_exists($key, $_ENV)) {
+                $_ENV[$key] = $value;
+            }
         }
     }
 
-    $host = $_ENV['DB_HOST'] ?? 'localhost';
-    $port = $_ENV['DB_PORT'] ?? '3306';
-    $name = $_ENV['DB_NAME'] ?? 'portico';
-    $user = $_ENV['DB_USER'] ?? '';
-    $pass = $_ENV['DB_PASSWORD'] ?? '';
+    $host   = $_ENV['DB_HOST']     ?? 'localhost';
+    $port   = $_ENV['DB_PORT']     ?? '3306';
+    $dbname = $_ENV['DB_NAME']     ?? 'portico';
+    $user   = $_ENV['DB_USER']     ?? '';
+    $pass   = $_ENV['DB_PASSWORD'] ?? '';
 
-    $dsn = "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
+    if ($user === '') {
+        throw new RuntimeException('Credenciales de base de datos no configuradas.');
+    }
 
-    $pdo = new PDO($dsn, $user, $pass, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
-    ]);
+    $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";
+
+    try {
+        $pdo = new PDO($dsn, $user, $pass, [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+            PDO::ATTR_TIMEOUT            => 5,
+        ]);
+    } catch (PDOException $e) {
+        error_log('DB connection error: ' . $e->getMessage());
+        throw new RuntimeException('No se pudo conectar a la base de datos.');
+    }
 
     return $pdo;
 }

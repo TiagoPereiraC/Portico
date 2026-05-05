@@ -62,7 +62,7 @@ $ip = filter_var($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0', FILTER_VALIDATE_IP)
 
 // Rate limiting 
 try {
-    $pdo = getDB();
+    $pdo = conectar();
 } catch (PDOException $e) {
     error_log('DB connection error: ' . $e->getMessage());
     http_response_code(503);
