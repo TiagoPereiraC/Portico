@@ -279,3 +279,28 @@ textarea {
         grid-template-columns: 1fr;
     }
 }
+
+#listaMateriales,
+#listaHerramientas {
+    margin-top: 15px;
+}
+
+.item-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #f7f7f7;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.item-box span {
+    font-size: 13px;
+    color: var(--text-dark);
+}
+
+.item-actions {
+    display: flex;
+    gap: 6px;
+}

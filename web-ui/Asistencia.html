@@ -33,14 +33,14 @@
 
 <nav>
   <div class="logo-wrap">
-    <img src="assets/img/logo.png" alt="Pórtico Construcciones y Servicios">
+    <img src="assets/img/logo.png">
   </div>
   <div class="user-pill">Admin</div>
 </nav>
 
 <main>
 
-<form class="form">
+<form class="form" method="POST" action="../api/guardar_asistencia.php">
 
 <h2>Registrar Asistencia</h2>
 
@@ -48,270 +48,269 @@
 
 <!-- OBRA -->
 <div class="full">
-  <label class="label">Obra</label>
-  <select id="id_obra" name="id_obra">
-    <option value="">Seleccionar obra</option>
-  </select>
+<label class="label">Obra</label>
+<select name="id_obra" id="selectObra" required></select>
 </div>
 
 <!-- FECHA -->
 <div>
-  <label class="label">Fecha</label>
-  <input type="date" id="fecha" name="fecha">
+<label class="label">Fecha</label>
+<input type="date" name="fecha" required>
 </div>
 
 <!-- OBREROS -->
 <div class="full">
-  <label class="label">Obreros</label>
-  <div class="obreros-selector">
-    <select id="selectObrero">
-      <option value="">Seleccionar obrero</option>
-      <option value="juan">Juan Pérez</option>
-      <option value="pedro">Pedro López</option>
-      <option value="carlos">Carlos Ruiz</option>
-    </select>
-  </div>
+<label class="label">Obreros</label>
+<select id="selectObrero"></select>
 </div>
 
-<!-- LISTA OBREROS -->
 <div class="full">
   <label class="label">Obreros seleccionados</label>
-  <div id="listaObreros"></div>
+<div id="listaObreros"></div>
 </div>
 
-<!-- HORARIOS -->
 <div class="full">
-  <label class="label">Horarios por obrero</label>
-  <div id="contenedorHorarios"></div>
+<label class="label">Horarios</label>
+<div id="contenedorHorarios"></div>
 </div>
 
-<!-- FINALIZA OBRA -->
+<!-- FINALIZA -->
 <div>
-  <label class="label">¿Finaliza obra?</label>
-  <select>
-    <option>No</option>
-    <option>Sí</option>
-  </select>
+<label class="label">¿Finaliza obra?</label>
+<select name="finaliza">
+<option value="No">No</option>
+<option value="Sí">Sí</option>
+</select>
 </div>
 
 <!-- MATERIALES -->
 <div class="full">
-  <label class="label">Materiales</label>
+<h3>Materiales</h3>
 
-  <div class="smart-box">
-    <select id="selectMaterial">
-      <option value="">Material existente</option>
-      <option value="cemento">Cemento</option>
-      <option value="arena">Arena</option>
-      <option value="ladrillo">Ladrillo</option>
-    </select>
+<div class="smart-box">
+<select id="selectMaterial"></select>
+<input type="text" id="nuevoMaterial" placeholder="Nuevo material">
+</div>
 
-    <input type="text" id="nuevoMaterial" placeholder="O escribir nuevo material">
-    <input type="number" id="cantidadMaterial" placeholder="Cantidad">
-    <input type="number" id="costoUnitario" placeholder="Costo unitario ($)">
-  </div>
+<div class="smart-box">
+<input type="number" id="cantidadMaterial" placeholder="Cantidad">
+<input type="number" id="costoMaterial" placeholder="Costo">
+</div>
 
-  <button type="button" class="btn" onclick="agregarMaterial()">Agregar material</button>
+<button class="btn" type="button" id="btnMaterial">Agregar</button>
 
-  <div id="listaMateriales"></div>
+<div id="listaMateriales"></div>
 </div>
 
 <!-- HERRAMIENTAS -->
 <div class="full">
-  <label class="label">Herramientas</label>
+<h3>Herramientas</h3>
 
-  <div class="smart-box">
-    <select id="selectHerramienta">
-      <option value="">Herramienta existente</option>
-      <option value="pala">Pala</option>
-      <option value="martillo">Martillo</option>
-      <option value="taladro">Taladro</option>
-    </select>
-
-    <input type="text" id="nuevaHerramienta" placeholder="O escribir nueva herramienta">
-    <input type="number" id="cantidadHerramienta" placeholder="Cantidad">
-  </div>
-
-  <button type="button" class="btn" onclick="agregarHerramienta()">Agregar herramienta</button>
-
-  <div id="listaHerramientas"></div>
+<div class="smart-box">
+<select id="selectHerramienta"></select>
+<input type="text" id="nuevaHerramienta" placeholder="Nueva herramienta">
 </div>
 
+<input type="number" id="cantidadHerramienta" placeholder="Cantidad">
+
+<button class="btn" type="button" id="btnHerramienta">Agregar</button>
+
+<div id="listaHerramientas"></div>
 </div>
 
+<!-- BOTÓN -->
+<div class="full">
 <button class="btn" type="submit">Guardar</button>
 <a href="PanelInicio.html" class="btn-back">Volver</a>
 
+</div>
 </form>
 
 </main>
 
 <script>
+document.addEventListener("DOMContentLoaded", () => {
 
-// ===== OBREROS =====
-const selectObrero = document.getElementById("selectObrero");
-const lista = document.getElementById("listaObreros");
-const horarios = document.getElementById("contenedorHorarios");
+  const selectObra = document.getElementById("selectObra");
+  const selectObrero = document.getElementById("selectObrero");
+  const lista = document.getElementById("listaObreros");
+  const horarios = document.getElementById("contenedorHorarios");
 
-const nombres = {
-  juan: "Juan Pérez",
-  pedro: "Pedro López",
-  carlos: "Carlos Ruiz"
-};
+  const listaMateriales = document.getElementById("listaMateriales");
+  const listaHerramientas = document.getElementById("listaHerramientas");
 
-let obrerosSeleccionados = [];
+  let obrerosSeleccionados = [];
 
-selectObrero.addEventListener("change", () => {
-  const id = selectObrero.value;
+  // ================= FETCH =================
+  fetch("../api/datos_asistencia.php")
+  .then(res => res.json())
+  .then(data => {
 
-  if (!id || obrerosSeleccionados.includes(id)) {
+    // OBRAS
+    selectObra.innerHTML = '<option value="">Seleccionar obra</option>';
+    data.obras.forEach(o => {
+      const opt = document.createElement("option");
+      opt.value = o.id_obra;
+      opt.textContent = o.nombre;
+      selectObra.appendChild(opt);
+    });
+
+    // OBREROS
+    selectObrero.innerHTML = '<option value="">Seleccionar obrero</option>';
+    data.obreros.forEach(o => {
+      const opt = document.createElement("option");
+      opt.value = o.id_obrero;
+      opt.textContent = o.nombre + " " + o.apellido;
+      selectObrero.appendChild(opt);
+    });
+
+    // MATERIALES
+    const selectMaterial = document.getElementById("selectMaterial");
+    selectMaterial.innerHTML = '<option value="">Seleccionar</option>';
+    data.materiales.forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m.nombre;
+      opt.textContent = m.nombre;
+      selectMaterial.appendChild(opt);
+    });
+
+    // HERRAMIENTAS
+    const selectHerramienta = document.getElementById("selectHerramienta");
+    selectHerramienta.innerHTML = '<option value="">Seleccionar</option>';
+    data.herramientas.forEach(h => {
+      const opt = document.createElement("option");
+      opt.value = h.nombre;
+      opt.textContent = h.nombre;
+      selectHerramienta.appendChild(opt);
+    });
+
+  });
+
+  // ================= OBREROS =================
+  selectObrero.addEventListener("change", () => {
+
+    const id = selectObrero.value;
+    const nombre = selectObrero.options[selectObrero.selectedIndex].text;
+
+    if (!id || obrerosSeleccionados.includes(id)) return;
+
+    obrerosSeleccionados.push(id);
+
+    const item = document.createElement("div");
+    item.classList.add("obrero-item");
+    item.id = "obrero-" + id;
+
+    item.innerHTML = `
+      <span class="obrero-name">${nombre}</span>
+      <div class="obrero-actions">
+        <button type="button" class="btn-delete" onclick="eliminarObrero('${id}')">X</button>
+      </div>
+      <input type="hidden" name="obreros[]" value="${id}">
+    `;
+
+    lista.appendChild(item);
+
+    const fila = document.createElement("div");
+    fila.classList.add("worker-row");
+    fila.id = "horario-" + id;
+
+    fila.innerHTML = `
+      <strong>${nombre}</strong>
+      <div>
+        <label>Entrada</label>
+        <input type="time" name="hora_entrada[${id}]" required>
+      </div>
+      <div>
+        <label>Salida</label>
+        <input type="time" name="hora_salida[${id}]" required>
+      </div>
+    `;
+
+    horarios.appendChild(fila);
+
     selectObrero.value = "";
-    return;
-  }
+  });
 
-  obrerosSeleccionados.push(id);
-  crearObrero(id);
-  crearHorario(id);
-  selectObrero.value = "";
+  window.eliminarObrero = (id) => {
+    obrerosSeleccionados = obrerosSeleccionados.filter(o => o !== id);
+    document.getElementById("obrero-" + id)?.remove();
+    document.getElementById("horario-" + id)?.remove();
+  };
+
+  // ================= MATERIALES =================
+  document.getElementById("btnMaterial").addEventListener("click", () => {
+
+    const select = document.getElementById("selectMaterial");
+    const nombre = document.getElementById("nuevoMaterial").value || select.value;
+    const cantidad = document.getElementById("cantidadMaterial").value;
+    const costo = document.getElementById("costoMaterial").value;
+
+    if (!nombre || !cantidad || !costo) return alert("Completa todo");
+
+    const id = Date.now();
+
+    const item = document.createElement("div");
+    item.classList.add("obrero-item");
+    item.id = "material-" + id;
+
+    item.innerHTML = `
+      <span class="obrero-name">${nombre} (${cantidad}) - $${costo}</span>
+      <div class="obrero-actions">
+        <button type="button" class="btn-delete" onclick="eliminarMaterial('${id}')">X</button>
+      </div>
+      <input type="hidden" name="material_nombre[]" value="${nombre}">
+      <input type="hidden" name="material_cantidad[]" value="${cantidad}">
+      <input type="hidden" name="material_costo[]" value="${costo}">
+    `;
+
+    listaMateriales.appendChild(item);
+
+    document.getElementById("nuevoMaterial").value = "";
+    document.getElementById("cantidadMaterial").value = "";
+    document.getElementById("costoMaterial").value = "";
+    select.value = "";
+  });
+
+  window.eliminarMaterial = id => {
+    document.getElementById("material-" + id)?.remove();
+  };
+
+  // ================= HERRAMIENTAS =================
+  document.getElementById("btnHerramienta").addEventListener("click", () => {
+
+    const select = document.getElementById("selectHerramienta");
+    const nombre = document.getElementById("nuevaHerramienta").value || select.value;
+    const cantidad = document.getElementById("cantidadHerramienta").value;
+
+    if (!nombre || !cantidad) return alert("Completa todo");
+
+    const id = Date.now();
+
+    const item = document.createElement("div");
+    item.classList.add("obrero-item");
+    item.id = "herramienta-" + id;
+
+    item.innerHTML = `
+      <span class="obrero-name">${nombre} (${cantidad})</span>
+      <div class="obrero-actions">
+        <button type="button" class="btn-delete" onclick="eliminarHerramienta('${id}')">X</button>
+      </div>
+      <input type="hidden" name="herramienta_nombre[]" value="${nombre}">
+      <input type="hidden" name="herramienta_cantidad[]" value="${cantidad}">
+    `;
+
+    listaHerramientas.appendChild(item);
+
+    document.getElementById("nuevaHerramienta").value = "";
+    document.getElementById("cantidadHerramienta").value = "";
+    select.value = "";
+  });
+
+  window.eliminarHerramienta = id => {
+    document.getElementById("herramienta-" + id)?.remove();
+  };
+
 });
-
-function crearObrero(id) {
-  const div = document.createElement("div");
-  div.classList.add("obrero-item");
-  div.id = `obrero-${id}`;
-  div.innerHTML = `
-    <span class="obrero-name">${nombres[id]}</span>
-    <div class="obrero-actions">
-      <button type="button" class="btn-delete" onclick="eliminarObrero('${id}')">
-        <i class="fas fa-trash"></i>
-      </button>
-    </div>
-  `;
-  lista.appendChild(div);
-}
-
-function crearHorario(id) {
-  const div = document.createElement("div");
-  div.classList.add("worker-row");
-  div.id = `horario-${id}`;
-  div.innerHTML = `
-    <strong>${nombres[id]}</strong>
-    <div>
-      <label>Entrada</label>
-      <input type="time" name="hora_entrada_${id}">
-    </div>
-    <div>
-      <label>Salida</label>
-      <input type="time" name="hora_salida_${id}">
-    </div>
-  `;
-  horarios.appendChild(div);
-}
-
-function eliminarObrero(id) {
-  obrerosSeleccionados = obrerosSeleccionados.filter(o => o !== id);
-  document.getElementById(`obrero-${id}`)?.remove();
-  document.getElementById(`horario-${id}`)?.remove();
-}
-
-// ===== MATERIALES =====
-let materialesSeleccionados = [];
-const listaMateriales = document.getElementById("listaMateriales");
-
-function agregarMaterial() {
-  const select = document.getElementById("selectMaterial");
-  const nuevoInput = document.getElementById("nuevoMaterial");
-  const cantidadInput = document.getElementById("cantidadMaterial");
-  const costoInput = document.getElementById("costoUnitario");
-
-  const nuevo = nuevoInput.value.trim();
-  const cantidad = cantidadInput.value;
-  const costo = costoInput.value;
-
-  // Obtener TEXTO del select (no value)
-  const textoSelect = select.options[select.selectedIndex].text;
-  const valorSelect = select.value;
-
-  const nombre = nuevo || (valorSelect ? textoSelect : "");
-
-  if (!nombre || !cantidad || !costo) {
-    alert("Completa material, cantidad y costo");
-    return;
-  }
-
-  const id = nombre.toLowerCase();
-
-  if (materialesSeleccionados.includes(id)) {
-    alert("Material ya agregado");
-    return;
-  }
-
-  materialesSeleccionados.push(id);
-
-  const div = document.createElement("div");
-  div.classList.add("obrero-item");
-  div.id = `material-${id}`;
-
-  div.innerHTML = `
-    <span class="obrero-name">${nombre} (${cantidad} x $${costo})</span>
-    <div class="obrero-actions">
-      <button type="button" class="btn-delete" onclick="eliminarMaterial('${id}')">
-        <i class="fas fa-trash"></i>
-      </button>
-    </div>
-  `;
-
-  listaMateriales.appendChild(div);
-
-  // limpiar
-  select.value = "";
-  nuevoInput.value = "";
-  cantidadInput.value = "";
-  costoInput.value = "";
-}
-
-// ===== HERRAMIENTAS =====
-let herramientasSeleccionadas = [];
-const listaHerramientas = document.getElementById("listaHerramientas");
-
-function agregarHerramienta() {
-  const select = document.getElementById("selectHerramienta");
-  const nuevo = document.getElementById("nuevaHerramienta").value.trim();
-  const cantidad = document.getElementById("cantidadHerramienta").value;
-
-  const nombre = nuevo || select.value;
-
-  if (!nombre || !cantidad) return;
-
-  const id = nombre.toLowerCase();
-
-  if (herramientasSeleccionadas.includes(id)) return;
-
-  herramientasSeleccionadas.push(id);
-
-  const div = document.createElement("div");
-  div.classList.add("obrero-item");
-  div.id = `herramienta-${id}`;
-  div.innerHTML = `
-    <span class="obrero-name">${nombre} (x${cantidad})</span>
-    <div class="obrero-actions">
-      <button type="button" class="btn-delete" onclick="eliminarHerramienta('${id}')">
-        <i class="fas fa-trash"></i>
-      </button>
-    </div>
-  `;
-  listaHerramientas.appendChild(div);
-
-  select.value = "";
-  document.getElementById("nuevaHerramienta").value = "";
-  document.getElementById("cantidadHerramienta").value = "";
-}
-
-function eliminarHerramienta(id) {
-  herramientasSeleccionadas = herramientasSeleccionadas.filter(h => h !== id);
-  document.getElementById(`herramienta-${id}`)?.remove();
-}
-
 </script>
 
 </body>
