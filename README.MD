@@ -16,6 +16,13 @@
 ---
 
 ## Build
+### Pasos antes de compilar
+1. Renombrar el archivo `.env.example` a `.env`
+2. Colocar las credenciales de la MySQL (No hace falta comillas)
+3. Compilar el sistema
+
+### Requisitos
+.NET 10.0 
 
 Para compilar la aplicación `.exe`:
 
