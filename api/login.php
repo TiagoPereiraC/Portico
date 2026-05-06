@@ -63,7 +63,7 @@ $ip = filter_var($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0', FILTER_VALIDATE_IP)
 // Rate limiting 
 try {
     $pdo = conectar();
-} catch (PDOException $e) {
+} catch (Throwable $e) {
     error_log('DB connection error: ' . $e->getMessage());
     http_response_code(503);
     exit(json_encode(['error' => 'Servicio no disponible. Intente más tarde.']));
@@ -131,4 +131,9 @@ $_SESSION['ip']      = $ip;
 // Invalidar el CSRF token usado; el cliente pedirá uno nuevo en la próxima solicitud
 unset($_SESSION['csrf_token']);
 
-echo json_encode(['success' => true, 'rol' => $user['rol']]);
+echo json_encode([
+    'success' => true,
+    'user_id' => (int) $user['id_usuario'],
+    'nombre' => $user['nombre'],
+    'rol' => $user['rol'],
+]);
