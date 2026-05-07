@@ -47,6 +47,7 @@ public sealed class MainWindow : Form
 			_env = LoadEnv();
 
 			await _webView.EnsureCoreWebView2Async();
+			_webView.ZoomFactor = 1.1d;
 			_webView.CoreWebView2.Settings.AreDevToolsEnabled = false;
 			_webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
 
@@ -73,6 +74,9 @@ public sealed class MainWindow : Form
 
 	private async void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs args)
 	{
+		string responseType = "desktop_response";
+		string requestId = string.Empty;
+
 		try
 		{
 			var json = args.TryGetWebMessageAsString();
@@ -80,11 +84,28 @@ public sealed class MainWindow : Form
 			var root = doc.RootElement;
 
 			if (!root.TryGetProperty("type", out var typeProp)) return;
+			var messageType = typeProp.GetString() ?? string.Empty;
+			requestId = root.TryGetProperty("requestId", out var requestIdProp)
+				? requestIdProp.GetString() ?? string.Empty
+				: string.Empty;
+			responseType = string.IsNullOrWhiteSpace(messageType) ? responseType : $"{messageType}_response";
 
-			switch (typeProp.GetString())
+			switch (messageType)
 			{
 				case "login":
 					await HandleLoginAsync(root);
+					break;
+				case "obras_listar":
+					await HandleObrasListarAsync(root);
+					break;
+				case "obras_guardar":
+					await HandleGuardarObraAsync(root);
+					break;
+				case "obras_eliminar":
+					await HandleEliminarObraAsync(root);
+					break;
+				case "obras_descargar_contrato":
+					await HandleDescargarContratoAsync(root);
 					break;
 				case "asistencia_catalogos":
 					await HandleAsistenciaCatalogosAsync(root);
@@ -96,7 +117,7 @@ public sealed class MainWindow : Form
 		}
 		catch (Exception ex)
 		{
-			PostToJs(new { type = "login_response", success = false, error = "Error interno del servidor." });
+			PostToJs(new { type = responseType, requestId, success = false, error = "Error interno del servidor." });
 			// Log real error internally, never exponer al cliente
 			System.Diagnostics.Debug.WriteLine($"[WebMessage error] {ex}");
 		}
@@ -250,6 +271,224 @@ public sealed class MainWindow : Form
 		}
 	}
 
+	private async Task HandleObrasListarAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		try
+		{
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			var obras = new List<object>();
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText =
+				"SELECT o.id_obra, o.numero_contrata, o.nombre, o.direccion, o.descripcion, o.fecha_inicio, o.fecha_fin, o.nombre_cliente, o.telefono_cliente, " +
+				"c.nombre_archivo AS contrato_nombre_archivo " +
+				"FROM obras o " +
+				"LEFT JOIN (" +
+				"SELECT c1.id_obra, c1.nombre_archivo FROM contratos c1 " +
+				"INNER JOIN (SELECT id_obra, MAX(id_contrato) AS max_id_contrato FROM contratos GROUP BY id_obra) ult " +
+				"ON ult.id_obra = c1.id_obra AND ult.max_id_contrato = c1.id_contrato" +
+				") c ON c.id_obra = o.id_obra " +
+				"ORDER BY o.fecha_inicio DESC, o.nombre ASC";
+
+			await using var reader = await cmd.ExecuteReaderAsync();
+			while (await reader.ReadAsync())
+			{
+				obras.Add(MapObra(reader));
+			}
+
+			PostToJs(new
+			{
+				type = "obras_listar_response",
+				requestId,
+				success = true,
+				obras
+			});
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Obras listar error] {ex}");
+			PostToJs(new { type = "obras_listar_response", requestId, success = false, error = "No se pudieron cargar las obras." });
+		}
+	}
+
+	private async Task HandleGuardarObraAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		try
+		{
+			var payload = ValidateObraPayload(root);
+			var contrato = ReadContrato(root);
+			var idObra = TryReadPositiveInt(root, "id_obra");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			if (idObra.HasValue)
+			{
+				if (!await ObraExistsAsync(conn, idObra.Value))
+					throw new InvalidOperationException("La obra indicada no existe.");
+
+				await using var updateCmd = conn.CreateCommand();
+				updateCmd.CommandText =
+					"UPDATE obras SET numero_contrata = @numeroContrata, nombre = @nombre, direccion = @direccion, descripcion = @descripcion, " +
+					"fecha_inicio = @fechaInicio, fecha_fin = @fechaFin, nombre_cliente = @nombreCliente, telefono_cliente = @telefonoCliente " +
+					"WHERE id_obra = @idObra";
+				AddObraParameters(updateCmd, payload, idObra.Value);
+				await updateCmd.ExecuteNonQueryAsync();
+
+				if (contrato is not null)
+					await GuardarContratoAsync(conn, idObra.Value, contrato.Value.NombreArchivo, contrato.Value.Archivo);
+
+				var obra = await GetObraByIdAsync(conn, idObra.Value);
+				PostToJs(new
+				{
+					type = "obras_guardar_response",
+					requestId,
+					success = true,
+					message = "Obra actualizada correctamente.",
+					obra
+				});
+				return;
+			}
+
+			var nuevaId = 0;
+			await using (var insertCmd = conn.CreateCommand())
+			{
+				insertCmd.CommandText =
+					"INSERT INTO obras (numero_contrata, nombre, direccion, descripcion, fecha_inicio, fecha_fin, nombre_cliente, telefono_cliente) " +
+					"VALUES (@numeroContrata, @nombre, @direccion, @descripcion, @fechaInicio, @fechaFin, @nombreCliente, @telefonoCliente)";
+				AddObraParameters(insertCmd, payload, null);
+				await insertCmd.ExecuteNonQueryAsync();
+				nuevaId = Convert.ToInt32(insertCmd.LastInsertedId);
+			}
+
+			if (contrato is not null)
+				await GuardarContratoAsync(conn, nuevaId, contrato.Value.NombreArchivo, contrato.Value.Archivo);
+
+			var nuevaObra = await GetObraByIdAsync(conn, nuevaId);
+			PostToJs(new
+			{
+				type = "obras_guardar_response",
+				requestId,
+				success = true,
+				message = "Obra guardada correctamente.",
+				obra = nuevaObra
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "obras_guardar_response", requestId, success = false, error = ex.Message });
+		}
+		catch (MySqlException ex) when (ex.Number == 1062)
+		{
+			PostToJs(new { type = "obras_guardar_response", requestId, success = false, error = "El número de contrata ya existe." });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Obras guardar error] {ex}");
+			PostToJs(new { type = "obras_guardar_response", requestId, success = false, error = "No se pudo guardar la obra." });
+		}
+	}
+
+	private async Task HandleEliminarObraAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		try
+		{
+			var idObra = ReadPositiveInt(root, "id_obra");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText = "DELETE FROM obras WHERE id_obra = @idObra";
+			cmd.Parameters.AddWithValue("@idObra", idObra);
+			var affected = await cmd.ExecuteNonQueryAsync();
+
+			if (affected == 0)
+				throw new InvalidOperationException("La obra indicada no existe.");
+
+			PostToJs(new
+			{
+				type = "obras_eliminar_response",
+				requestId,
+				success = true,
+				message = "Obra eliminada correctamente."
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "obras_eliminar_response", requestId, success = false, error = ex.Message });
+		}
+		catch (MySqlException ex) when (ex.Number == 1451)
+		{
+			PostToJs(new { type = "obras_eliminar_response", requestId, success = false, error = "No se puede eliminar la obra porque tiene registros asociados." });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Obras eliminar error] {ex}");
+			PostToJs(new { type = "obras_eliminar_response", requestId, success = false, error = "No se pudo eliminar la obra." });
+		}
+	}
+
+	private async Task HandleDescargarContratoAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		try
+		{
+			var idObra = ReadPositiveInt(root, "id_obra");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText =
+				"SELECT nombre_archivo, archivo FROM contratos WHERE id_obra = @idObra ORDER BY id_contrato DESC LIMIT 1";
+			cmd.Parameters.AddWithValue("@idObra", idObra);
+
+			await using var reader = await cmd.ExecuteReaderAsync(System.Data.CommandBehavior.SequentialAccess);
+			if (!await reader.ReadAsync())
+				throw new InvalidOperationException("La obra no tiene contrato cargado.");
+
+			var nombreArchivo = ReadNullableString(reader, "nombre_archivo") ?? $"contrato-{idObra}";
+			var archivoOrdinal = reader.GetOrdinal("archivo");
+			var archivo = (byte[])reader.GetValue(archivoOrdinal);
+
+			PostToJs(new
+			{
+				type = "obras_descargar_contrato_response",
+				requestId,
+				success = true,
+				nombre_archivo = nombreArchivo,
+				tipo_contenido = GuessMimeType(nombreArchivo),
+				contenido_base64 = Convert.ToBase64String(archivo)
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "obras_descargar_contrato_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Obras descargar contrato error] {ex}");
+			PostToJs(new { type = "obras_descargar_contrato_response", requestId, success = false, error = "No se pudo descargar el contrato." });
+		}
+	}
+
 	private async Task HandleGuardarAsistenciaAsync(JsonElement root)
 	{
 		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
@@ -352,6 +591,30 @@ public sealed class MainWindow : Form
 		throw new InvalidOperationException($"El campo {propertyName} es inválido.");
 	}
 
+	private static int? TryReadPositiveInt(JsonElement root, string propertyName)
+	{
+		if (!root.TryGetProperty(propertyName, out var prop))
+			return null;
+
+		if (prop.ValueKind == JsonValueKind.Null)
+			return null;
+
+		if (prop.ValueKind == JsonValueKind.Number && prop.TryGetInt32(out var number) && number > 0)
+			return number;
+
+		if (prop.ValueKind == JsonValueKind.String)
+		{
+			var text = prop.GetString()?.Trim();
+			if (string.IsNullOrWhiteSpace(text))
+				return null;
+
+			if (int.TryParse(text, out number) && number > 0)
+				return number;
+		}
+
+		throw new InvalidOperationException($"El campo {propertyName} es inválido.");
+	}
+
 	private static string ReadRequiredString(JsonElement root, string propertyName)
 	{
 		if (!root.TryGetProperty(propertyName, out var prop) || prop.ValueKind != JsonValueKind.String)
@@ -364,6 +627,92 @@ public sealed class MainWindow : Form
 		return value;
 	}
 
+	private static Dictionary<string, object?> ValidateObraPayload(JsonElement root)
+	{
+		var numeroContrata = SanitizeText(root, "numero_contrata", 50, true);
+		var nombre = SanitizeText(root, "nombre", 150, true);
+		var direccion = SanitizeText(root, "direccion", 200, false);
+		var descripcion = SanitizeText(root, "descripcion", 65535, false);
+		var fechaInicio = NormalizeDate(root, "fecha_inicio");
+		var fechaFin = NormalizeDate(root, "fecha_fin");
+		var nombreCliente = SanitizeText(root, "nombre_cliente", 150, true);
+		var telefonoCliente = SanitizeText(root, "telefono_cliente", 30, false);
+
+		if (fechaInicio is not null && fechaFin is not null && string.CompareOrdinal(fechaFin, fechaInicio) < 0)
+			throw new InvalidOperationException("La fecha de fin no puede ser menor a la de inicio.");
+
+		return new Dictionary<string, object?>
+		{
+			["numero_contrata"] = numeroContrata,
+			["nombre"] = nombre,
+			["direccion"] = direccion,
+			["descripcion"] = descripcion,
+			["fecha_inicio"] = fechaInicio,
+			["fecha_fin"] = fechaFin,
+			["nombre_cliente"] = nombreCliente,
+			["telefono_cliente"] = telefonoCliente
+		};
+	}
+
+	private static (string NombreArchivo, byte[] Archivo)? ReadContrato(JsonElement root)
+	{
+		if (!root.TryGetProperty("contrato", out var contratoProp) || contratoProp.ValueKind != JsonValueKind.Object)
+			return null;
+
+		var nombreArchivo = SanitizeText(contratoProp, "nombre_archivo", 255, true);
+		var contenidoBase64 = ReadRequiredString(contratoProp, "contenido_base64");
+
+		byte[] archivo;
+		try
+		{
+			archivo = Convert.FromBase64String(contenidoBase64);
+		}
+		catch (FormatException)
+		{
+			throw new InvalidOperationException("El contrato seleccionado es inválido.");
+		}
+
+		if (archivo.Length > 10 * 1024 * 1024)
+			throw new InvalidOperationException("El contrato no puede superar los 10 MB.");
+
+		return (nombreArchivo, archivo);
+	}
+
+	private static string SanitizeText(JsonElement root, string propertyName, int maxLength, bool required)
+	{
+		var value = root.TryGetProperty(propertyName, out var prop) && prop.ValueKind == JsonValueKind.String
+			? prop.GetString()?.Trim() ?? string.Empty
+			: string.Empty;
+
+		if (value.Length == 0)
+		{
+			if (required)
+				throw new InvalidOperationException("Número de contrata, nombre de la obra y cliente son obligatorios.");
+
+			return string.Empty;
+		}
+
+		if (value.Length > maxLength)
+			throw new InvalidOperationException("Uno de los campos supera la longitud permitida.");
+
+		return value;
+	}
+
+	private static string? NormalizeDate(JsonElement root, string propertyName)
+	{
+		if (!root.TryGetProperty(propertyName, out var prop) || prop.ValueKind != JsonValueKind.String)
+			return null;
+
+		var value = prop.GetString()?.Trim() ?? string.Empty;
+		if (value.Length == 0)
+			return null;
+
+		if (!DateTime.TryParseExact(value, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var date))
+			throw new InvalidOperationException("Formato de fecha inválido.");
+
+		return date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+	}
+
 	private static string CalcularHorasTrabajadas(string horaEntrada, string horaSalida)
 	{
 		var entrada = TimeSpan.Parse(horaEntrada);
@@ -372,6 +721,125 @@ public sealed class MainWindow : Form
 			throw new InvalidOperationException("La hora de salida debe ser mayor a la de entrada.");
 
 		return ((decimal)(salida - entrada).TotalHours).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+	}
+
+	private static void AddObraParameters(MySqlCommand cmd, Dictionary<string, object?> payload, int? idObra)
+	{
+		cmd.Parameters.AddWithValue("@numeroContrata", payload["numero_contrata"]);
+		cmd.Parameters.AddWithValue("@nombre", payload["nombre"]);
+		cmd.Parameters.AddWithValue("@direccion", ToDbValue(payload["direccion"]));
+		cmd.Parameters.AddWithValue("@descripcion", ToDbValue(payload["descripcion"]));
+		cmd.Parameters.AddWithValue("@fechaInicio", ToDbValue(payload["fecha_inicio"]));
+		cmd.Parameters.AddWithValue("@fechaFin", ToDbValue(payload["fecha_fin"]));
+		cmd.Parameters.AddWithValue("@nombreCliente", payload["nombre_cliente"]);
+		cmd.Parameters.AddWithValue("@telefonoCliente", ToDbValue(payload["telefono_cliente"]));
+
+		if (idObra.HasValue)
+			cmd.Parameters.AddWithValue("@idObra", idObra.Value);
+	}
+
+	private static object ToDbValue(object? value)
+	{
+		if (value is null)
+			return DBNull.Value;
+
+		if (value is string text && string.IsNullOrWhiteSpace(text))
+			return DBNull.Value;
+
+		return value;
+	}
+
+	private static object MapObra(MySqlDataReader reader)
+	{
+		return new
+		{
+			id_obra = reader.GetInt32("id_obra"),
+			numero_contrata = reader.GetString("numero_contrata"),
+			nombre = reader.GetString("nombre"),
+			direccion = ReadNullableString(reader, "direccion"),
+			descripcion = ReadNullableString(reader, "descripcion"),
+			fecha_inicio = ReadNullableDate(reader, "fecha_inicio"),
+			fecha_fin = ReadNullableDate(reader, "fecha_fin"),
+			nombre_cliente = reader.GetString("nombre_cliente"),
+			telefono_cliente = ReadNullableString(reader, "telefono_cliente"),
+			contrato_nombre_archivo = ReadNullableString(reader, "contrato_nombre_archivo")
+		};
+	}
+
+	private static string? ReadNullableString(MySqlDataReader reader, string columnName)
+	{
+		var ordinal = reader.GetOrdinal(columnName);
+		return reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+	}
+
+	private static string? ReadNullableDate(MySqlDataReader reader, string columnName)
+	{
+		var ordinal = reader.GetOrdinal(columnName);
+		if (reader.IsDBNull(ordinal))
+			return null;
+
+		return reader.GetDateTime(ordinal).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+	}
+
+	private static async Task<bool> ObraExistsAsync(MySqlConnection conn, int idObra)
+	{
+		await using var cmd = conn.CreateCommand();
+		cmd.CommandText = "SELECT 1 FROM obras WHERE id_obra = @idObra LIMIT 1";
+		cmd.Parameters.AddWithValue("@idObra", idObra);
+		var result = await cmd.ExecuteScalarAsync();
+		return result is not null;
+	}
+
+	private static async Task<object> GetObraByIdAsync(MySqlConnection conn, int idObra)
+	{
+		await using var cmd = conn.CreateCommand();
+		cmd.CommandText =
+			"SELECT o.id_obra, o.numero_contrata, o.nombre, o.direccion, o.descripcion, o.fecha_inicio, o.fecha_fin, o.nombre_cliente, o.telefono_cliente, " +
+			"c.nombre_archivo AS contrato_nombre_archivo " +
+			"FROM obras o " +
+			"LEFT JOIN (" +
+			"SELECT c1.id_obra, c1.nombre_archivo FROM contratos c1 " +
+			"INNER JOIN (SELECT id_obra, MAX(id_contrato) AS max_id_contrato FROM contratos GROUP BY id_obra) ult " +
+			"ON ult.id_obra = c1.id_obra AND ult.max_id_contrato = c1.id_contrato" +
+			") c ON c.id_obra = o.id_obra " +
+			"WHERE o.id_obra = @idObra LIMIT 1";
+		cmd.Parameters.AddWithValue("@idObra", idObra);
+
+		await using var reader = await cmd.ExecuteReaderAsync();
+		if (!await reader.ReadAsync())
+			throw new InvalidOperationException("La obra indicada no existe.");
+
+		return MapObra(reader);
+	}
+
+	private static async Task GuardarContratoAsync(MySqlConnection conn, int idObra, string nombreArchivo, byte[] archivo)
+	{
+		await using (var deleteCmd = conn.CreateCommand())
+		{
+			deleteCmd.CommandText = "DELETE FROM contratos WHERE id_obra = @idObra";
+			deleteCmd.Parameters.AddWithValue("@idObra", idObra);
+			await deleteCmd.ExecuteNonQueryAsync();
+		}
+
+		await using var insertCmd = conn.CreateCommand();
+		insertCmd.CommandText =
+			"INSERT INTO contratos (id_obra, archivo, nombre_archivo, fecha_subida) VALUES (@idObra, @archivo, @nombreArchivo, CURDATE())";
+		insertCmd.Parameters.AddWithValue("@idObra", idObra);
+		insertCmd.Parameters.Add("@archivo", MySqlDbType.LongBlob).Value = archivo;
+		insertCmd.Parameters.AddWithValue("@nombreArchivo", nombreArchivo);
+		await insertCmd.ExecuteNonQueryAsync();
+	}
+
+	private static string GuessMimeType(string nombreArchivo)
+	{
+		var extension = Path.GetExtension(nombreArchivo)?.ToLowerInvariant();
+		return extension switch
+		{
+			".pdf" => "application/pdf",
+			".doc" => "application/msword",
+			".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+			_ => "application/octet-stream"
+		};
 	}
 
 	private static async Task<List<string>> LeerRecursosAsync(MySqlConnection conn, bool esMaterial)
