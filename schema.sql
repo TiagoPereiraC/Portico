@@ -20,7 +20,8 @@ CREATE TABLE obras (
     fecha_inicio DATE,
     fecha_fin DATE,
     nombre_cliente VARCHAR(150) NOT NULL,
-    telefono_cliente VARCHAR(30)
+    telefono_cliente VARCHAR(30),
+    activo BOOLEAN DEFAULT 1
 );
 
 CREATE TABLE obreros (
