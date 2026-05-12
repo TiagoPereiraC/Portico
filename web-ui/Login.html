@@ -1,147 +1,194 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link rel="stylesheet" href="assets/css/Login-style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-</head>
-<body> 
-    <div class="card">
-        <img src="assets/img/logo.png" alt="Logo" class="logo">
-        <h2>Iniciar Sesión</h2>
-        <form id="login-form" novalidate>
-            <div class="input-group">
-                <i class="fas fa-user"></i> 
-                <input type="text" id="usuario" name="usuario" placeholder="Usuario" autocomplete="username" required>
-            </div>
-            <div class="input-group">
-                <i class="fas fa-lock"></i>
-                <input type="password" id="password" placeholder="Contraseña" required>
-                <button type="button" class="toggle-password" onclick="togglePassword('password', this)">
-                    <i class="fas fa-eye"></i>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Login</title>
+        <link rel="stylesheet" href="assets/css/theme.css" />
+        <link rel="stylesheet" href="assets/css/Login-style.css" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        />
+    </head>
+    <body>
+        <div class="card">
+            <img src="assets/img/logo.png" alt="Logo" class="logo" />
+            <h2>Iniciar Sesión</h2>
+            <form id="login-form" novalidate>
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input
+                        type="text"
+                        id="usuario"
+                        name="usuario"
+                        placeholder="Usuario"
+                        autocomplete="username"
+                        required
+                    />
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Contraseña"
+                        required
+                    />
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        onclick="togglePassword('password', this)"
+                    >
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <p id="error-msg" class="error-msg" aria-live="polite"></p>
+                <button class="btn" type="submit" id="btn-login">
+                    Iniciar Sesión
                 </button>
-            </div>
-            <p id="error-msg" class="error-msg" aria-live="polite"></p>
-            <button class="btn" type="submit" id="btn-login">Iniciar Sesión</button>
-        </form>
-    </div>
+            </form>
+        </div>
 
-<script>
-function togglePassword(inputId, btn) {
-    const input = document.getElementById(inputId);
-    const icon = btn.querySelector('i');
-    if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.replace('fa-eye', 'fa-eye-slash');
-    } else {
-        input.type = 'password';
-        icon.classList.replace('fa-eye-slash', 'fa-eye');
-    }
-}
+        <script>
+            function togglePassword(inputId, btn) {
+                const input = document.getElementById(inputId);
+                const icon = btn.querySelector("i");
+                if (input.type === "password") {
+                    input.type = "text";
+                    icon.classList.replace("fa-eye", "fa-eye-slash");
+                } else {
+                    input.type = "password";
+                    icon.classList.replace("fa-eye-slash", "fa-eye");
+                }
+            }
 
-const errorEl = document.getElementById('error-msg');
-const btnLogin = document.getElementById('btn-login');
-const isBrowserHttp = window.location.protocol.startsWith('http');
+            const errorEl = document.getElementById("error-msg");
+            const btnLogin = document.getElementById("btn-login");
+            const isBrowserHttp = window.location.protocol.startsWith("http");
 
-// Recibe la respuesta de C# y actúa en consecuencia
-window.chrome?.webview?.addEventListener('message', function (e) {
-    const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-    if (data.type !== 'login_response') return;
+            // Recibe la respuesta de C# y actúa en consecuencia
+            window.chrome?.webview?.addEventListener("message", function (e) {
+                const data =
+                    typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+                if (data.type !== "login_response") return;
 
-    if (data.success) {
-        if (data.user_id) {
-            sessionStorage.setItem('user_id', String(data.user_id));
-        }
-        sessionStorage.setItem('rol',    data.rol);
-        sessionStorage.setItem('nombre', data.nombre);
-        // La navegación la hace C#; este fallback solo aplica fuera del escritorio
-        const destino = data.rol === 'Capataz' ? 'Asistencia.html' : 'PanelInicio.html';
-        window.location.href = destino;
-    } else {
-        errorEl.textContent = data.error || 'Error desconocido';
-        btnLogin.disabled   = false;
-        btnLogin.textContent = 'Iniciar Sesión';
-    }
-});
+                if (data.success) {
+                    if (data.user_id) {
+                        sessionStorage.setItem("user_id", String(data.user_id));
+                    }
+                    sessionStorage.setItem("rol", data.rol);
+                    sessionStorage.setItem("nombre", data.nombre);
+                    // La navegación la hace C#; este fallback solo aplica fuera del escritorio
+                    const destino =
+                        data.rol === "Capataz"
+                            ? "Asistencia.html"
+                            : "PanelInicio.html";
+                    window.location.href = destino;
+                } else {
+                    errorEl.textContent = data.error || "Error desconocido";
+                    btnLogin.disabled = false;
+                    btnLogin.textContent = "Iniciar Sesión";
+                }
+            });
 
-document.getElementById('login-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    iniciarSesion().catch(function (error) {
-        console.error(error);
-        errorEl.textContent = error.message || 'No se pudo iniciar sesión';
-        btnLogin.disabled = false;
-        btnLogin.textContent = 'Iniciar Sesión';
-    });
-});
+            document
+                .getElementById("login-form")
+                .addEventListener("submit", function (e) {
+                    e.preventDefault();
+                    iniciarSesion().catch(function (error) {
+                        console.error(error);
+                        errorEl.textContent =
+                            error.message || "No se pudo iniciar sesión";
+                        btnLogin.disabled = false;
+                        btnLogin.textContent = "Iniciar Sesión";
+                    });
+                });
 
-async function iniciarSesion() {
-    errorEl.textContent  = '';
-    btnLogin.disabled    = true;
-    btnLogin.textContent = 'Verificando...';
+            async function iniciarSesion() {
+                errorEl.textContent = "";
+                btnLogin.disabled = true;
+                btnLogin.textContent = "Verificando...";
 
-    const payload = {
-        type:     'login',
-        usuario:  document.getElementById('usuario').value.trim(),
-        password: document.getElementById('password').value
-    };
+                const payload = {
+                    type: "login",
+                    usuario: document.getElementById("usuario").value.trim(),
+                    password: document.getElementById("password").value,
+                };
 
-    if (window.chrome?.webview) {
-        window.chrome.webview.postMessage(JSON.stringify(payload));
-        return;
-    }
+                if (window.chrome?.webview) {
+                    window.chrome.webview.postMessage(JSON.stringify(payload));
+                    return;
+                }
 
-    if (!isBrowserHttp) {
-        throw new Error('Abrí esta pantalla desde un servidor local PHP para iniciar sesión en navegador.');
-    }
+                if (!isBrowserHttp) {
+                    throw new Error(
+                        "Abrí esta pantalla desde un servidor local PHP para iniciar sesión en navegador.",
+                    );
+                }
 
-    const csrfResponse = await fetch(`${window.location.origin}/api/csrf.php`, {
-        credentials: 'include'
-    });
-    const csrfData = await parseJsonResponse(csrfResponse, 'No se pudo obtener el token de seguridad.');
+                const csrfResponse = await fetch(
+                    `${window.location.origin}/api/csrf.php`,
+                    {
+                        credentials: "include",
+                    },
+                );
+                const csrfData = await parseJsonResponse(
+                    csrfResponse,
+                    "No se pudo obtener el token de seguridad.",
+                );
 
-    if (!csrfResponse.ok || !csrfData.token) {
-        throw new Error(csrfData.error || 'No se pudo obtener el token de seguridad.');
-    }
+                if (!csrfResponse.ok || !csrfData.token) {
+                    throw new Error(
+                        csrfData.error ||
+                            "No se pudo obtener el token de seguridad.",
+                    );
+                }
 
-    const response = await fetch(`${window.location.origin}/api/login.php`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfData.token
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload)
-    });
-    const data = await parseJsonResponse(response, 'No se pudo iniciar sesión');
+                const response = await fetch(
+                    `${window.location.origin}/api/login.php`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-Token": csrfData.token,
+                        },
+                        credentials: "include",
+                        body: JSON.stringify(payload),
+                    },
+                );
+                const data = await parseJsonResponse(
+                    response,
+                    "No se pudo iniciar sesión",
+                );
 
-    if (!response.ok) {
-        throw new Error(data.error || 'No se pudo iniciar sesión');
-    }
+                if (!response.ok) {
+                    throw new Error(data.error || "No se pudo iniciar sesión");
+                }
 
-    sessionStorage.setItem('user_id', String(data.user_id));
-    sessionStorage.setItem('rol', data.rol);
-    sessionStorage.setItem('nombre', data.nombre);
+                sessionStorage.setItem("user_id", String(data.user_id));
+                sessionStorage.setItem("rol", data.rol);
+                sessionStorage.setItem("nombre", data.nombre);
 
-    window.location.href = data.rol === 'Capataz' ? 'Asistencia.html' : 'PanelInicio.html';
-}
+                window.location.href =
+                    data.rol === "Capataz"
+                        ? "Asistencia.html"
+                        : "PanelInicio.html";
+            }
 
-async function parseJsonResponse(response, fallbackMessage) {
-    const text = await response.text();
+            async function parseJsonResponse(response, fallbackMessage) {
+                const text = await response.text();
 
-    if (!text) {
-        throw new Error(fallbackMessage);
-    }
+                if (!text) {
+                    throw new Error(fallbackMessage);
+                }
 
-    try {
-        return JSON.parse(text);
-    } catch {
-        throw new Error(fallbackMessage);
-    }
-}
-</script>
-
-</body>
+                try {
+                    return JSON.parse(text);
+                } catch {
+                    throw new Error(fallbackMessage);
+                }
+            }
+        </script>
+    </body>
 </html>

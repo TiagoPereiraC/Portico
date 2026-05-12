@@ -71,24 +71,75 @@ try {
 
 function responderListado(PDO $pdo): void
 {
-    $stmt = $pdo->query(
-        'SELECT o.id_obra, o.numero_contrata, o.nombre, o.direccion, o.descripcion, o.fecha_inicio, o.fecha_fin, o.nombre_cliente, o.telefono_cliente,
-                c.nombre_archivo AS contrato_nombre_archivo
-         FROM obras o
-         LEFT JOIN (
-             SELECT c1.id_obra, c1.nombre_archivo
-             FROM contratos c1
-             INNER JOIN (
-                 SELECT id_obra, MAX(id_contrato) AS max_id_contrato
-                 FROM contratos
-                 GROUP BY id_obra
-             ) ult ON ult.id_obra = c1.id_obra AND ult.max_id_contrato = c1.id_contrato
-         ) c ON c.id_obra = o.id_obra
-         ORDER BY o.fecha_inicio DESC, o.nombre ASC'
-    );
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    $limit = (int) ($_GET['limit'] ?? 10);
+    $limit = max(1, min($limit, 100));
+    $search = trim((string) ($_GET['search'] ?? ''));
+    $status = strtolower(trim((string) ($_GET['status'] ?? 'all')));
+
+    if (!in_array($status, ['all', 'active', 'inactive'], true)) {
+        throw new InvalidArgumentException('Filtro de estado inválido.');
+    }
+
+    $where = [];
+    $params = [];
+
+    if ($search !== '') {
+        $where[] = '(o.numero_contrata LIKE ? OR o.nombre LIKE ? OR o.direccion LIKE ? OR o.descripcion LIKE ? OR o.nombre_cliente LIKE ? OR o.telefono_cliente LIKE ?)';
+        $searchLike = $search . '%';
+        $params = array_merge($params, [$searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike]);
+    }
+
+    if ($status === 'active') {
+        $where[] = 'o.activo = 1';
+    } elseif ($status === 'inactive') {
+        $where[] = 'o.activo = 0';
+    }
+
+    $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+
+    $countStmt = $pdo->prepare('SELECT COUNT(*) FROM obras o' . $whereSql);
+    foreach ($params as $index => $value) {
+        $countStmt->bindValue($index + 1, $value, PDO::PARAM_STR);
+    }
+    $countStmt->execute();
+    $total = (int) $countStmt->fetchColumn();
+
+    $totalPages = max(1, (int) ceil($total / $limit));
+    $page = min($page, $totalPages);
+    $offset = ($page - 1) * $limit;
+
+    $sql = 'SELECT o.id_obra, o.numero_contrata, o.nombre, o.direccion, o.descripcion, o.fecha_inicio, o.fecha_fin, o.nombre_cliente, o.telefono_cliente,
+                   o.activo,
+                   c.nombre_archivo AS contrato_nombre_archivo
+            FROM obras o
+            LEFT JOIN (
+                SELECT c1.id_obra, c1.nombre_archivo
+                FROM contratos c1
+                INNER JOIN (
+                    SELECT id_obra, MAX(id_contrato) AS max_id_contrato
+                    FROM contratos
+                    GROUP BY id_obra
+                ) ult ON ult.id_obra = c1.id_obra AND ult.max_id_contrato = c1.id_contrato
+            ) c ON c.id_obra = o.id_obra'
+        . $whereSql
+        . ' ORDER BY o.fecha_inicio DESC, o.nombre ASC LIMIT ? OFFSET ?';
+
+    $stmt = $pdo->prepare($sql);
+    $bindIndex = 1;
+    foreach ($params as $value) {
+        $stmt->bindValue($bindIndex++, $value, PDO::PARAM_STR);
+    }
+    $stmt->bindValue($bindIndex++, $limit, PDO::PARAM_INT);
+    $stmt->bindValue($bindIndex, $offset, PDO::PARAM_INT);
+    $stmt->execute();
 
     echo json_encode([
         'obras' => $stmt->fetchAll(),
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $limit,
+        'total_pages' => $totalPages,
     ]);
 }
 
@@ -108,7 +159,7 @@ function responderGuardado(PDO $pdo, array $body): void
 
         $stmt = $pdo->prepare(
             'UPDATE obras
-             SET numero_contrata = ?, nombre = ?, direccion = ?, descripcion = ?, fecha_inicio = ?, fecha_fin = ?, nombre_cliente = ?, telefono_cliente = ?
+             SET numero_contrata = ?, nombre = ?, direccion = ?, descripcion = ?, fecha_inicio = ?, fecha_fin = ?, nombre_cliente = ?, telefono_cliente = ?, activo = ?
              WHERE id_obra = ?'
         );
         $stmt->execute([
@@ -120,6 +171,7 @@ function responderGuardado(PDO $pdo, array $body): void
             $payload['fecha_fin'],
             $payload['nombre_cliente'],
             $payload['telefono_cliente'],
+            $payload['activo'],
             $idObra,
         ]);
 
@@ -137,8 +189,8 @@ function responderGuardado(PDO $pdo, array $body): void
     }
 
     $stmt = $pdo->prepare(
-        'INSERT INTO obras (numero_contrata, nombre, direccion, descripcion, fecha_inicio, fecha_fin, nombre_cliente, telefono_cliente)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO obras (numero_contrata, nombre, direccion, descripcion, fecha_inicio, fecha_fin, nombre_cliente, telefono_cliente, activo)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         $payload['numero_contrata'],
@@ -149,6 +201,7 @@ function responderGuardado(PDO $pdo, array $body): void
         $payload['fecha_fin'],
         $payload['nombre_cliente'],
         $payload['telefono_cliente'],
+        $payload['activo'],
     ]);
 
     $idObra = (int) $pdo->lastInsertId();
@@ -217,6 +270,8 @@ function validarPayload(array $body): array
     $fechaFin = normalizarFecha($body['fecha_fin'] ?? null);
     $nombreCliente = limpiarTexto($body['nombre_cliente'] ?? '', 150);
     $telefonoCliente = limpiarTexto($body['telefono_cliente'] ?? '', 30, false);
+    $activo = isset($body['activo']) ? (int) $body['activo'] : 1;
+    $activo = $activo === 1 ? 1 : 0;
 
     if ($numeroContrata === '' || $nombre === '' || $nombreCliente === '') {
         throw new InvalidArgumentException('Número de contrata, nombre de la obra y cliente son obligatorios.');
@@ -235,6 +290,7 @@ function validarPayload(array $body): array
         'fecha_fin' => $fechaFin,
         'nombre_cliente' => $nombreCliente,
         'telefono_cliente' => $telefonoCliente,
+        'activo' => $activo,
     ];
 }
 
@@ -274,6 +330,7 @@ function obtenerObra(PDO $pdo, int $idObra): array
 {
     $stmt = $pdo->prepare(
         'SELECT o.id_obra, o.numero_contrata, o.nombre, o.direccion, o.descripcion, o.fecha_inicio, o.fecha_fin, o.nombre_cliente, o.telefono_cliente,
+                o.activo,
                 c.nombre_archivo AS contrato_nombre_archivo
          FROM obras o
          LEFT JOIN (

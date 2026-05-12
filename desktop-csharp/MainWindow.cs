@@ -579,13 +579,72 @@ public sealed class MainWindow : Form
 
 		try
 		{
+			var page = 1;
+			if (root.TryGetProperty("page", out var pageProp))
+			{
+				if (pageProp.ValueKind == JsonValueKind.Number && pageProp.TryGetInt32(out var pageNumber) && pageNumber > 0)
+					page = pageNumber;
+				else if (pageProp.ValueKind == JsonValueKind.String && int.TryParse(pageProp.GetString(), out pageNumber) && pageNumber > 0)
+					page = pageNumber;
+			}
+
+			var limit = 10;
+			if (root.TryGetProperty("limit", out var limitProp))
+			{
+				if (limitProp.ValueKind == JsonValueKind.Number && limitProp.TryGetInt32(out var limitNumber) && limitNumber > 0)
+					limit = limitNumber;
+				else if (limitProp.ValueKind == JsonValueKind.String && int.TryParse(limitProp.GetString(), out limitNumber) && limitNumber > 0)
+					limit = limitNumber;
+			}
+			limit = Math.Clamp(limit, 1, 100);
+
+			var search = root.TryGetProperty("search", out var searchProp) && searchProp.ValueKind == JsonValueKind.String
+				? searchProp.GetString()?.Trim() ?? string.Empty
+				: string.Empty;
+			var status = root.TryGetProperty("status", out var statusProp) && statusProp.ValueKind == JsonValueKind.String
+				? (statusProp.GetString()?.Trim().ToLowerInvariant() ?? "all")
+				: "all";
+
+			if (status is not ("all" or "active" or "inactive"))
+				throw new InvalidOperationException("Filtro de estado inválido.");
+
 			await using var conn = new MySqlConnection(BuildConnectionString());
 			await conn.OpenAsync();
+
+			var where = new List<string>();
+			var countParams = new List<MySqlParameter>();
+
+			if (!string.IsNullOrWhiteSpace(search))
+			{
+				where.Add("(o.numero_contrata LIKE @search OR o.nombre LIKE @search OR o.direccion LIKE @search OR o.descripcion LIKE @search OR o.nombre_cliente LIKE @search OR o.telefono_cliente LIKE @search)");
+				countParams.Add(new MySqlParameter("@search", $"%{search}%"));
+			}
+
+			if (status == "active")
+				where.Add("o.activo = 1");
+			else if (status == "inactive")
+				where.Add("o.activo = 0");
+
+			var whereSql = where.Count > 0 ? " WHERE " + string.Join(" AND ", where) : string.Empty;
+
+			var total = 0;
+			await using (var countCmd = conn.CreateCommand())
+			{
+				countCmd.CommandText = "SELECT COUNT(*) FROM obras o" + whereSql;
+				foreach (var param in countParams)
+					countCmd.Parameters.AddWithValue(param.ParameterName, param.Value);
+
+				total = Convert.ToInt32(await countCmd.ExecuteScalarAsync());
+			}
+
+			var totalPages = Math.Max(1, (int)Math.Ceiling(total / (double)limit));
+			page = Math.Min(page, totalPages);
+			var offset = (page - 1) * limit;
 
 			var obras = new List<object>();
 			await using var cmd = conn.CreateCommand();
 			cmd.CommandText =
-				"SELECT o.id_obra, o.numero_contrata, o.nombre, o.direccion, o.descripcion, o.fecha_inicio, o.fecha_fin, o.nombre_cliente, o.telefono_cliente, " +
+				"SELECT o.id_obra, o.numero_contrata, o.nombre, o.direccion, o.descripcion, o.fecha_inicio, o.fecha_fin, o.nombre_cliente, o.telefono_cliente, o.activo, " +
 				"c.nombre_archivo AS contrato_nombre_archivo " +
 				"FROM obras o " +
 				"LEFT JOIN (" +
@@ -593,7 +652,12 @@ public sealed class MainWindow : Form
 				"INNER JOIN (SELECT id_obra, MAX(id_contrato) AS max_id_contrato FROM contratos GROUP BY id_obra) ult " +
 				"ON ult.id_obra = c1.id_obra AND ult.max_id_contrato = c1.id_contrato" +
 				") c ON c.id_obra = o.id_obra " +
-				"ORDER BY o.fecha_inicio DESC, o.nombre ASC";
+				whereSql +
+				" ORDER BY o.fecha_inicio DESC, o.nombre ASC LIMIT @limit OFFSET @offset";
+			foreach (var param in countParams)
+				cmd.Parameters.AddWithValue(param.ParameterName, param.Value);
+			cmd.Parameters.AddWithValue("@limit", limit);
+			cmd.Parameters.AddWithValue("@offset", offset);
 
 			await using var reader = await cmd.ExecuteReaderAsync();
 			while (await reader.ReadAsync())
@@ -606,7 +670,11 @@ public sealed class MainWindow : Form
 				type = "obras_listar_response",
 				requestId,
 				success = true,
-				obras
+				obras,
+				total,
+				page,
+				per_page = limit,
+				total_pages = totalPages
 			});
 		}
 		catch (Exception ex)
@@ -1133,6 +1201,7 @@ public sealed class MainWindow : Form
 			fecha_fin = ReadNullableDate(reader, "fecha_fin"),
 			nombre_cliente = reader.GetString("nombre_cliente"),
 			telefono_cliente = ReadNullableString(reader, "telefono_cliente"),
+			activo = Convert.ToInt32(reader["activo"]),
 			contrato_nombre_archivo = ReadNullableString(reader, "contrato_nombre_archivo")
 		};
 	}
@@ -1165,7 +1234,7 @@ public sealed class MainWindow : Form
 	{
 		await using var cmd = conn.CreateCommand();
 		cmd.CommandText =
-			"SELECT o.id_obra, o.numero_contrata, o.nombre, o.direccion, o.descripcion, o.fecha_inicio, o.fecha_fin, o.nombre_cliente, o.telefono_cliente, " +
+			"SELECT o.id_obra, o.numero_contrata, o.nombre, o.direccion, o.descripcion, o.fecha_inicio, o.fecha_fin, o.nombre_cliente, o.telefono_cliente, o.activo, " +
 			"c.nombre_archivo AS contrato_nombre_archivo " +
 			"FROM obras o " +
 			"LEFT JOIN (" +

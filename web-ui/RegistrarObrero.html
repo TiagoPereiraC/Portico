@@ -1,162 +1,258 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Obreros</title>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Obreros</title>
 
-<!-- ICONOS -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="assets/css/RegObrero.css">
-<link rel="stylesheet" href="assets/css/nav-sidebar.css">
-<script src="assets/js/auth.js" data-role="Administrador"></script>
-</head>
+        <!-- ICONOS -->
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        />
+        <link rel="stylesheet" href="assets/css/theme.css" />
+        <link rel="stylesheet" href="assets/css/RegObrero.css" />
+        <link rel="stylesheet" href="assets/css/nav-sidebar.css" />
+        <script src="assets/js/auth.js" data-role="Administrador"></script>
+    </head>
 
-<body>
+    <body>
+        <div class="nav-dropdown">
+            <button class="nav-menu-btn">
+                <i class="fas fa-bars"></i> Menú
+            </button>
+            <ul class="nav-dropdown-menu">
+                <li>
+                    <a href="PanelInicio.html"
+                        ><i class="fas fa-home"></i> Panel</a
+                    >
+                </li>
+                <li>
+                    <a href="Obras.html"
+                        ><i class="fas fa-building"></i> Obras</a
+                    >
+                </li>
+                <li>
+                    <a href="RegistrarObrero.html" class="active"
+                        ><i class="fas fa-helmet-safety"></i> Obreros</a
+                    >
+                </li>
+                <li>
+                    <a href="Asistencia.html"
+                        ><i class="fas fa-clipboard-list"></i> Asistencia</a
+                    >
+                </li>
+                <li>
+                    <a href="Consultas.html"
+                        ><i class="fas fa-chart-column"></i> Consultas</a
+                    >
+                </li>
+                <li>
+                    <a href="Login.html"
+                        ><i class="fas fa-right-from-bracket"></i> Salir</a
+                    >
+                </li>
+            </ul>
+        </div>
 
-<div class="nav-dropdown">
-  <button class="nav-menu-btn"><i class="fas fa-bars"></i> Menú</button>
-  <ul class="nav-dropdown-menu">
-    <li><a href="PanelInicio.html"><i class="fas fa-home"></i> Panel</a></li>
-    <li><a href="Obras.html"><i class="fas fa-building"></i> Obras</a></li>
-    <li><a href="RegistrarObrero.html" class="active"><i class="fas fa-helmet-safety"></i> Obreros</a></li>
-    <li><a href="Asistencia.html"><i class="fas fa-clipboard-list"></i> Asistencia</a></li>
-    <li><a href="Consultas.html"><i class="fas fa-chart-column"></i> Consultas</a></li>
-    <li><a href="Login.html"><i class="fas fa-right-from-bracket"></i> Salir</a></li>
-  </ul>
-</div>
+        <nav>
+            <div class="logo-wrap">
+                <img
+                    src="assets/img/logo.png"
+                    alt="Pórtico Construcciones y Servicios"
+                />
+            </div>
+            <div class="user-pill">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"
+                    />
+                </svg>
+                Admin
+            </div>
+        </nav>
 
-<nav>
-  <div class="logo-wrap">
-    <img src="assets/img/logo.png" alt="Pórtico Construcciones y Servicios">
-  </div>
-  <div class="user-pill">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-    </svg>
-    Admin
-  </div>
-</nav>
+        <main>
+            <div class="card">
+                <section id="panelObreros" class="panel-view active">
+                    <h2>Obreros</h2>
 
-<main>
-  <div class="card">
-    <section id="panelObreros" class="panel-view active">
-      <h2>Obreros</h2>
+                    <button
+                        type="button"
+                        class="btn-new"
+                        id="openRegisterPanel"
+                    >
+                        <i class="fas fa-user-plus"></i> Registrar
+                    </button>
 
-      <button type="button" class="btn-new" id="openRegisterPanel">
-        <i class="fas fa-user-plus"></i> Registrar
-      </button>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>DNI / Cédula</th>
+                                    <th>Teléfono</th>
+                                    <th>Fecha contratación</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="obreroTableBody">
+                                <tr>
+                                    <td>Juan Carlos Mendoza</td>
+                                    <td>5.123.456-7</td>
+                                    <td>099 123 456</td>
+                                    <td>2026-04-18</td>
+                                    <td>
+                                        <button
+                                            type="button"
+                                            class="btn-edit"
+                                            aria-label="Editar obrero"
+                                        >
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="btn-delete"
+                                            aria-label="Remover obrero"
+                                        >
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>María Fernanda Silva</td>
+                                    <td>4.987.654-3</td>
+                                    <td>+598 98 456 321</td>
+                                    <td>2026-04-22</td>
+                                    <td>
+                                        <button
+                                            type="button"
+                                            class="btn-edit"
+                                            aria-label="Editar obrero"
+                                        >
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="btn-delete"
+                                            aria-label="Remover obrero"
+                                        >
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>DNI / Cédula</th>
-              <th>Teléfono</th>
-              <th>Fecha contratación</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="obreroTableBody">
-            <tr>
-              <td>Juan Carlos Mendoza</td>
-              <td>5.123.456-7</td>
-              <td>099 123 456</td>
-              <td>2026-04-18</td>
-              <td>
-                <button type="button" class="btn-edit" aria-label="Editar obrero">
-                  <i class="fas fa-pen"></i>
-                </button>
-                <button type="button" class="btn-delete" aria-label="Remover obrero">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td>María Fernanda Silva</td>
-              <td>4.987.654-3</td>
-              <td>+598 98 456 321</td>
-              <td>2026-04-22</td>
-              <td>
-                <button type="button" class="btn-edit" aria-label="Editar obrero">
-                  <i class="fas fa-pen"></i>
-                </button>
-                <button type="button" class="btn-delete" aria-label="Remover obrero">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                    <a href="PanelInicio.html" class="btn-back">Volver</a>
+                </section>
 
-      <a href="PanelInicio.html" class="btn-back">Volver</a>
-    </section>
+                <section id="panelRegistro" class="panel-view hidden">
+                    <div class="form-wrap">
+                        <h2 class="form-title">Registrar Obrero</h2>
 
-    <section id="panelRegistro" class="panel-view hidden">
-      <div class="form-wrap">
-        <h2 class="form-title">Registrar Obrero</h2>
+                        <form id="obreroForm">
+                            <div class="grupo">
+                                <div class="label">Nombre completo</div>
+                                <input
+                                    type="text"
+                                    id="nombre"
+                                    name="nombre"
+                                    class="input"
+                                    placeholder="Ej: Juan Carlos Mendoza"
+                                    required
+                                />
+                            </div>
 
-        <form id="obreroForm">
-          <div class="grupo">
-            <div class="label">Nombre completo</div>
-            <input type="text" id="nombre" name="nombre" class="input" placeholder="Ej: Juan Carlos Mendoza" required>
-          </div>
+                            <div class="grupo">
+                                <div class="label">DNI / Cédula</div>
+                                <input
+                                    type="text"
+                                    id="documento"
+                                    name="documento"
+                                    class="input"
+                                    placeholder="Ej: 5.123.456-7"
+                                    required
+                                />
+                            </div>
 
-          <div class="grupo">
-            <div class="label">DNI / Cédula</div>
-            <input type="text" id="documento" name="documento" class="input" placeholder="Ej: 5.123.456-7" required>
-          </div>
+                            <div class="grupo">
+                                <div class="label">Teléfono</div>
+                                <input
+                                    type="text"
+                                    id="telefono"
+                                    name="telefono"
+                                    class="input"
+                                    placeholder="Ej: 099 123 456 o +598 99 123 456"
+                                    required
+                                />
+                            </div>
 
-          <div class="grupo">
-            <div class="label">Teléfono</div>
-            <input type="text" id="telefono" name="telefono" class="input" placeholder="Ej: 099 123 456 o +598 99 123 456" required>
-          </div>
+                            <div class="fecha">
+                                <label for="fecha_contratacion"
+                                    >Fecha Contratación</label
+                                >
+                                <input
+                                    type="date"
+                                    id="fecha_contratacion"
+                                    name="fecha_contratacion"
+                                    value="2026-04-30"
+                                    required
+                                />
+                            </div>
 
-          <div class="fecha">
-            <label for="fecha_contratacion">Fecha Contratación</label>
-            <input type="date" id="fecha_contratacion" name="fecha_contratacion" value="2026-04-30" required>
-          </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn">
+                                    Guardar
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn-back"
+                                    id="cancelRegisterPanel"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </main>
 
-          <div class="form-actions">
-            <button type="submit" class="btn">Guardar</button>
-            <button type="button" class="btn-back" id="cancelRegisterPanel">Cancelar</button>
-          </div>
-        </form>
-      </div>
-    </section>
-  </div>
-</main>
+        <script>
+            const panelObreros = document.getElementById("panelObreros");
+            const panelRegistro = document.getElementById("panelRegistro");
+            const openRegisterPanel =
+                document.getElementById("openRegisterPanel");
+            const cancelRegisterPanel = document.getElementById(
+                "cancelRegisterPanel",
+            );
+            const obreroForm = document.getElementById("obreroForm");
 
-<script>
-  const panelObreros = document.getElementById('panelObreros');
-  const panelRegistro = document.getElementById('panelRegistro');
-  const openRegisterPanel = document.getElementById('openRegisterPanel');
-  const cancelRegisterPanel = document.getElementById('cancelRegisterPanel');
-  const obreroForm = document.getElementById('obreroForm');
+            function togglePanels(showRegister) {
+                panelObreros.classList.toggle("hidden", showRegister);
+                panelObreros.classList.toggle("active", !showRegister);
+                panelRegistro.classList.toggle("hidden", !showRegister);
+                panelRegistro.classList.toggle("active", showRegister);
+            }
 
-  function togglePanels(showRegister) {
-    panelObreros.classList.toggle('hidden', showRegister);
-    panelObreros.classList.toggle('active', !showRegister);
-    panelRegistro.classList.toggle('hidden', !showRegister);
-    panelRegistro.classList.toggle('active', showRegister);
-  }
+            function resetFormAndBack() {
+                obreroForm.reset();
+                document.getElementById("fecha_contratacion").value =
+                    "2026-04-30";
+                togglePanels(false);
+            }
 
-  function resetFormAndBack() {
-    obreroForm.reset();
-    document.getElementById('fecha_contratacion').value = '2026-04-30';
-    togglePanels(false);
-  }
+            openRegisterPanel.addEventListener("click", () =>
+                togglePanels(true),
+            );
+            cancelRegisterPanel.addEventListener("click", resetFormAndBack);
 
-  openRegisterPanel.addEventListener('click', () => togglePanels(true));
-  cancelRegisterPanel.addEventListener('click', resetFormAndBack);
-
-  obreroForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    resetFormAndBack();
-  });
-</script>
-
-</body>
+            obreroForm.addEventListener("submit", (event) => {
+                event.preventDefault();
+                resetFormAndBack();
+            });
+        </script>
+    </body>
 </html>

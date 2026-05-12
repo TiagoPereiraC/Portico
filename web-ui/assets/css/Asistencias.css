@@ -1,27 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
 :root {
-  --bg:           #954043;
-  --card-bg:      #e8e3df;
-  --input-bg:     #f5f5f5;
-  --input-border: #e0e0e0;
-  --text-dark:    #666;
-  --text-muted:   #888;
-  --btn-bg:       #b54747;
-  --btn-hover:    #9e3c3c;
-  --accent:       #b54747;
-  --input-shadow: 0 2px 8px rgba(0,0,0,.12);
+    --bg: #954043;
+    --card-bg: #e8e3df;
+    --input-bg: #f5f5f5;
+    --input-border: #e0e0e0;
+    --text-dark: #666;
+    --text-muted: #888;
+    --btn-bg: #b54747;
+    --btn-hover: #9e3c3c;
+    --accent: #b54747;
+    --input-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 body {
     margin: 0;
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
     background-color: var(--bg);
     min-height: 100vh;
     display: flex;
@@ -36,7 +38,7 @@ nav {
     height: 140px;
     box-sizing: border-box;
     background-color: #fff;
-    box-shadow: 0 2px 6px rgba(0,0,0,.12);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .logo-wrap {
@@ -71,17 +73,17 @@ main {
     flex: 1;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     padding: 48px 16px;
 }
 
 .form {
     background: var(--card-bg);
     padding: 45px;
-    border-radius: 20px;
-    width: 700px;
-    max-width: 90%;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+    border-radius: 25px;
+    width: min(100%, 980px);
+    max-width: 100%;
+    box-shadow: var(--shadow-card);
 }
 
 .grid {
@@ -97,8 +99,10 @@ main {
 h2 {
     margin-bottom: 25px;
     text-align: center;
+    font-size: 22px;
     font-weight: 600;
     color: var(--text-dark);
+    letter-spacing: 0.4px;
 }
 
 .label {
@@ -109,26 +113,34 @@ h2 {
     color: var(--text-dark);
 }
 
-input, select, textarea {
+input,
+select,
+textarea {
     width: 100%;
-    padding: 12px;
+    min-height: 48px;
+    padding: 12px 14px;
     margin-top: 5px;
     border-radius: 10px;
     border: 1.5px solid var(--input-border);
     background: var(--input-bg);
+    box-shadow: var(--input-shadow);
     font-family: inherit;
-    font-size: 13px;
+    font-size: 14px;
     transition: 0.2s;
 }
 
-input:hover, select:hover, textarea:hover {
+input:hover,
+select:hover,
+textarea:hover {
     border-color: var(--accent);
 }
 
-input:focus, select:focus, textarea:focus {
+input:focus,
+select:focus,
+textarea:focus {
     outline: none;
     border: 1.5px solid var(--accent);
-    box-shadow: 0 0 5px rgba(181,71,71,0.5);
+    box-shadow: 0 2px 12px rgba(181, 71, 71, 0.2);
 }
 
 .row {
@@ -138,7 +150,7 @@ input:focus, select:focus, textarea:focus {
 
 textarea {
     resize: none;
-    height: 70px;
+    min-height: 90px;
 }
 
 .btn {
@@ -185,6 +197,52 @@ textarea {
     transform: scale(1.02);
 }
 
+/* ===== CUSTOM SELECT GENERAL ===== */
+
+.custom-select {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select-box {
+    padding: 12px;
+    background: var(--input-bg);
+    border: 1.5px solid var(--input-border);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-dark);
+}
+
+.custom-select-box:hover {
+    border-color: var(--accent);
+}
+
+.custom-select-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    max-height: 180px;
+    overflow-y: auto;
+    display: none;
+    z-index: 1000;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.custom-select-options div {
+    padding: 10px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.custom-select-options div:hover {
+    background: #eee;
+}
+
 /* ===== OBREROS ===== */
 .obreros-selector {
     display: flex;
@@ -227,8 +285,8 @@ textarea {
 }
 
 .btn-delete:hover {
-    background: #c0392b;
-    transform: scale(1.05);
+    background: var(--danger-hover);
+    transform: scale(1.02);
 }
 
 /* ===== HORARIOS ===== */

@@ -1,212 +1,300 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Crear Cuenta</title>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crear Cuenta</title>
+        <link rel="stylesheet" href="assets/css/theme.css" />
+        <link rel="stylesheet" href="assets/css/CrearCuenta.css" />
+        <link rel="stylesheet" href="assets/css/nav-sidebar.css" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        />
+        <script src="assets/js/auth.js" data-role="Administrador"></script>
+        <script src="assets/js/users.js"></script>
+    </head>
 
-    <link rel="stylesheet" href="assets/css/CrearCuenta.css">
-    <link rel="stylesheet" href="assets/css/nav-sidebar.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <script src="assets/js/auth.js" data-role="Administrador"></script>
-    <script src="assets/js/users.js"></script>
-</head>
-
-<body>
-    <div class="nav-dropdown">
-        <button class="nav-menu-btn"><i class="fas fa-bars"></i> Menú</button>
-        <ul class="nav-dropdown-menu">
-            <li><a href="PanelInicio.html"><i class="fas fa-home"></i> Panel</a></li>
-            <li><a href="Obras.html"><i class="fas fa-building"></i> Obras</a></li>
-            <li><a href="RegistrarObrero.html"><i class="fas fa-helmet-safety"></i> Obreros</a></li>
-            <li><a href="Asistencia.html"><i class="fas fa-clipboard-list"></i> Asistencia</a></li>
-            <li><a href="Consultas.html"><i class="fas fa-chart-column"></i> Consultas</a></li>
-            <li><a href="Login.html"><i class="fas fa-right-from-bracket"></i> Salir</a></li>
-        </ul>
-    </div>
-
-    <nav>
-        <div class="logo-wrap">
-            <img src="assets/img/logo.png" alt="Pórtico Construcciones y Servicios">
+    <body>
+        <div class="nav-dropdown">
+            <button class="nav-menu-btn">
+                <i class="fas fa-bars"></i> Menú
+            </button>
+            <ul class="nav-dropdown-menu">
+                <li>
+                    <a href="PanelInicio.html"
+                        ><i class="fas fa-home"></i> Panel</a
+                    >
+                </li>
+                <li>
+                    <a href="Obras.html"
+                        ><i class="fas fa-building"></i> Obras</a
+                    >
+                </li>
+                <li>
+                    <a href="RegistrarObrero.html"
+                        ><i class="fas fa-helmet-safety"></i> Obreros</a
+                    >
+                </li>
+                <li>
+                    <a href="Asistencia.html"
+                        ><i class="fas fa-clipboard-list"></i> Asistencia</a
+                    >
+                </li>
+                <li>
+                    <a href="Consultas.html"
+                        ><i class="fas fa-chart-column"></i> Consultas</a
+                    >
+                </li>
+                <li>
+                    <a href="Login.html"
+                        ><i class="fas fa-right-from-bracket"></i> Salir</a
+                    >
+                </li>
+            </ul>
         </div>
-        <div class="user-pill">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-            </svg>
-            <span class="user-pill-name">Admin</span>
-        </div>
-    </nav>
 
-    <main>
-        <div class="card">
-             <img src="assets/img/logo.png" alt="Logo" class="logo">
+        <nav>
+            <div class="logo-wrap">
+                <img
+                    src="assets/img/logo.png"
+                    alt="Pórtico Construcciones y Servicios"
+                />
+            </div>
+            <div class="user-pill">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"
+                    />
+                </svg>
+                <span class="user-pill-name">Admin</span>
+            </div>
+        </nav>
 
-            <h2>Crear Cuenta</h2>
-            <p class="form-helper">Completá los datos para registrar un usuario con acceso al sistema.</p>
+        <main>
+            <div class="card">
+                <img src="assets/img/logo.png" alt="Logo" class="logo" />
 
-            <div id="feedback" class="feedback" hidden></div>
+                <h2>Crear Cuenta</h2>
+                <p class="form-helper">
+                    Completá los datos para registrar un usuario con acceso al
+                    sistema.
+                </p>
 
-            <form id="create-user-form" novalidate>
+                <div id="feedback" class="feedback" hidden></div>
 
-                <div class="input-group" id="group-nombre">
-                    <i class="fas fa-id-card"></i>
-                    <input type="text" id="nombre" name="nombre" placeholder="Nombre completo" maxlength="100" required>
-                    <div class="error-message" id="error-nombre">El nombre completo es obligatorio.</div>
-                </div>
+                <form id="create-user-form" novalidate>
+                    <div class="input-group" id="group-nombre">
+                        <i class="fas fa-id-card"></i>
+                        <input
+                            type="text"
+                            id="nombre"
+                            name="nombre"
+                            placeholder="Nombre completo"
+                            maxlength="100"
+                            required
+                        />
+                        <div class="error-message" id="error-nombre">
+                            El nombre completo es obligatorio.
+                        </div>
+                    </div>
 
-                <div class="input-group" id="group-usuario">
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="usuario" name="usuario" placeholder="Nombre de usuario" maxlength="50" required>
-                    <div class="error-message" id="error-usuario">El nombre de usuario es obligatorio.</div>
-                </div>
+                    <div class="input-group" id="group-usuario">
+                        <i class="fas fa-user"></i>
+                        <input
+                            type="text"
+                            id="usuario"
+                            name="usuario"
+                            placeholder="Nombre de usuario"
+                            maxlength="50"
+                            required
+                        />
+                        <div class="error-message" id="error-usuario">
+                            El nombre de usuario es obligatorio.
+                        </div>
+                    </div>
 
-                <div class="input-group" id="group-password">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="password" name="password" placeholder="Contraseña" maxlength="255" required>
-                    <button type="button" class="toggle-password" id="toggle-password-btn">
-                        <i class="fas fa-eye"></i>
+                    <div class="input-group" id="group-password">
+                        <i class="fas fa-lock"></i>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Contraseña"
+                            maxlength="255"
+                            required
+                        />
+                        <button
+                            type="button"
+                            class="toggle-password"
+                            id="toggle-password-btn"
+                        >
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div class="error-message" id="error-password">
+                            La contraseña debe tener al menos 6 caracteres.
+                        </div>
+                    </div>
+
+                    <div class="input-group select-rol" id="group-rol">
+                        <i class="fas fa-users"></i>
+                        <select id="rol" name="rol" required>
+                            <option value="">Seleccionar rol</option>
+                            <option value="Administrador">Administrador</option>
+                            <option value="Capataz">Capataz</option>
+                        </select>
+                        <div class="error-message" id="error-rol">
+                            Debe seleccionar un rol.
+                        </div>
+                    </div>
+
+                    <button class="btn" type="submit" id="submitBtn">
+                        Crear Cuenta
                     </button>
-                    <div class="error-message" id="error-password">La contraseña debe tener al menos 6 caracteres.</div>
-                </div>
+                    <a href="TablaUsuarios.html" class="btn-back">Volver</a>
+                </form>
+            </div>
+        </main>
 
-                <div class="input-group select-rol" id="group-rol">
-                    <i class="fas fa-users"></i>
-                    <select id="rol" name="rol" required>
-                        <option value="">Seleccionar rol</option>
-                        <option value="Administrador">Administrador</option>
-                        <option value="Capataz">Capataz</option>
-                    </select>
-                    <div class="error-message" id="error-rol">Debe seleccionar un rol.</div>
-                </div>
+        <script>
+            const form = document.getElementById("create-user-form");
+            const feedbackEl = document.getElementById("feedback");
+            const submitBtn = document.getElementById("submitBtn");
 
-                <button class="btn" type="submit" id="submitBtn">Crear Cuenta</button>
-                <a href="TablaUsuarios.html" class="btn-back">Volver</a>
+            const fields = {
+                nombre: document.getElementById("nombre"),
+                usuario: document.getElementById("usuario"),
+                password: document.getElementById("password"),
+                rol: document.getElementById("rol"),
+            };
 
-            </form>
-        </div>
-    </main>
+            document
+                .getElementById("toggle-password-btn")
+                .addEventListener("click", function () {
+                    togglePassword("password", this);
+                });
 
-<script>
-const form = document.getElementById('create-user-form');
-const feedbackEl = document.getElementById('feedback');
-const submitBtn = document.getElementById('submitBtn');
+            fields.nombre.addEventListener("input", validateNombre);
+            fields.usuario.addEventListener("input", validateUsuario);
+            fields.password.addEventListener("input", validatePassword);
+            fields.rol.addEventListener("change", validateRol);
 
-const fields = {
-    nombre: document.getElementById('nombre'),
-    usuario: document.getElementById('usuario'),
-    password: document.getElementById('password'),
-    rol: document.getElementById('rol')
-};
+            form.addEventListener("submit", async function (event) {
+                event.preventDefault();
 
-document.getElementById('toggle-password-btn').addEventListener('click', function () {
-    togglePassword('password', this);
-});
+                if (!validateAll()) {
+                    showFeedback(
+                        "Por favor, complete todos los campos correctamente antes de enviar.",
+                        "error",
+                    );
+                    return;
+                }
 
-fields.nombre.addEventListener('input', validateNombre);
-fields.usuario.addEventListener('input', validateUsuario);
-fields.password.addEventListener('input', validatePassword);
-fields.rol.addEventListener('change', validateRol);
+                setSubmitting(true, "Creando...");
+                showFeedback("", "success");
 
-form.addEventListener('submit', async function (event) {
-    event.preventDefault();
+                try {
+                    const data = await window.userApi.createUser({
+                        nombre: fields.nombre.value.trim(),
+                        usuario: fields.usuario.value.trim(),
+                        password: fields.password.value,
+                        rol: fields.rol.value,
+                    });
 
-    if (!validateAll()) {
-        showFeedback('Por favor, complete todos los campos correctamente antes de enviar.', 'error');
-        return;
-    }
+                    sessionStorage.setItem(
+                        "user_flash",
+                        JSON.stringify({
+                            type: "success",
+                            message:
+                                data.message || "Usuario creado correctamente.",
+                        }),
+                    );
+                    window.location.href = "TablaUsuarios.html";
+                } catch (error) {
+                    showFeedback(
+                        error.message || "No se pudo crear el usuario.",
+                        "error",
+                    );
+                    setSubmitting(false, "Crear Cuenta");
+                }
+            });
 
-    setSubmitting(true, 'Creando...');
-    showFeedback('', 'success');
+            function togglePassword(inputId, btn) {
+                const input = document.getElementById(inputId);
+                const icon = btn.querySelector("i");
+                if (input.type === "password") {
+                    input.type = "text";
+                    icon.classList.replace("fa-eye", "fa-eye-slash");
+                } else {
+                    input.type = "password";
+                    icon.classList.replace("fa-eye-slash", "fa-eye");
+                }
+            }
 
-    try {
-        const data = await window.userApi.createUser({
-            nombre: fields.nombre.value.trim(),
-            usuario: fields.usuario.value.trim(),
-            password: fields.password.value,
-            rol: fields.rol.value
-        });
+            function showFeedback(message, type) {
+                if (!message) {
+                    feedbackEl.hidden = true;
+                    feedbackEl.textContent = "";
+                    feedbackEl.className = "feedback";
+                    return;
+                }
 
-        sessionStorage.setItem('user_flash', JSON.stringify({
-            type: 'success',
-            message: data.message || 'Usuario creado correctamente.'
-        }));
-        window.location.href = 'TablaUsuarios.html';
-    } catch (error) {
-        showFeedback(error.message || 'No se pudo crear el usuario.', 'error');
-        setSubmitting(false, 'Crear Cuenta');
-    }
-});
+                feedbackEl.hidden = false;
+                feedbackEl.textContent = message;
+                feedbackEl.className = `feedback feedback-${type}`;
+            }
 
-function togglePassword(inputId, btn) {
-    const input = document.getElementById(inputId);
-    const icon = btn.querySelector('i');
-    if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.replace('fa-eye', 'fa-eye-slash');
-    } else {
-        input.type = 'password';
-        icon.classList.replace('fa-eye-slash', 'fa-eye');
-    }
-}
+            function setSubmitting(disabled, label) {
+                submitBtn.disabled = disabled;
+                submitBtn.textContent = label;
+            }
 
-function showFeedback(message, type) {
-    if (!message) {
-        feedbackEl.hidden = true;
-        feedbackEl.textContent = '';
-        feedbackEl.className = 'feedback';
-        return;
-    }
+            function setFieldValidity(fieldName, isValid) {
+                const group = document.getElementById(`group-${fieldName}`);
+                const error = document.getElementById(`error-${fieldName}`);
+                const field = fields[fieldName];
 
-    feedbackEl.hidden = false;
-    feedbackEl.textContent = message;
-    feedbackEl.className = `feedback feedback-${type}`;
-}
+                group.classList.toggle("error", !isValid);
+                field.classList.toggle(
+                    "success-border",
+                    isValid && field.value.trim() !== "",
+                );
+                error.classList.toggle("visible", !isValid);
+            }
 
-function setSubmitting(disabled, label) {
-    submitBtn.disabled = disabled;
-    submitBtn.textContent = label;
-}
+            function validateNombre() {
+                const isValid = fields.nombre.value.trim() !== "";
+                setFieldValidity("nombre", isValid);
+                return isValid;
+            }
 
-function setFieldValidity(fieldName, isValid) {
-    const group = document.getElementById(`group-${fieldName}`);
-    const error = document.getElementById(`error-${fieldName}`);
-    const field = fields[fieldName];
+            function validateUsuario() {
+                const isValid = fields.usuario.value.trim() !== "";
+                setFieldValidity("usuario", isValid);
+                return isValid;
+            }
 
-    group.classList.toggle('error', !isValid);
-    field.classList.toggle('success-border', isValid && field.value.trim() !== '');
-    error.classList.toggle('visible', !isValid);
-}
+            function validatePassword() {
+                const isValid = fields.password.value.length >= 6;
+                setFieldValidity("password", isValid);
+                return isValid;
+            }
 
-function validateNombre() {
-    const isValid = fields.nombre.value.trim() !== '';
-    setFieldValidity('nombre', isValid);
-    return isValid;
-}
+            function validateRol() {
+                const isValid = fields.rol.value !== "";
+                setFieldValidity("rol", isValid);
+                return isValid;
+            }
 
-function validateUsuario() {
-    const isValid = fields.usuario.value.trim() !== '';
-    setFieldValidity('usuario', isValid);
-    return isValid;
-}
-
-function validatePassword() {
-    const isValid = fields.password.value.length >= 6;
-    setFieldValidity('password', isValid);
-    return isValid;
-}
-
-function validateRol() {
-    const isValid = fields.rol.value !== '';
-    setFieldValidity('rol', isValid);
-    return isValid;
-}
-
-function validateAll() {
-    return validateNombre() && validateUsuario() && validatePassword() && validateRol();
-}
-</script>
-
-</body>
-
+            function validateAll() {
+                return (
+                    validateNombre() &&
+                    validateUsuario() &&
+                    validatePassword() &&
+                    validateRol()
+                );
+            }
+        </script>
+    </body>
 </html>

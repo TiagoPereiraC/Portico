@@ -1,74 +1,88 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>Pórtico - Panel</title>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Pórtico - Panel</title>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="assets/css/inicio.css">
-<link rel="stylesheet" href="assets/css/nav-sidebar.css">
-<script src="assets/js/auth.js" data-role="Administrador"></script>
-</head>
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        />
+        <link rel="stylesheet" href="assets/css/theme.css" />
+        <link rel="stylesheet" href="assets/css/inicio.css" />
+        <link rel="stylesheet" href="assets/css/nav-sidebar.css" />
+        <script src="assets/js/auth.js" data-role="Administrador"></script>
+    </head>
 
-<body>
+    <body>
+        <nav>
+            <div class="logo-wrap">
+                <img
+                    src="assets/img/logo.png"
+                    alt="Pórtico Construcciones y Servicios"
+                />
+            </div>
+            <div class="user-pill">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"
+                    />
+                </svg>
+                Admin
+            </div>
+        </nav>
 
-<nav>
-  <div class="logo-wrap">
-    <img src="assets/img/logo.png" alt="Pórtico Construcciones y Servicios">
-  </div>
-  <div class="user-pill">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-    </svg>
-    Admin
-  </div>
-</nav>
+        <main>
+            <div class="title">
+                <h1>Panel de Administración</h1>
+                <p>Gestión de obras y personal</p>
+            </div>
 
-<main>
-    <div class="title">
-        <h1>Panel de Administración</h1>
-        <p>Gestión de obras y personal</p>
-    </div>
+            <div class="grid">
+                <a href="TablaUsuarios.html" class="card">
+                    <div class="icon"><i class="fa-solid fa-user"></i></div>
+                    <h3>Usuarios</h3>
+                    <p>Registrar y gestionar usuarios</p>
+                </a>
 
-    <div class="grid">
-        <a href="TablaUsuarios.html" class="card">
-            <div class="icon"><i class="fa-solid fa-user"></i></div>
-            <h3>Usuarios</h3>
-            <p>Registrar y gestionar usuarios</p>
-        </a>
+                <a href="Obras.html" class="card">
+                    <div class="icon"><i class="fa-solid fa-building"></i></div>
+                    <h3>Obras</h3>
+                    <p>Control de construcciones</p>
+                </a>
 
-        <a href="Obras.html" class="card">
-            <div class="icon"><i class="fa-solid fa-building"></i></div>
-            <h3>Obras</h3>
-            <p>Control de construcciones</p>
-        </a>
+                <a href="RegistrarObrero.html" class="card">
+                    <div class="icon">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                    </div>
+                    <h3>Obreros</h3>
+                    <p>Gestión del personal</p>
+                </a>
 
-        <a href="RegistrarObrero.html" class="card">
-            <div class="icon"><i class="fa-solid fa-helmet-safety"></i></div>
-            <h3>Obreros</h3>
-            <p>Gestión del personal</p>
-        </a>
+                <a href="Consultas.html" class="card">
+                    <div class="icon">
+                        <i class="fa-solid fa-chart-column"></i>
+                    </div>
+                    <h3>Consultas</h3>
+                    <p>Informes y datos</p>
+                </a>
 
-        <a href="Consultas.html" class="card">
-            <div class="icon"><i class="fa-solid fa-chart-column"></i></div>
-            <h3>Consultas</h3>
-            <p>Informes y datos</p>
-        </a>
+                <a href="Asistencia.html" class="card">
+                    <div class="icon">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <h3>Asistencias</h3>
+                    <p>Registro de asistencia del personal</p>
+                </a>
 
-        <a href="Asistencia.html" class="card">
-            <div class="icon"><i class="fa-solid fa-clipboard-list"></i></div>
-            <h3>Asistencias</h3>
-            <p>Registro de asistencia del personal</p>
-        </a>
-
-        <a href="Login.html" class="card">
-            <div class="icon"><i class="fa-solid fa-right-from-bracket"></i></div>
-            <h3>Salir</h3>
-            <p>Cerrar sesión</p>
-        </a>
-    </div>
-
-</main>
-
-</body>
+                <a href="Login.html" class="card">
+                    <div class="icon">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </div>
+                    <h3>Salir</h3>
+                    <p>Cerrar sesión</p>
+                </a>
+            </div>
+        </main>
+    </body>
 </html>
