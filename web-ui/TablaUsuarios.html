@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="assets/css/nav-sidebar.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script src="assets/js/auth.js" data-role="Administrador"></script>
+<script src="assets/js/users.js"></script>
 </head>
 
 <body>
@@ -33,7 +34,7 @@
     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
     </svg>
-    Admin
+    <span class="user-pill-name">Admin</span>
   </div>
 </nav>
 
@@ -42,9 +43,13 @@
 
     <h2>Usuarios Registrados</h2>
 
-    <a href="CrearCuenta.html" class="btn-new">
-      <i class="fas fa-user-plus"></i> Nueva Cuenta
-    </a>
+    <div id="feedback" class="feedback" hidden></div>
+
+    <div class="toolbar">
+      <a href="CrearCuenta.html" class="btn-new">
+        <i class="fas fa-user-plus"></i> Nueva Cuenta
+      </a>
+    </div>
 
     <div class="table-container">
       <table>
@@ -52,48 +57,16 @@
           <tr>
             <th>ID</th>
             <th>Nombre</th>
-            <th>Email</th>
+            <th>Usuario</th>
             <th>Contraseña</th>
             <th>Rol</th>
             <th>Acciones</th>
           </tr>
         </thead>
 
-        <tbody>
+        <tbody id="users-body">
           <tr>
-            <td>1</td>
-            <td>Juan Pérez</td>
-            <td>juan@email.com</td>
-            <td>********</td>
-            <td>Administrador</td>
-            <td>
-              <button class="btn-edit"><i class="fas fa-pen"></i></button>
-              <button class="btn-delete"><i class="fas fa-trash"></i></button>
-            </td>
-          </tr>
-
-          <tr>
-            <td>2</td>
-            <td>María López</td>
-            <td>maria@email.com</td>
-            <td>********</td>
-            <td>Obrero</td>
-            <td>
-              <button class="btn-edit"><i class="fas fa-pen"></i></button>
-              <button class="btn-delete"><i class="fas fa-trash"></i></button>
-            </td>
-          </tr>
-
-          <tr>
-            <td>3</td>
-            <td>Carlos Gómez</td>
-            <td>carlos@email.com</td>
-            <td>********</td>
-            <td>Obrero</td>
-            <td>
-              <button class="btn-edit"><i class="fas fa-pen"></i></button>
-              <button class="btn-delete"><i class="fas fa-trash"></i></button>
-            </td>
+            <td colspan="6" class="table-status">Cargando usuarios...</td>
           </tr>
         </tbody>
       </table>
@@ -103,6 +76,167 @@
 
   </div>
 </main>
+
+<div id="modalConfirm" class="modal-confirm" aria-hidden="true">
+  <div class="modal-content">
+    <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
+    <h3>¿Eliminar usuario?</h3>
+    <p id="modalUsuarioTexto">Esta acción no se puede deshacer.</p>
+    <div class="modal-buttons">
+      <button class="modal-btn modal-cancel" id="btnCancelar" type="button">Cancelar</button>
+      <button class="modal-btn modal-delete" id="btnConfirmarEliminar" type="button">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const tbody = document.getElementById('users-body');
+const feedbackEl = document.getElementById('feedback');
+const modal = document.getElementById('modalConfirm');
+const modalTexto = document.getElementById('modalUsuarioTexto');
+const btnCancelar = document.getElementById('btnCancelar');
+const btnConfirmar = document.getElementById('btnConfirmarEliminar');
+
+let pendingDelete = null;
+
+btnCancelar.addEventListener('click', closeModal);
+btnConfirmar.addEventListener('click', confirmDelete);
+modal.addEventListener('click', function (event) {
+  if (event.target === modal) {
+    closeModal();
+  }
+});
+
+tbody.addEventListener('click', function (event) {
+  const deleteButton = event.target.closest('.btn-delete');
+  if (!deleteButton) {
+    return;
+  }
+
+  pendingDelete = {
+    id: Number(deleteButton.dataset.id),
+    usuario: deleteButton.dataset.usuario || ''
+  };
+
+  modalTexto.innerHTML = `Estás a punto de eliminar a <strong>${escapeHtml(pendingDelete.usuario)}</strong>. Esta acción no se puede deshacer.`;
+  modal.classList.add('active');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
+});
+
+loadUsers();
+showFlashMessage();
+
+async function loadUsers() {
+  tbody.innerHTML = '<tr><td colspan="6" class="table-status">Cargando usuarios...</td></tr>';
+
+  try {
+    const data = await window.userApi.listUsers();
+    renderUsers(data.users || []);
+  } catch (error) {
+    tbody.innerHTML = `<tr><td colspan="6" class="table-status">${escapeHtml(error.message || 'No se pudieron cargar los usuarios.')}</td></tr>`;
+    showFeedback(error.message || 'No se pudieron cargar los usuarios.', 'error');
+  }
+}
+
+function renderUsers(users) {
+  if (!Array.isArray(users) || users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="table-status">No hay usuarios registrados.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = users.map(function (user) {
+    return `
+      <tr>
+        <td>${user.id_usuario}</td>
+        <td>${escapeHtml(user.nombre)}</td>
+        <td>${escapeHtml(user.usuario)}</td>
+        <td>••••••••</td>
+        <td>${escapeHtml(user.rol)}</td>
+        <td>
+          <div class="table-actions">
+            <a href="EditarUsuario.html?id=${encodeURIComponent(user.id_usuario)}" class="btn-edit" title="Editar usuario">
+              <i class="fas fa-pen"></i>
+            </a>
+            <button class="btn-delete" type="button" data-id="${user.id_usuario}" data-usuario="${escapeHtml(user.usuario)}" title="Eliminar usuario">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+async function confirmDelete() {
+  if (!pendingDelete?.id) {
+    closeModal();
+    return;
+  }
+
+  btnConfirmar.disabled = true;
+
+  try {
+    const data = await window.userApi.deleteUser(pendingDelete.id);
+    showFeedback(data.message || 'Usuario eliminado correctamente.', 'success');
+    closeModal();
+    await loadUsers();
+  } catch (error) {
+    showFeedback(error.message || 'No se pudo eliminar el usuario.', 'error');
+    btnConfirmar.disabled = false;
+  }
+}
+
+function closeModal() {
+  modal.classList.remove('active');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('modal-open');
+  btnConfirmar.disabled = false;
+  pendingDelete = null;
+}
+
+function showFlashMessage() {
+  const raw = sessionStorage.getItem('user_flash');
+  if (!raw) {
+    return;
+  }
+
+  sessionStorage.removeItem('user_flash');
+
+  try {
+    const flash = JSON.parse(raw);
+    if (flash?.message) {
+      showFeedback(flash.message, flash.type || 'success');
+    }
+  } catch {
+    showFeedback(raw, 'success');
+  }
+}
+
+function showFeedback(message, type) {
+  if (!message) {
+    feedbackEl.hidden = true;
+    feedbackEl.textContent = '';
+    feedbackEl.className = 'feedback';
+    return;
+  }
+
+  feedbackEl.hidden = false;
+  feedbackEl.textContent = message;
+  feedbackEl.className = `feedback feedback-${type}`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, function (char) {
+    return ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[char];
+  });
+}
+</script>
 
 </body>
 </html>

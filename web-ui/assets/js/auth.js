@@ -20,6 +20,11 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         const pill = document.querySelector('.user-pill');
-        if (pill) pill.textContent = nombre;
+        const pillName = document.querySelector('.user-pill-name');
+        if (pillName) {
+            pillName.textContent = nombre;
+        } else if (pill) {
+            pill.textContent = nombre;
+        }
     });
 })();

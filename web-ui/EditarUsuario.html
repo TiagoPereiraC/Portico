@@ -1,18 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crear Cuenta</title>
-
+    <title>Editar Usuario</title>
     <link rel="stylesheet" href="assets/css/CrearCuenta.css">
     <link rel="stylesheet" href="assets/css/nav-sidebar.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="assets/js/auth.js" data-role="Administrador"></script>
     <script src="assets/js/users.js"></script>
 </head>
-
 <body>
     <div class="nav-dropdown">
         <button class="nav-menu-btn"><i class="fas fa-bars"></i> Menú</button>
@@ -40,15 +37,13 @@
 
     <main>
         <div class="card">
-             <img src="assets/img/logo.png" alt="Logo" class="logo">
-
-            <h2>Crear Cuenta</h2>
-            <p class="form-helper">Completá los datos para registrar un usuario con acceso al sistema.</p>
+            <img src="assets/img/logo.png" alt="Logo" class="logo">
+            <h2>Editar Usuario</h2>
+            <p class="form-helper">Actualizá los datos del usuario. La contraseña solo cambia si completás el campo.</p>
 
             <div id="feedback" class="feedback" hidden></div>
 
-            <form id="create-user-form" novalidate>
-
+            <form id="edit-user-form" novalidate>
                 <div class="input-group" id="group-nombre">
                     <i class="fas fa-id-card"></i>
                     <input type="text" id="nombre" name="nombre" placeholder="Nombre completo" maxlength="100" required>
@@ -63,7 +58,7 @@
 
                 <div class="input-group" id="group-password">
                     <i class="fas fa-lock"></i>
-                    <input type="password" id="password" name="password" placeholder="Contraseña" maxlength="255" required>
+                    <input type="password" id="nueva_password" name="nueva_password" placeholder="Nueva contraseña (opcional)" maxlength="255">
                     <button type="button" class="toggle-password" id="toggle-password-btn">
                         <i class="fas fa-eye"></i>
                     </button>
@@ -80,32 +75,33 @@
                     <div class="error-message" id="error-rol">Debe seleccionar un rol.</div>
                 </div>
 
-                <button class="btn" type="submit" id="submitBtn">Crear Cuenta</button>
-                <a href="TablaUsuarios.html" class="btn-back">Volver</a>
-
+                <button class="btn" type="submit" id="submitBtn">Actualizar Usuario</button>
+                <a href="TablaUsuarios.html" class="btn-back">Cancelar</a>
             </form>
         </div>
     </main>
 
 <script>
-const form = document.getElementById('create-user-form');
+const params = new URLSearchParams(window.location.search);
+const userId = Number(params.get('id'));
 const feedbackEl = document.getElementById('feedback');
 const submitBtn = document.getElementById('submitBtn');
+const form = document.getElementById('edit-user-form');
 
 const fields = {
     nombre: document.getElementById('nombre'),
     usuario: document.getElementById('usuario'),
-    password: document.getElementById('password'),
+    nueva_password: document.getElementById('nueva_password'),
     rol: document.getElementById('rol')
 };
 
 document.getElementById('toggle-password-btn').addEventListener('click', function () {
-    togglePassword('password', this);
+    togglePassword('nueva_password', this);
 });
 
 fields.nombre.addEventListener('input', validateNombre);
 fields.usuario.addEventListener('input', validateUsuario);
-fields.password.addEventListener('input', validatePassword);
+fields.nueva_password.addEventListener('input', validatePassword);
 fields.rol.addEventListener('change', validateRol);
 
 form.addEventListener('submit', async function (event) {
@@ -116,27 +112,56 @@ form.addEventListener('submit', async function (event) {
         return;
     }
 
-    setSubmitting(true, 'Creando...');
+    setSubmitting(true, 'Guardando...');
     showFeedback('', 'success');
 
     try {
-        const data = await window.userApi.createUser({
+        const data = await window.userApi.updateUser({
+            id_usuario: userId,
             nombre: fields.nombre.value.trim(),
             usuario: fields.usuario.value.trim(),
-            password: fields.password.value,
+            nueva_password: fields.nueva_password.value,
             rol: fields.rol.value
         });
 
         sessionStorage.setItem('user_flash', JSON.stringify({
             type: 'success',
-            message: data.message || 'Usuario creado correctamente.'
+            message: data.message || 'Usuario actualizado correctamente.'
         }));
         window.location.href = 'TablaUsuarios.html';
     } catch (error) {
-        showFeedback(error.message || 'No se pudo crear el usuario.', 'error');
-        setSubmitting(false, 'Crear Cuenta');
+        showFeedback(error.message || 'No se pudo actualizar el usuario.', 'error');
+        setSubmitting(false, 'Actualizar Usuario');
     }
 });
+
+if (!Number.isInteger(userId) || userId <= 0) {
+    showFeedback('El usuario seleccionado es inválido.', 'error');
+    form.querySelectorAll('input, select, button').forEach(function (element) {
+        element.disabled = true;
+    });
+} else {
+    loadUser();
+}
+
+async function loadUser() {
+    setSubmitting(true, 'Cargando...');
+
+    try {
+        const data = await window.userApi.getUser(userId);
+        const user = data.user;
+        fields.nombre.value = user.nombre || '';
+        fields.usuario.value = user.usuario || '';
+        fields.rol.value = user.rol || '';
+        validateAll();
+        setSubmitting(false, 'Actualizar Usuario');
+    } catch (error) {
+        showFeedback(error.message || 'No se pudo cargar el usuario.', 'error');
+        form.querySelectorAll('input, select, button').forEach(function (element) {
+            element.disabled = true;
+        });
+    }
+}
 
 function togglePassword(inputId, btn) {
     const input = document.getElementById(inputId);
@@ -169,8 +194,8 @@ function setSubmitting(disabled, label) {
 }
 
 function setFieldValidity(fieldName, isValid) {
-    const group = document.getElementById(`group-${fieldName}`);
-    const error = document.getElementById(`error-${fieldName}`);
+    const group = document.getElementById(`group-${fieldName === 'nueva_password' ? 'password' : fieldName}`);
+    const error = document.getElementById(`error-${fieldName === 'nueva_password' ? 'password' : fieldName}`);
     const field = fields[fieldName];
 
     group.classList.toggle('error', !isValid);
@@ -191,8 +216,9 @@ function validateUsuario() {
 }
 
 function validatePassword() {
-    const isValid = fields.password.value.length >= 6;
-    setFieldValidity('password', isValid);
+    const value = fields.nueva_password.value;
+    const isValid = value === '' || value.length >= 6;
+    setFieldValidity('nueva_password', isValid);
     return isValid;
 }
 
@@ -206,7 +232,5 @@ function validateAll() {
     return validateNombre() && validateUsuario() && validatePassword() && validateRol();
 }
 </script>
-
 </body>
-
 </html>

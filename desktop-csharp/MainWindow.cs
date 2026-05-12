@@ -95,6 +95,21 @@ public sealed class MainWindow : Form
 				case "login":
 					await HandleLoginAsync(root);
 					break;
+					case "users_list":
+						await HandleUsersListAsync(root);
+						break;
+					case "user_get":
+						await HandleUserGetAsync(root);
+						break;
+					case "user_create":
+						await HandleUserCreateAsync(root);
+						break;
+					case "user_update":
+						await HandleUserUpdateAsync(root);
+						break;
+					case "user_delete":
+						await HandleUserDeleteAsync(root);
+						break;
 				case "obras_listar":
 					await HandleObrasListarAsync(root);
 					break;
@@ -268,6 +283,291 @@ public sealed class MainWindow : Form
 		{
 			System.Diagnostics.Debug.WriteLine($"[Asistencia catalogos error] {ex}");
 			PostToJs(new { type = "asistencia_catalogos_response", requestId, success = false, error = "No se pudieron cargar los datos de asistencia." });
+		}
+	}
+
+	private async Task HandleUsersListAsync(JsonElement root)
+	{
+		var requestId = ReadRequestId(root);
+		const string responseType = "users_list_response";
+
+		if (!EnsureAdministrador(requestId, responseType))
+			return;
+
+		try
+		{
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			var users = new List<object>();
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText = "SELECT id_usuario, nombre, usuario, rol, activo FROM usuarios ORDER BY id_usuario ASC";
+
+			await using var reader = await cmd.ExecuteReaderAsync();
+			while (await reader.ReadAsync())
+			{
+				users.Add(new
+				{
+					id_usuario = reader.GetInt32("id_usuario"),
+					nombre = reader.GetString("nombre"),
+					usuario = reader.GetString("usuario"),
+					rol = reader.GetString("rol"),
+					activo = Convert.ToInt32(reader["activo"])
+				});
+			}
+
+			PostToJs(new { type = responseType, requestId, success = true, users });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Users list error] {ex}");
+			PostToJs(new { type = responseType, requestId, success = false, error = "No se pudieron cargar los usuarios." });
+		}
+	}
+
+	private async Task HandleUserGetAsync(JsonElement root)
+	{
+		var requestId = ReadRequestId(root);
+		const string responseType = "user_get_response";
+
+		if (!EnsureAdministrador(requestId, responseType))
+			return;
+
+		try
+		{
+			var idUsuario = ReadPositiveInt(root, "id_usuario");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText = "SELECT id_usuario, nombre, usuario, rol, activo FROM usuarios WHERE id_usuario = @idUsuario LIMIT 1";
+			cmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+
+			await using var reader = await cmd.ExecuteReaderAsync();
+			if (!await reader.ReadAsync())
+			{
+				PostToJs(new { type = responseType, requestId, success = false, error = "Usuario no encontrado." });
+				return;
+			}
+
+			PostToJs(new
+			{
+				type = responseType,
+				requestId,
+				success = true,
+				user = new
+				{
+					id_usuario = reader.GetInt32("id_usuario"),
+					nombre = reader.GetString("nombre"),
+					usuario = reader.GetString("usuario"),
+					rol = reader.GetString("rol"),
+					activo = Convert.ToInt32(reader["activo"])
+				}
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = responseType, requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[User get error] {ex}");
+			PostToJs(new { type = responseType, requestId, success = false, error = "No se pudo cargar el usuario." });
+		}
+	}
+
+	private async Task HandleUserCreateAsync(JsonElement root)
+	{
+		var requestId = ReadRequestId(root);
+		const string responseType = "user_create_response";
+
+		if (!EnsureAdministrador(requestId, responseType))
+			return;
+
+		try
+		{
+			var nombre = ReadRequiredString(root, "nombre");
+			var usuario = ReadRequiredString(root, "usuario");
+			var password = ReadPasswordString(root, "password", required: true);
+			var rol = ReadRequiredString(root, "rol");
+
+			ValidateUserFields(nombre, usuario, password, rol, validatePassword: true);
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			await using (var checkCmd = conn.CreateCommand())
+			{
+				checkCmd.CommandText = "SELECT id_usuario FROM usuarios WHERE usuario = @usuario LIMIT 1";
+				checkCmd.Parameters.AddWithValue("@usuario", usuario);
+				var existing = await checkCmd.ExecuteScalarAsync();
+				if (existing is not null)
+				{
+					PostToJs(new { type = responseType, requestId, success = false, error = "El nombre de usuario ya está registrado." });
+					return;
+				}
+			}
+
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText =
+				"INSERT INTO usuarios (nombre, usuario, password_hash, rol, activo) VALUES (@nombre, @usuario, @passwordHash, @rol, 1); " +
+				"SELECT LAST_INSERT_ID();";
+			cmd.Parameters.AddWithValue("@nombre", nombre);
+			cmd.Parameters.AddWithValue("@usuario", usuario);
+			cmd.Parameters.AddWithValue("@passwordHash", BCrypt.Net.BCrypt.HashPassword(password));
+			cmd.Parameters.AddWithValue("@rol", rol);
+
+			var insertedId = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+			PostToJs(new
+			{
+				type = responseType,
+				requestId,
+				success = true,
+				message = $"Usuario '{usuario}' creado correctamente.",
+				user_id = insertedId
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = responseType, requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[User create error] {ex}");
+			PostToJs(new { type = responseType, requestId, success = false, error = "No se pudo crear el usuario." });
+		}
+	}
+
+	private async Task HandleUserUpdateAsync(JsonElement root)
+	{
+		var requestId = ReadRequestId(root);
+		const string responseType = "user_update_response";
+
+		if (!EnsureAdministrador(requestId, responseType))
+			return;
+
+		try
+		{
+			var idUsuario = ReadPositiveInt(root, "id_usuario");
+			var nombre = ReadRequiredString(root, "nombre");
+			var usuario = ReadRequiredString(root, "usuario");
+			var rol = ReadRequiredString(root, "rol");
+			var nuevaPassword = ReadPasswordString(root, "nueva_password", required: false);
+
+			ValidateUserFields(nombre, usuario, nuevaPassword, rol, validatePassword: nuevaPassword.Length > 0);
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			await using (var existsCmd = conn.CreateCommand())
+			{
+				existsCmd.CommandText = "SELECT id_usuario FROM usuarios WHERE id_usuario = @idUsuario LIMIT 1";
+				existsCmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+				var exists = await existsCmd.ExecuteScalarAsync();
+				if (exists is null)
+				{
+					PostToJs(new { type = responseType, requestId, success = false, error = "Usuario no encontrado." });
+					return;
+				}
+			}
+
+			await using (var checkCmd = conn.CreateCommand())
+			{
+				checkCmd.CommandText = "SELECT id_usuario FROM usuarios WHERE usuario = @usuario AND id_usuario <> @idUsuario LIMIT 1";
+				checkCmd.Parameters.AddWithValue("@usuario", usuario);
+				checkCmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+				var existing = await checkCmd.ExecuteScalarAsync();
+				if (existing is not null)
+				{
+					PostToJs(new { type = responseType, requestId, success = false, error = "El nombre de usuario ya está en uso por otra cuenta." });
+					return;
+				}
+			}
+
+			await using var cmd = conn.CreateCommand();
+			if (nuevaPassword.Length > 0)
+			{
+				cmd.CommandText =
+					"UPDATE usuarios SET nombre = @nombre, usuario = @usuario, rol = @rol, password_hash = @passwordHash WHERE id_usuario = @idUsuario";
+				cmd.Parameters.AddWithValue("@passwordHash", BCrypt.Net.BCrypt.HashPassword(nuevaPassword));
+			}
+			else
+			{
+				cmd.CommandText = "UPDATE usuarios SET nombre = @nombre, usuario = @usuario, rol = @rol WHERE id_usuario = @idUsuario";
+			}
+
+			cmd.Parameters.AddWithValue("@nombre", nombre);
+			cmd.Parameters.AddWithValue("@usuario", usuario);
+			cmd.Parameters.AddWithValue("@rol", rol);
+			cmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+			await cmd.ExecuteNonQueryAsync();
+
+			PostToJs(new { type = responseType, requestId, success = true, message = "Usuario actualizado correctamente." });
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = responseType, requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[User update error] {ex}");
+			PostToJs(new { type = responseType, requestId, success = false, error = "No se pudo actualizar el usuario." });
+		}
+	}
+
+	private async Task HandleUserDeleteAsync(JsonElement root)
+	{
+		var requestId = ReadRequestId(root);
+		const string responseType = "user_delete_response";
+
+		if (!EnsureAdministrador(requestId, responseType))
+			return;
+
+		try
+		{
+			var idUsuario = ReadPositiveInt(root, "id_usuario");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			string? usuario;
+			await using (var selectCmd = conn.CreateCommand())
+			{
+				selectCmd.CommandText = "SELECT usuario FROM usuarios WHERE id_usuario = @idUsuario LIMIT 1";
+				selectCmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+
+				var result = await selectCmd.ExecuteScalarAsync();
+				if (result is null)
+				{
+					PostToJs(new { type = responseType, requestId, success = false, error = "Usuario no encontrado." });
+					return;
+				}
+
+				usuario = Convert.ToString(result);
+			}
+
+			await using var deleteCmd = conn.CreateCommand();
+			deleteCmd.CommandText = "DELETE FROM usuarios WHERE id_usuario = @idUsuario";
+			deleteCmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+			await deleteCmd.ExecuteNonQueryAsync();
+
+			PostToJs(new
+			{
+				type = responseType,
+				requestId,
+				success = true,
+				message = $"Usuario '{usuario}' eliminado correctamente."
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = responseType, requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[User delete error] {ex}");
+			PostToJs(new { type = responseType, requestId, success = false, error = "No se pudo eliminar el usuario." });
 		}
 	}
 
@@ -591,6 +891,30 @@ public sealed class MainWindow : Form
 		throw new InvalidOperationException($"El campo {propertyName} es inválido.");
 	}
 
+	private static string ReadRequestId(JsonElement root)
+	{
+		return root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+	}
+
+	private bool EnsureAdministrador(string requestId, string responseType)
+	{
+		if (_currentUserId is null)
+		{
+			PostToJs(new { type = responseType, requestId, success = false, error = "Sesión no válida. Iniciá sesión nuevamente." });
+			return false;
+		}
+
+		if (!string.Equals(_currentRol, "Administrador", StringComparison.Ordinal))
+		{
+			PostToJs(new { type = responseType, requestId, success = false, error = "No tenés permisos para gestionar usuarios." });
+			return false;
+		}
+
+		return true;
+	}
+
 	private static int? TryReadPositiveInt(JsonElement root, string propertyName)
 	{
 		if (!root.TryGetProperty(propertyName, out var prop))
@@ -625,6 +949,53 @@ public sealed class MainWindow : Form
 			throw new InvalidOperationException($"El campo {propertyName} es obligatorio.");
 
 		return value;
+	}
+
+	private static string ReadPasswordString(JsonElement root, string propertyName, bool required)
+	{
+		if (!root.TryGetProperty(propertyName, out var prop) || prop.ValueKind != JsonValueKind.String)
+		{
+			if (required)
+				throw new InvalidOperationException($"Falta el campo {propertyName}.");
+
+			return string.Empty;
+		}
+
+		var value = prop.GetString() ?? string.Empty;
+		if (required && value.Length == 0)
+			throw new InvalidOperationException($"El campo {propertyName} es obligatorio.");
+
+		return value;
+	}
+
+	private static void ValidateUserFields(string nombre, string usuario, string password, string rol, bool validatePassword)
+	{
+		if (nombre.Length == 0)
+			throw new InvalidOperationException("El nombre completo es obligatorio.");
+
+		if (nombre.Length > 100)
+			throw new InvalidOperationException("El nombre completo es demasiado largo.");
+
+		if (usuario.Length == 0)
+			throw new InvalidOperationException("El nombre de usuario es obligatorio.");
+
+		if (usuario.Length > 50)
+			throw new InvalidOperationException("El nombre de usuario es demasiado largo.");
+
+		if (validatePassword)
+		{
+			if (password.Length < 6)
+				throw new InvalidOperationException("La contraseña debe tener al menos 6 caracteres.");
+
+			if (password.Length > 255)
+				throw new InvalidOperationException("La contraseña es demasiado larga.");
+		}
+
+		if (!string.Equals(rol, "Administrador", StringComparison.Ordinal) &&
+		    !string.Equals(rol, "Capataz", StringComparison.Ordinal))
+		{
+			throw new InvalidOperationException("Seleccione un rol válido.");
+		}
 	}
 
 	private static Dictionary<string, object?> ValidateObraPayload(JsonElement root)
