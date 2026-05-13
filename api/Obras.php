@@ -19,6 +19,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 iniciarSesion();
 
+if (empty($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Sesión no válida. Iniciá sesión nuevamente.']);
+    exit;
+}
+
+$esAdmin = ($_SESSION['rol'] ?? '') === 'Administrador';
+
 try {
     $pdo = conectar();
 
@@ -32,12 +40,22 @@ try {
             break;
 
         case 'POST':
+            if (!$esAdmin) {
+                http_response_code(403);
+                echo json_encode(['error' => 'No tenés permisos para gestionar obras.']);
+                exit;
+            }
             validarCsrf();
             $body = leerJson();
             responderGuardado($pdo, $body);
             break;
 
         case 'DELETE':
+            if (!$esAdmin) {
+                http_response_code(403);
+                echo json_encode(['error' => 'No tenés permisos para gestionar obras.']);
+                exit;
+            }
             validarCsrf();
             $body = leerJson();
             responderEliminacion($pdo, $body);
@@ -149,18 +167,53 @@ function responderGuardado(PDO $pdo, array $body): void
     $contrato = extraerContrato($body);
     $idObra = isset($body['id_obra']) && $body['id_obra'] !== '' ? (int) $body['id_obra'] : null;
 
-    if ($idObra !== null) {
-        $stmt = $pdo->prepare('SELECT id_obra FROM obras WHERE id_obra = ? LIMIT 1');
-        $stmt->execute([$idObra]);
+    $pdo->beginTransaction();
 
-        if (!$stmt->fetchColumn()) {
-            throw new RuntimeException('La obra indicada no existe.');
+    try {
+        if ($idObra !== null) {
+            $stmt = $pdo->prepare('SELECT id_obra FROM obras WHERE id_obra = ? LIMIT 1');
+            $stmt->execute([$idObra]);
+
+            if (!$stmt->fetchColumn()) {
+                throw new RuntimeException('La obra indicada no existe.');
+            }
+
+            $stmt = $pdo->prepare(
+                'UPDATE obras
+                 SET numero_contrata = ?, nombre = ?, direccion = ?, descripcion = ?, fecha_inicio = ?, fecha_fin = ?, nombre_cliente = ?, telefono_cliente = ?, activo = ?
+                 WHERE id_obra = ?'
+            );
+            $stmt->execute([
+                $payload['numero_contrata'],
+                $payload['nombre'],
+                $payload['direccion'],
+                $payload['descripcion'],
+                $payload['fecha_inicio'],
+                $payload['fecha_fin'],
+                $payload['nombre_cliente'],
+                $payload['telefono_cliente'],
+                $payload['activo'],
+                $idObra,
+            ]);
+
+            if ($contrato !== null) {
+                guardarContrato($pdo, $idObra, $contrato);
+            }
+
+            $pdo->commit();
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Obra actualizada correctamente.',
+                'obra' => obtenerObra($pdo, $idObra),
+            ]);
+            return;
         }
 
         $stmt = $pdo->prepare(
-            'UPDATE obras
-             SET numero_contrata = ?, nombre = ?, direccion = ?, descripcion = ?, fecha_inicio = ?, fecha_fin = ?, nombre_cliente = ?, telefono_cliente = ?, activo = ?
-             WHERE id_obra = ?'
+            'INSERT INTO obras (numero_contrata, nombre, direccion, descripcion, fecha_inicio, fecha_fin, nombre_cliente, telefono_cliente, activo)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $payload['numero_contrata'],
@@ -172,50 +225,28 @@ function responderGuardado(PDO $pdo, array $body): void
             $payload['nombre_cliente'],
             $payload['telefono_cliente'],
             $payload['activo'],
-            $idObra,
         ]);
+
+        $idObra = (int) $pdo->lastInsertId();
 
         if ($contrato !== null) {
             guardarContrato($pdo, $idObra, $contrato);
         }
 
-        http_response_code(200);
+        $pdo->commit();
+
+        http_response_code(201);
         echo json_encode([
             'success' => true,
-            'message' => 'Obra actualizada correctamente.',
+            'message' => 'Obra guardada correctamente.',
             'obra' => obtenerObra($pdo, $idObra),
         ]);
-        return;
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
     }
-
-    $stmt = $pdo->prepare(
-        'INSERT INTO obras (numero_contrata, nombre, direccion, descripcion, fecha_inicio, fecha_fin, nombre_cliente, telefono_cliente, activo)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    );
-    $stmt->execute([
-        $payload['numero_contrata'],
-        $payload['nombre'],
-        $payload['direccion'],
-        $payload['descripcion'],
-        $payload['fecha_inicio'],
-        $payload['fecha_fin'],
-        $payload['nombre_cliente'],
-        $payload['telefono_cliente'],
-        $payload['activo'],
-    ]);
-
-    $idObra = (int) $pdo->lastInsertId();
-
-    if ($contrato !== null) {
-        guardarContrato($pdo, $idObra, $contrato);
-    }
-
-    http_response_code(201);
-    echo json_encode([
-        'success' => true,
-        'message' => 'Obra guardada correctamente.',
-        'obra' => obtenerObra($pdo, $idObra),
-    ]);
 }
 
 function responderEliminacion(PDO $pdo, array $body): void

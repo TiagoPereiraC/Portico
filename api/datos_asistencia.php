@@ -6,6 +6,12 @@ iniciarSesion();
 
 header('Content-Type: application/json');
 
+if (empty($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Sesión no válida. Iniciá sesión nuevamente.']);
+    exit;
+}
+
 try {
 
     $pdo = conectar();

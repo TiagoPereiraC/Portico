@@ -51,6 +51,47 @@
         </div>
 
         <script>
+            (function () {
+                function redirectByRol(rol) {
+                    window.location.replace(
+                        rol === "Capataz" ? "Asistencia.html" : "PanelInicio.html"
+                    );
+                }
+
+                // Escritorio: sessionStorage es la fuente de verdad
+                if (window.chrome?.webview) {
+                    var rol = sessionStorage.getItem("rol");
+                    if (rol) {
+                        redirectByRol(rol);
+                        return;
+                    }
+                    return;
+                }
+
+                // Web: consultar sesión PHP antes de mostrar el login
+                var isHttp = window.location.protocol.startsWith("http");
+                if (!isHttp) return;
+
+                var path = window.location.pathname;
+                var idx = path.lastIndexOf("/web-ui/");
+                var apiBase =
+                    idx !== -1
+                        ? window.location.origin + path.substring(0, idx) + "/api"
+                        : window.location.origin + "/api";
+
+                fetch(apiBase + "/session.php", { credentials: "include" })
+                    .then(function (res) { return res.json(); })
+                    .then(function (data) {
+                        if (data && data.autenticado) {
+                            sessionStorage.setItem("user_id", String(data.user_id));
+                            sessionStorage.setItem("rol", data.rol);
+                            sessionStorage.setItem("nombre", data.nombre);
+                            redirectByRol(data.rol);
+                        }
+                    })
+                    .catch(function () {});
+            })();
+
             function togglePassword(inputId, btn) {
                 const input = document.getElementById(inputId);
                 const icon = btn.querySelector("i");

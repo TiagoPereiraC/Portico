@@ -40,6 +40,35 @@
         return true;
     }
 
+    function doLogout() {
+        sessionStorage.clear();
+
+        if (window.chrome?.webview) {
+            window.chrome.webview.postMessage(JSON.stringify({ type: 'logout' }));
+            return;
+        }
+
+        if (isHttp) {
+            var apiBase = resolveApiBase();
+            fetch(apiBase + '/logout.php', {
+                method: 'POST',
+                credentials: 'include'
+            }).catch(function () {}).finally(function () {
+                window.location.href = 'Login.html';
+            });
+        } else {
+            window.location.href = 'Login.html';
+        }
+    }
+
+    // Interceptar clicks en cualquier enlace a Login.html (botón Salir)
+    document.addEventListener('click', function (e) {
+        var link = e.target.closest('a[href="Login.html"]');
+        if (!link) return;
+        e.preventDefault();
+        doLogout();
+    });
+
     const rolStored = sessionStorage.getItem('rol') || '';
     const nombreStored = sessionStorage.getItem('nombre') || 'Usuario';
 

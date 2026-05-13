@@ -18,9 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\web-ui\**\*">
-      <Link>web-ui\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <EmbeddedResource Include="..\web-ui\**\*">
+      <LogicalName>webui.$([System.String]::Copy('%(RecursiveDir)').Replace('\','.').Replace('/','.'))%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

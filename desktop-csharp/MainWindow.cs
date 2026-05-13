@@ -53,14 +53,18 @@ public sealed class MainWindow : Form
 
 			_webView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
 
-			var loginPath = ResolveHtmlPath("Login.html");
-			if (loginPath is null)
+			_webView.CoreWebView2.AddWebResourceRequestedFilter(
+				"https://portico.desktop/*",
+				CoreWebView2WebResourceContext.All);
+			_webView.CoreWebView2.WebResourceRequested += OnWebResourceRequested;
+
+			if (GetType().Assembly.GetManifestResourceStream("webui.Login.html") is null)
 			{
-				ShowError("No se encontró web-ui/Login.html.");
+				ShowError("No se encontró el recurso embebido webui.Login.html.");
 				return;
 			}
 
-			_webView.Source = new Uri(loginPath);
+			_webView.Source = new Uri("https://portico.desktop/Login.html");
 		}
 		catch (WebView2RuntimeNotFoundException)
 		{
@@ -95,21 +99,24 @@ public sealed class MainWindow : Form
 				case "login":
 					await HandleLoginAsync(root);
 					break;
-					case "users_list":
-						await HandleUsersListAsync(root);
-						break;
-					case "user_get":
-						await HandleUserGetAsync(root);
-						break;
-					case "user_create":
-						await HandleUserCreateAsync(root);
-						break;
-					case "user_update":
-						await HandleUserUpdateAsync(root);
-						break;
-					case "user_delete":
-						await HandleUserDeleteAsync(root);
-						break;
+				case "logout":
+					HandleLogout();
+					break;
+				case "users_list":
+					await HandleUsersListAsync(root);
+					break;
+				case "user_get":
+					await HandleUserGetAsync(root);
+					break;
+				case "user_create":
+					await HandleUserCreateAsync(root);
+					break;
+				case "user_update":
+					await HandleUserUpdateAsync(root);
+					break;
+				case "user_delete":
+					await HandleUserDeleteAsync(root);
+					break;
 				case "obras_listar":
 					await HandleObrasListarAsync(root);
 					break;
@@ -119,15 +126,24 @@ public sealed class MainWindow : Form
 				case "obras_eliminar":
 					await HandleEliminarObraAsync(root);
 					break;
-				case "obras_descargar_contrato":
-					await HandleDescargarContratoAsync(root);
-					break;
-				case "asistencia_catalogos":
-					await HandleAsistenciaCatalogosAsync(root);
-					break;
-				case "asistencia_guardar":
-					await HandleGuardarAsistenciaAsync(root);
-					break;
+			case "obras_descargar_contrato":
+				await HandleDescargarContratoAsync(root);
+				break;
+			case "obreros_listar":
+				await HandleObrerosListarAsync(root);
+				break;
+			case "obreros_guardar":
+				await HandleGuardarObreroAsync(root);
+				break;
+			case "obreros_eliminar":
+				await HandleEliminarObreroAsync(root);
+				break;
+			case "asistencia_catalogos":
+				await HandleAsistenciaCatalogosAsync(root);
+				break;
+			case "asistencia_guardar":
+				await HandleGuardarAsistenciaAsync(root);
+				break;
 			}
 		}
 		catch (Exception ex)
@@ -203,9 +219,7 @@ public sealed class MainWindow : Form
 			Invoke(() =>
 			{
 				var destino = rol == "Capataz" ? "Asistencia.html" : "PanelInicio.html";
-				var path = ResolveHtmlPath(destino);
-				if (path is not null)
-					_webView.Source = new Uri(path);
+				_webView.Source = new Uri($"https://portico.desktop/{destino}");
 			});
 		}
 		catch (MySqlException ex)
@@ -220,11 +234,28 @@ public sealed class MainWindow : Form
 		}
 	}
 
+	private void HandleLogout()
+	{
+		_currentUserId = null;
+		_currentNombre = string.Empty;
+		_currentRol = string.Empty;
+
+		PostToJs(new { type = "logout_response", success = true });
+
+		Invoke(() =>
+		{
+			_webView.Source = new Uri("https://portico.desktop/Login.html");
+		});
+	}
+
 	private async Task HandleAsistenciaCatalogosAsync(JsonElement root)
 	{
 		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
 			? requestIdProp.GetString() ?? string.Empty
 			: string.Empty;
+
+		if (!EnsureCapatazOAdmin(requestId, "asistencia_catalogos_response"))
+			return;
 
 		try
 		{
@@ -577,6 +608,9 @@ public sealed class MainWindow : Form
 			? requestIdProp.GetString() ?? string.Empty
 			: string.Empty;
 
+		if (!EnsureAutenticado(requestId, "obras_listar_response"))
+			return;
+
 		try
 		{
 			var page = 1;
@@ -690,6 +724,9 @@ public sealed class MainWindow : Form
 			? requestIdProp.GetString() ?? string.Empty
 			: string.Empty;
 
+		if (!EnsureAdministrador(requestId, "obras_guardar_response"))
+			return;
+
 		try
 		{
 			var payload = ValidateObraPayload(root);
@@ -698,6 +735,7 @@ public sealed class MainWindow : Form
 
 			await using var conn = new MySqlConnection(BuildConnectionString());
 			await conn.OpenAsync();
+			await using var tx = await conn.BeginTransactionAsync();
 
 			if (idObra.HasValue)
 			{
@@ -705,6 +743,7 @@ public sealed class MainWindow : Form
 					throw new InvalidOperationException("La obra indicada no existe.");
 
 				await using var updateCmd = conn.CreateCommand();
+				updateCmd.Transaction = tx;
 				updateCmd.CommandText =
 					"UPDATE obras SET numero_contrata = @numeroContrata, nombre = @nombre, direccion = @direccion, descripcion = @descripcion, " +
 					"fecha_inicio = @fechaInicio, fecha_fin = @fechaFin, nombre_cliente = @nombreCliente, telefono_cliente = @telefonoCliente " +
@@ -713,7 +752,9 @@ public sealed class MainWindow : Form
 				await updateCmd.ExecuteNonQueryAsync();
 
 				if (contrato is not null)
-					await GuardarContratoAsync(conn, idObra.Value, contrato.Value.NombreArchivo, contrato.Value.Archivo);
+					await GuardarContratoAsync(conn, tx, idObra.Value, contrato.Value.NombreArchivo, contrato.Value.Archivo);
+
+				await tx.CommitAsync();
 
 				var obra = await GetObraByIdAsync(conn, idObra.Value);
 				PostToJs(new
@@ -730,6 +771,7 @@ public sealed class MainWindow : Form
 			var nuevaId = 0;
 			await using (var insertCmd = conn.CreateCommand())
 			{
+				insertCmd.Transaction = tx;
 				insertCmd.CommandText =
 					"INSERT INTO obras (numero_contrata, nombre, direccion, descripcion, fecha_inicio, fecha_fin, nombre_cliente, telefono_cliente) " +
 					"VALUES (@numeroContrata, @nombre, @direccion, @descripcion, @fechaInicio, @fechaFin, @nombreCliente, @telefonoCliente)";
@@ -739,7 +781,9 @@ public sealed class MainWindow : Form
 			}
 
 			if (contrato is not null)
-				await GuardarContratoAsync(conn, nuevaId, contrato.Value.NombreArchivo, contrato.Value.Archivo);
+				await GuardarContratoAsync(conn, tx, nuevaId, contrato.Value.NombreArchivo, contrato.Value.Archivo);
+
+			await tx.CommitAsync();
 
 			var nuevaObra = await GetObraByIdAsync(conn, nuevaId);
 			PostToJs(new
@@ -771,6 +815,9 @@ public sealed class MainWindow : Form
 		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
 			? requestIdProp.GetString() ?? string.Empty
 			: string.Empty;
+
+		if (!EnsureAdministrador(requestId, "obras_eliminar_response"))
+			return;
 
 		try
 		{
@@ -816,6 +863,9 @@ public sealed class MainWindow : Form
 			? requestIdProp.GetString() ?? string.Empty
 			: string.Empty;
 
+		if (!EnsureAdministrador(requestId, "obras_descargar_contrato_response"))
+			return;
+
 		try
 		{
 			var idObra = ReadPositiveInt(root, "id_obra");
@@ -857,11 +907,301 @@ public sealed class MainWindow : Form
 		}
 	}
 
+	private async Task HandleObrerosListarAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAutenticado(requestId, "obreros_listar_response"))
+			return;
+
+		try
+		{
+			var page = 1;
+			if (root.TryGetProperty("page", out var pageProp))
+			{
+				if (pageProp.ValueKind == JsonValueKind.Number && pageProp.TryGetInt32(out var pageNumber) && pageNumber > 0)
+					page = pageNumber;
+				else if (pageProp.ValueKind == JsonValueKind.String && int.TryParse(pageProp.GetString(), out pageNumber) && pageNumber > 0)
+					page = pageNumber;
+			}
+
+			var limit = 10;
+			if (root.TryGetProperty("limit", out var limitProp))
+			{
+				if (limitProp.ValueKind == JsonValueKind.Number && limitProp.TryGetInt32(out var limitNumber) && limitNumber > 0)
+					limit = limitNumber;
+				else if (limitProp.ValueKind == JsonValueKind.String && int.TryParse(limitProp.GetString(), out limitNumber) && limitNumber > 0)
+					limit = limitNumber;
+			}
+			limit = Math.Clamp(limit, 1, 100);
+
+			var search = root.TryGetProperty("search", out var searchProp) && searchProp.ValueKind == JsonValueKind.String
+				? (searchProp.GetString()?.Trim() ?? string.Empty)
+				: string.Empty;
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			var where = new List<string> { "activo = 1" };
+			var countParams = new List<MySqlParameter>();
+
+			if (!string.IsNullOrWhiteSpace(search))
+			{
+				where.Add("(nombre LIKE @search OR apellido LIKE @search OR documento LIKE @search OR telefono LIKE @search)");
+				countParams.Add(new MySqlParameter("@search", $"%{search}%"));
+			}
+
+			var whereSql = " WHERE " + string.Join(" AND ", where);
+
+			var total = 0;
+			await using (var countCmd = conn.CreateCommand())
+			{
+				countCmd.CommandText = "SELECT COUNT(*) FROM obreros" + whereSql;
+				foreach (var param in countParams)
+					countCmd.Parameters.AddWithValue(param.ParameterName, param.Value);
+				total = Convert.ToInt32(await countCmd.ExecuteScalarAsync());
+			}
+
+			var totalPages = Math.Max(1, (int)Math.Ceiling(total / (double)limit));
+			page = Math.Min(page, totalPages);
+			var offset = (page - 1) * limit;
+
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText =
+				"SELECT id_obrero, nombre, apellido, documento, telefono, fecha_contratacion FROM obreros"
+				+ whereSql
+				+ " ORDER BY id_obrero DESC LIMIT @limit OFFSET @offset";
+
+			foreach (var param in countParams)
+				cmd.Parameters.AddWithValue(param.ParameterName, param.Value);
+			cmd.Parameters.AddWithValue("@limit", limit);
+			cmd.Parameters.AddWithValue("@offset", offset);
+
+			var obreros = new List<object>();
+			await using var reader = await cmd.ExecuteReaderAsync();
+			while (await reader.ReadAsync())
+			{
+				obreros.Add(new
+				{
+					id_obrero = reader.GetInt32("id_obrero"),
+					nombre = reader.GetString("nombre"),
+					apellido = ReadNullableString(reader, "apellido"),
+					documento = reader.GetString("documento"),
+					telefono = ReadNullableString(reader, "telefono"),
+					fecha_contratacion = ReadNullableDate(reader, "fecha_contratacion")
+				});
+			}
+
+			PostToJs(new
+			{
+				type = "obreros_listar_response",
+				requestId,
+				success = true,
+				obreros,
+				total,
+				page,
+				per_page = limit,
+				total_pages = totalPages
+			});
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Obreros listar error] {ex}");
+			PostToJs(new { type = "obreros_listar_response", requestId, success = false, error = "No se pudieron cargar los obreros." });
+		}
+	}
+
+	private async Task HandleGuardarObreroAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAdministrador(requestId, "obreros_guardar_response"))
+			return;
+
+		try
+		{
+			var nombre = ReadRequiredString(root, "nombre");
+			var apellido = root.TryGetProperty("apellido", out var apellidoProp) && apellidoProp.ValueKind == JsonValueKind.String
+				? (apellidoProp.GetString()?.Trim() ?? string.Empty)
+				: string.Empty;
+			var documento = ReadRequiredString(root, "documento");
+			var telefono = root.TryGetProperty("telefono", out var telefonoProp) && telefonoProp.ValueKind == JsonValueKind.String
+				? (telefonoProp.GetString()?.Trim() ?? string.Empty)
+				: string.Empty;
+			var fechaContratacion = root.TryGetProperty("fecha_contratacion", out var fechaProp) && fechaProp.ValueKind == JsonValueKind.String
+				? (fechaProp.GetString()?.Trim() ?? string.Empty)
+				: string.Empty;
+			var idObrero = TryReadPositiveInt(root, "id_obrero");
+
+			if (nombre.Length > 150)
+				throw new InvalidOperationException("El nombre es demasiado largo.");
+			if (apellido.Length > 100)
+				throw new InvalidOperationException("El apellido es demasiado largo.");
+			if (documento.Length > 30)
+				throw new InvalidOperationException("El documento es demasiado largo.");
+			if (telefono.Length > 30)
+				throw new InvalidOperationException("El teléfono es demasiado largo.");
+
+			string? fechaDb = null;
+			if (!string.IsNullOrWhiteSpace(fechaContratacion))
+			{
+				if (!DateTime.TryParseExact(fechaContratacion, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
+					throw new InvalidOperationException("Formato de fecha inválido.");
+				fechaDb = fechaContratacion;
+			}
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+			await using var tx = await conn.BeginTransactionAsync();
+
+			if (idObrero.HasValue)
+			{
+				await using (var existsCmd = conn.CreateCommand())
+				{
+					existsCmd.Transaction = tx;
+					existsCmd.CommandText = "SELECT id_obrero FROM obreros WHERE id_obrero = @idObrero LIMIT 1";
+					existsCmd.Parameters.AddWithValue("@idObrero", idObrero.Value);
+					var exists = await existsCmd.ExecuteScalarAsync();
+					if (exists is null)
+						throw new InvalidOperationException("El obrero indicado no existe.");
+				}
+
+				await using (var dupCmd = conn.CreateCommand())
+				{
+					dupCmd.Transaction = tx;
+					dupCmd.CommandText = "SELECT id_obrero FROM obreros WHERE documento = @documento AND id_obrero <> @idObrero LIMIT 1";
+					dupCmd.Parameters.AddWithValue("@documento", documento);
+					dupCmd.Parameters.AddWithValue("@idObrero", idObrero.Value);
+					var dup = await dupCmd.ExecuteScalarAsync();
+					if (dup is not null)
+						throw new InvalidOperationException("Ya existe otro obrero con ese documento.");
+				}
+
+				await using var updateCmd = conn.CreateCommand();
+				updateCmd.Transaction = tx;
+				updateCmd.CommandText =
+					"UPDATE obreros SET nombre = @nombre, apellido = @apellido, documento = @documento, telefono = @telefono, fecha_contratacion = @fecha WHERE id_obrero = @idObrero";
+				updateCmd.Parameters.AddWithValue("@nombre", nombre);
+				updateCmd.Parameters.AddWithValue("@apellido", string.IsNullOrWhiteSpace(apellido) ? DBNull.Value : apellido);
+				updateCmd.Parameters.AddWithValue("@documento", documento);
+				updateCmd.Parameters.AddWithValue("@telefono", string.IsNullOrWhiteSpace(telefono) ? DBNull.Value : telefono);
+				updateCmd.Parameters.AddWithValue("@fecha", fechaDb is null ? DBNull.Value : fechaDb);
+				updateCmd.Parameters.AddWithValue("@idObrero", idObrero.Value);
+				await updateCmd.ExecuteNonQueryAsync();
+
+				await tx.CommitAsync();
+
+				PostToJs(new
+				{
+					type = "obreros_guardar_response",
+					requestId,
+					success = true,
+					message = "Obrero actualizado correctamente."
+				});
+				return;
+			}
+
+			await using (var dupCmd = conn.CreateCommand())
+			{
+				dupCmd.Transaction = tx;
+				dupCmd.CommandText = "SELECT id_obrero FROM obreros WHERE documento = @documento LIMIT 1";
+				dupCmd.Parameters.AddWithValue("@documento", documento);
+				var dup = await dupCmd.ExecuteScalarAsync();
+				if (dup is not null)
+					throw new InvalidOperationException("Ya existe un obrero con ese documento.");
+			}
+
+			await using var insertCmd = conn.CreateCommand();
+			insertCmd.Transaction = tx;
+			insertCmd.CommandText =
+				"INSERT INTO obreros (nombre, apellido, documento, telefono, fecha_contratacion, activo) VALUES (@nombre, @apellido, @documento, @telefono, @fecha, 1)";
+			insertCmd.Parameters.AddWithValue("@nombre", nombre);
+			insertCmd.Parameters.AddWithValue("@apellido", string.IsNullOrWhiteSpace(apellido) ? DBNull.Value : apellido);
+			insertCmd.Parameters.AddWithValue("@documento", documento);
+			insertCmd.Parameters.AddWithValue("@telefono", string.IsNullOrWhiteSpace(telefono) ? DBNull.Value : telefono);
+			insertCmd.Parameters.AddWithValue("@fecha", fechaDb is null ? DBNull.Value : fechaDb);
+			await insertCmd.ExecuteNonQueryAsync();
+
+			await tx.CommitAsync();
+
+			PostToJs(new
+			{
+				type = "obreros_guardar_response",
+				requestId,
+				success = true,
+				message = "Obrero registrado correctamente."
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "obreros_guardar_response", requestId, success = false, error = ex.Message });
+		}
+		catch (MySqlException ex) when (ex.Number == 1062)
+		{
+			PostToJs(new { type = "obreros_guardar_response", requestId, success = false, error = "Ya existe un obrero con ese documento." });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Obreros guardar error] {ex}");
+			PostToJs(new { type = "obreros_guardar_response", requestId, success = false, error = "No se pudo guardar el obrero." });
+		}
+	}
+
+	private async Task HandleEliminarObreroAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAdministrador(requestId, "obreros_eliminar_response"))
+			return;
+
+		try
+		{
+			var idObrero = ReadPositiveInt(root, "id_obrero");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText = "UPDATE obreros SET activo = 0 WHERE id_obrero = @idObrero";
+			cmd.Parameters.AddWithValue("@idObrero", idObrero);
+			var affected = await cmd.ExecuteNonQueryAsync();
+
+			if (affected == 0)
+				throw new InvalidOperationException("El obrero indicado no existe.");
+
+			PostToJs(new
+			{
+				type = "obreros_eliminar_response",
+				requestId,
+				success = true,
+				message = "Obrero eliminado correctamente."
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "obreros_eliminar_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Obreros eliminar error] {ex}");
+			PostToJs(new { type = "obreros_eliminar_response", requestId, success = false, error = "No se pudo eliminar el obrero." });
+		}
+	}
+
 	private async Task HandleGuardarAsistenciaAsync(JsonElement root)
 	{
 		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
 			? requestIdProp.GetString() ?? string.Empty
 			: string.Empty;
+
+		if (!EnsureCapatazOAdmin(requestId, "asistencia_guardar_response"))
+			return;
 
 		try
 		{
@@ -977,6 +1317,34 @@ public sealed class MainWindow : Form
 		if (!string.Equals(_currentRol, "Administrador", StringComparison.Ordinal))
 		{
 			PostToJs(new { type = responseType, requestId, success = false, error = "No tenés permisos para gestionar usuarios." });
+			return false;
+		}
+
+		return true;
+	}
+
+	private bool EnsureAutenticado(string requestId, string responseType)
+	{
+		if (_currentUserId is null)
+		{
+			PostToJs(new { type = responseType, requestId, success = false, error = "Sesión no válida. Iniciá sesión nuevamente." });
+			return false;
+		}
+		return true;
+	}
+
+	private bool EnsureCapatazOAdmin(string requestId, string responseType)
+	{
+		if (_currentUserId is null)
+		{
+			PostToJs(new { type = responseType, requestId, success = false, error = "Sesión no válida. Iniciá sesión nuevamente." });
+			return false;
+		}
+
+		if (!string.Equals(_currentRol, "Administrador", StringComparison.Ordinal) &&
+		    !string.Equals(_currentRol, "Capataz", StringComparison.Ordinal))
+		{
+			PostToJs(new { type = responseType, requestId, success = false, error = "No tenés permisos para esta acción." });
 			return false;
 		}
 
@@ -1252,16 +1620,18 @@ public sealed class MainWindow : Form
 		return MapObra(reader);
 	}
 
-	private static async Task GuardarContratoAsync(MySqlConnection conn, int idObra, string nombreArchivo, byte[] archivo)
+	private static async Task GuardarContratoAsync(MySqlConnection conn, MySqlTransaction tx, int idObra, string nombreArchivo, byte[] archivo)
 	{
 		await using (var deleteCmd = conn.CreateCommand())
 		{
+			deleteCmd.Transaction = tx;
 			deleteCmd.CommandText = "DELETE FROM contratos WHERE id_obra = @idObra";
 			deleteCmd.Parameters.AddWithValue("@idObra", idObra);
 			await deleteCmd.ExecuteNonQueryAsync();
 		}
 
 		await using var insertCmd = conn.CreateCommand();
+		insertCmd.Transaction = tx;
 		insertCmd.CommandText =
 			"INSERT INTO contratos (id_obra, archivo, nombre_archivo, fecha_subida) VALUES (@idObra, @archivo, @nombreArchivo, CURDATE())";
 		insertCmd.Parameters.AddWithValue("@idObra", idObra);
@@ -1415,19 +1785,55 @@ public sealed class MainWindow : Form
 		return null;
 	}
 
-	private static string? ResolveHtmlPath(string fileName)
+	private void OnWebResourceRequested(object? sender, CoreWebView2WebResourceRequestedEventArgs args)
 	{
-		var directPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "web-ui", fileName));
-		if (File.Exists(directPath)) return directPath;
+		var uri = new Uri(args.Request.Uri);
+		if (!uri.Host.Equals("portico.desktop", StringComparison.OrdinalIgnoreCase))
+			return;
 
-		var dir = new DirectoryInfo(AppContext.BaseDirectory);
-		while (dir is not null)
+		var path = uri.AbsolutePath.TrimStart('/');
+		if (string.IsNullOrEmpty(path))
+			path = "Login.html";
+
+		var resourceName = MapPathToResourceName(path);
+		var stream = GetType().Assembly.GetManifestResourceStream(resourceName);
+		if (stream is null)
 		{
-			var candidate = Path.Combine(dir.FullName, "web-ui", fileName);
-			if (File.Exists(candidate)) return candidate;
-			dir = dir.Parent;
+			args.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(
+				new MemoryStream(0), 404, "Not Found", "Content-Type: text/plain");
+			return;
 		}
-		return null;
+
+		var mime = GetMimeTypeForWebAsset(path);
+		args.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(
+			stream, 200, "OK", $"Content-Type: {mime}");
+	}
+
+	private static string MapPathToResourceName(string path)
+	{
+		return "webui." + path.Replace('/', '.').Replace('\\', '.');
+	}
+
+	private static string GetMimeTypeForWebAsset(string path)
+	{
+		var extension = Path.GetExtension(path).ToLowerInvariant();
+		return extension switch
+		{
+			".html" => "text/html",
+			".css" => "text/css",
+			".js" => "application/javascript",
+			".json" => "application/json",
+			".png" => "image/png",
+			".jpg" => "image/jpeg",
+			".jpeg" => "image/jpeg",
+			".gif" => "image/gif",
+			".svg" => "image/svg+xml",
+			".ico" => "image/x-icon",
+			".woff2" => "font/woff2",
+			".woff" => "font/woff",
+			".ttf" => "font/ttf",
+			_ => "application/octet-stream"
+		};
 	}
 
 	private void ShowError(string message)

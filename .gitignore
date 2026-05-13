@@ -1,6 +1,9 @@
 # Build outputs
 desktop-csharp/bin/
 desktop-csharp/obj/
+desktop-csharp/**/publish/
+artifacts/
+TestResults/
 
 # Visual Studio
 .vs/
@@ -9,11 +12,21 @@ desktop-csharp/obj/
 *.userosscache
 *.sln.docstates
 
+# VS Code local settings (opcional)
+.vscode/*
+!.vscode/extensions.json
+
 # WebView2 cache
 *.WebView2/
 
 # Environment / credentials
 .env
+.env.*
+!.env.example
+
+# Logs / temp
+*.log
+*.tmp
 
 # Herramientas / scripts temporales de dev
 tools/
