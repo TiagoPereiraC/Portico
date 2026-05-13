@@ -1,7 +1,7 @@
 # Aplicación Desktop ➔ Portico.
 
 ## Tecnologias
-- **Frontend:** HTML, CSS (?)
+- **Frontend:** HTML, CSS, JS
 - **Backend:** PHP
 - **Base de datos:** MySQL
 
