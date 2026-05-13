@@ -1,7 +1,9 @@
-CREATE DATABASE IF NOT EXISTS portico;
+CREATE DATABASE IF NOT EXISTS portico
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
 USE portico;
 
-CREATE TABLE usuarios (
+CREATE TABLE IF NOT EXISTS usuarios (
     id_usuario INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     usuario VARCHAR(50) NOT NULL UNIQUE,
@@ -11,7 +13,7 @@ CREATE TABLE usuarios (
     activo BOOLEAN DEFAULT 1
 );
 
-CREATE TABLE obras (
+CREATE TABLE IF NOT EXISTS obras (
     id_obra INT AUTO_INCREMENT PRIMARY KEY,
     numero_contrata VARCHAR(50) NOT NULL UNIQUE,
     nombre VARCHAR(150) NOT NULL,
@@ -24,7 +26,7 @@ CREATE TABLE obras (
     activo BOOLEAN DEFAULT 1
 );
 
-CREATE TABLE obreros (
+CREATE TABLE IF NOT EXISTS obreros (
     id_obrero INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(150) NOT NULL,
     apellido VARCHAR(100),
@@ -34,7 +36,16 @@ CREATE TABLE obreros (
     activo BOOLEAN DEFAULT 1
 );
 
-CREATE TABLE registros (
+CREATE TABLE IF NOT EXISTS contrato_obrero (
+    id_contrato_obrero INT AUTO_INCREMENT PRIMARY KEY,
+    archivo LONGBLOB NOT NULL,
+    id_obrero INT NOT NULL,
+
+    FOREIGN KEY (id_obrero) REFERENCES obreros(id_obrero)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS registros (
     id_registro INT AUTO_INCREMENT PRIMARY KEY,
     fecha DATE NOT NULL,
     hora_entrada TIME NOT NULL,
@@ -55,7 +66,7 @@ CREATE TABLE registros (
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
-CREATE TABLE contratos (
+CREATE TABLE IF NOT EXISTS contratos (
     id_contrato INT AUTO_INCREMENT PRIMARY KEY,
     id_obra INT NOT NULL,
     archivo LONGBLOB NOT NULL,
@@ -66,7 +77,7 @@ CREATE TABLE contratos (
         ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE TABLE recursos (
+CREATE TABLE IF NOT EXISTS recursos (
     id_recurso INT AUTO_INCREMENT PRIMARY KEY,
     id_obra INT NOT NULL,
     id_registro INT NULL,
@@ -83,7 +94,38 @@ CREATE TABLE recursos (
         ON UPDATE CASCADE ON DELETE SET NULL
 );
 
-CREATE TABLE intentos_login (
+CREATE TABLE IF NOT EXISTS maquinaria (
+    id_maquinaria INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(150) NOT NULL,
+    marca VARCHAR(100)
+);
+
+CREATE TABLE IF NOT EXISTS obra_maquinaria (
+    id_obra_maquinaria INT AUTO_INCREMENT PRIMARY KEY,
+    id_obra INT NOT NULL,
+    id_maquinaria INT NOT NULL,
+    fecha_asignacion DATE,
+    fecha_retiro DATE,
+
+    FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    UNIQUE KEY uq_obra_maquinaria (id_obra, id_maquinaria, fecha_asignacion)
+);
+
+CREATE TABLE IF NOT EXISTS certificado (
+    id_certificado INT AUTO_INCREMENT PRIMARY KEY,
+    archivo LONGBLOB NOT NULL,
+    id_obra_maquinaria INT NOT NULL,
+
+    FOREIGN KEY (id_obra_maquinaria) REFERENCES obra_maquinaria(id_obra_maquinaria)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS intentos_login (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL,
     ip_address VARCHAR(45) NOT NULL,
