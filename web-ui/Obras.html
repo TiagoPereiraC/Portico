@@ -129,6 +129,137 @@
                     </div>
                 </div>
 
+                <div
+                    id="obraDetailModal"
+                    class="detail-modal hidden"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="detailModalTitle"
+                >
+                    <div class="detail-panel">
+                        <div class="detail-header">
+                            <div>
+                                <h2 id="detailModalTitle">Detalle de obra</h2>
+                                <span class="detail-contrata" id="detailContrata"></span>
+                                <span class="detail-status" id="detailStatus"></span>
+                            </div>
+                            <button
+                                type="button"
+                                class="detail-close"
+                                id="detailClose"
+                                aria-label="Cerrar detalle"
+                            >
+                                <i class="fas fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <div class="detail-body" id="detailBody">
+                            <div class="detail-section">
+                                <h3><i class="fas fa-circle-info"></i> Información general</h3>
+                                <div class="detail-grid" id="detailInfo"></div>
+                            </div>
+
+                            <div class="detail-section">
+                                <h3><i class="fas fa-boxes-stacked"></i> Materiales usados</h3>
+                                <div class="detail-table-wrap" id="detailMaterialesWrap">
+                                    <table class="detail-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Material</th>
+                                                <th>Cantidad total</th>
+                                                <th>Costo total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="detailMaterialesBody"></tbody>
+                                    </table>
+                                </div>
+                                <p class="detail-empty" id="detailMaterialesEmpty">Sin materiales registrados.</p>
+                            </div>
+
+                            <div class="detail-section">
+                                <h3><i class="fas fa-screwdriver-wrench"></i> Herramientas usadas</h3>
+                                <div class="detail-table-wrap" id="detailHerramientasWrap">
+                                    <table class="detail-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Herramienta</th>
+                                                <th>Cantidad total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="detailHerramientasBody"></tbody>
+                                    </table>
+                                </div>
+                                <p class="detail-empty" id="detailHerramientasEmpty">Sin herramientas registradas.</p>
+                            </div>
+
+                            <div class="detail-section">
+                                <h3><i class="fas fa-helmet-safety"></i> Obreros</h3>
+                                <div class="detail-table-wrap" id="detailObrerosWrap">
+                                    <table class="detail-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Nombre</th>
+                                                <th>Horas trabajadas</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="detailObrerosBody"></tbody>
+                                    </table>
+                                </div>
+                                <p class="detail-empty" id="detailObrerosEmpty">Sin obreros registrados.</p>
+                            </div>
+
+                            <div class="detail-section">
+                                <h3><i class="fas fa-truck-monster"></i> Maquinaria</h3>
+                                <div class="detail-table-wrap" id="detailMaquinariaWrap">
+                                    <table class="detail-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Maquinaria</th>
+                                                <th>Marca</th>
+                                                <th>Asignación</th>
+                                                <th>Retiro</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="detailMaquinariaBody"></tbody>
+                                    </table>
+                                </div>
+                                <p class="detail-empty" id="detailMaquinariaEmpty">Sin maquinaria asignada.</p>
+                            </div>
+                        </div>
+
+                        <div class="detail-actions">
+                            <button
+                                type="button"
+                                class="btn-save"
+                                id="detailBtnToggleStatus"
+                            >
+                                <i class="fas fa-power-off"></i> <span id="detailToggleStatusText">Estado</span>
+                            </button>
+                            <button
+                                type="button"
+                                class="btn-secondary"
+                                id="detailBtnEdit"
+                            >
+                                <i class="fas fa-pen"></i> Editar
+                            </button>
+                            <button
+                                type="button"
+                                class="btn-secondary"
+                                id="detailBtnDownload"
+                            >
+                                <i class="fas fa-download"></i> Descargar contrato
+                            </button>
+                            <button
+                                type="button"
+                                class="btn-save"
+                                id="detailBtnDelete"
+                            >
+                                <i class="fas fa-trash"></i> Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="layout-grid">
                     <section class="editor-panel">
                         <div class="panel-head">
@@ -232,12 +363,21 @@
 
                             <div class="field file-field">
                                 <label for="contrato_archivo">Contrato</label>
-                                <input
-                                    type="file"
-                                    id="contrato_archivo"
-                                    name="contrato_archivo"
-                                    accept=".pdf,.doc,.docx"
-                                />
+                                <div class="file-upload-wrap">
+                                    <label class="file-upload-btn" for="contrato_archivo">
+                                        <i class="fas fa-cloud-arrow-up"></i>
+                                        <span>Seleccionar archivo</span>
+                                    </label>
+                                    <span class="file-upload-name" id="contratoNombre">
+                                        Ningún archivo seleccionado
+                                    </span>
+                                    <input
+                                        type="file"
+                                        id="contrato_archivo"
+                                        name="contrato_archivo"
+                                        accept=".pdf,.doc,.docx"
+                                    />
+                                </div>
                                 <p class="field-note" id="contratoEstado">
                                     Sin contrato cargado.
                                 </p>

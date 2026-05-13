@@ -4,6 +4,7 @@ const btnGuardar = document.getElementById("btnGuardar");
 const btnBack = document.querySelector(".btn-back");
 const contratoInput = document.getElementById("contrato_archivo");
 const contratoEstado = document.getElementById("contratoEstado");
+const contratoNombre = document.getElementById("contratoNombre");
 const obrasTableBody = document.getElementById("obrasTableBody");
 const resultsCount = document.getElementById("resultsCount");
 const tableWrap = document.getElementById("tableWrap");
@@ -26,6 +27,29 @@ const confirmTitle = document.getElementById("confirmTitle");
 const confirmMessage = document.getElementById("confirmMessage");
 const confirmCancel = document.getElementById("confirmCancel");
 const confirmAccept = document.getElementById("confirmAccept");
+const obraDetailModal = document.getElementById("obraDetailModal");
+const detailClose = document.getElementById("detailClose");
+const detailModalTitle = document.getElementById("detailModalTitle");
+const detailContrata = document.getElementById("detailContrata");
+const detailStatus = document.getElementById("detailStatus");
+const detailInfo = document.getElementById("detailInfo");
+const detailMaterialesWrap = document.getElementById("detailMaterialesWrap");
+const detailMaterialesBody = document.getElementById("detailMaterialesBody");
+const detailMaterialesEmpty = document.getElementById("detailMaterialesEmpty");
+const detailHerramientasWrap = document.getElementById("detailHerramientasWrap");
+const detailHerramientasBody = document.getElementById("detailHerramientasBody");
+const detailHerramientasEmpty = document.getElementById("detailHerramientasEmpty");
+const detailObrerosWrap = document.getElementById("detailObrerosWrap");
+const detailObrerosBody = document.getElementById("detailObrerosBody");
+const detailObrerosEmpty = document.getElementById("detailObrerosEmpty");
+const detailMaquinariaWrap = document.getElementById("detailMaquinariaWrap");
+const detailMaquinariaBody = document.getElementById("detailMaquinariaBody");
+const detailMaquinariaEmpty = document.getElementById("detailMaquinariaEmpty");
+const detailBtnEdit = document.getElementById("detailBtnEdit");
+const detailBtnDownload = document.getElementById("detailBtnDownload");
+const detailBtnDelete = document.getElementById("detailBtnDelete");
+const detailBtnToggleStatus = document.getElementById("detailBtnToggleStatus");
+const detailToggleStatusText = document.getElementById("detailToggleStatusText");
 const isDesktopWebView = Boolean(window.chrome?.webview);
 
 function resolveApiBase() {
@@ -115,6 +139,18 @@ filterEstadoObras.addEventListener("change", (event) => {
   });
 });
 
+detailClose.addEventListener("click", cerrarDetalle);
+obraDetailModal.addEventListener("click", (event) => {
+  if (event.target === obraDetailModal) {
+    cerrarDetalle();
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !obraDetailModal.classList.contains("hidden")) {
+    cerrarDetalle();
+  }
+});
+
 obraForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -153,6 +189,11 @@ document.addEventListener("click", async (event) => {
 
   const idObra = Number.parseInt(button.dataset.id, 10);
   if (!idObra) {
+    return;
+  }
+
+  if (button.dataset.action === "view") {
+    abrirDetalle(idObra);
     return;
   }
 
@@ -535,6 +576,7 @@ function renderObras() {
 
   obras.forEach((obra) => {
     const row = document.createElement("tr");
+    row.dataset.id = obra.id_obra;
     row.innerHTML = `
       <td>${escapeHtml(obra.numero_contrata)}</td>
       <td>
@@ -547,18 +589,19 @@ function renderObras() {
       <td>${formatDate(obra.fecha_fin)}</td>
       <td>
         <div class="table-actions">
-          <button type="button" class="action-btn download" data-action="download" data-id="${obra.id_obra}" ${obra.contrato_nombre_archivo ? "" : "disabled"} title="Descargar contrato">
-            <i class="fas fa-download"></i>
-          </button>
-          <button type="button" class="action-btn edit" data-action="edit" data-id="${obra.id_obra}">
-            <i class="fas fa-pen"></i>
-          </button>
-          <button type="button" class="action-btn delete" data-action="delete" data-id="${obra.id_obra}">
-            <i class="fas fa-trash"></i>
+          <button type="button" class="action-btn edit" data-action="view" data-id="${obra.id_obra}" title="Ver detalle">
+            <i class="fas fa-eye"></i>
           </button>
         </div>
       </td>
     `;
+    row.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-action]");
+      if (button) {
+        return;
+      }
+      abrirDetalle(obra.id_obra);
+    });
     obrasTableBody.appendChild(row);
   });
 
@@ -669,7 +712,8 @@ function readFileAsDataUrl(file) {
 function actualizarEstadoContratoSeleccionado() {
   const file = contratoInput.files?.[0];
   if (file) {
-    contratoEstado.textContent = `Archivo seleccionado: ${file.name}`;
+    contratoNombre.textContent = file.name;
+    contratoEstado.textContent = "Archivo listo para subir.";
     return;
   }
 
@@ -678,9 +722,13 @@ function actualizarEstadoContratoSeleccionado() {
 }
 
 function actualizarEstadoContratoActual(nombreArchivo) {
-  contratoEstado.textContent = nombreArchivo
-    ? `Contrato actual: ${nombreArchivo}`
-    : "Sin contrato cargado.";
+  if (nombreArchivo) {
+    contratoNombre.textContent = nombreArchivo;
+    contratoEstado.textContent = "Contrato cargado actualmente.";
+  } else {
+    contratoNombre.textContent = "Ningún archivo seleccionado";
+    contratoEstado.textContent = "Sin contrato cargado.";
+  }
 }
 
 function triggerBrowserDownload(blob, fileName) {
@@ -750,6 +798,264 @@ function cerrarConfirmacion() {
 
 function ocultarFeedback() {
   feedbackPanel.classList.add("hidden");
+}
+
+let obraDetalleActual = null;
+
+function abrirDetalle(idObra) {
+  obraDetalleActual = idObra;
+  cargarDetalleObra(idObra).catch((error) => {
+    console.error(error);
+    setFeedback(error.message || "No se pudo cargar el detalle de la obra.", "error");
+  });
+}
+
+function cerrarDetalle() {
+  obraDetailModal.classList.add("hidden");
+  obraDetalleActual = null;
+  detailBtnEdit.onclick = null;
+  detailBtnDownload.onclick = null;
+  detailBtnDelete.onclick = null;
+}
+
+async function cargarDetalleObra(idObra) {
+  let data;
+
+  if (apiBase) {
+    data = await fetchJson(`${apiBase}/Obras.php?id_obra=${encodeURIComponent(idObra)}&detalle=1`);
+  } else {
+    data = await sendDesktopRequest(
+      "obras_detalle",
+      { id_obra: idObra },
+      "obras_detalle_response",
+    );
+  }
+
+  renderDetalle(data);
+  obraDetailModal.classList.remove("hidden");
+}
+
+function renderDetalle(data) {
+  const obra = data.obra || {};
+  const materiales = data.materiales || [];
+  const herramientas = data.herramientas || [];
+  const obreros = data.obreros || [];
+  const maquinaria = data.maquinaria || [];
+
+  detailModalTitle.textContent = obra.nombre || "Detalle de obra";
+  detailContrata.textContent = obra.numero_contrata || "";
+  detailStatus.textContent = obra.activo === 1 || obra.activo === "1" ? "Activa" : "Inactiva";
+  detailStatus.className = "detail-status" + (obra.activo === 1 || obra.activo === "1" ? "" : " inactive");
+
+  detailInfo.innerHTML = `
+    <div class="detail-item">
+      <span class="detail-label">Cliente</span>
+      <span class="detail-value">${escapeHtml(obra.nombre_cliente || "—")}</span>
+    </div>
+    <div class="detail-item">
+      <span class="detail-label">Teléfono</span>
+      <span class="detail-value">${escapeHtml(obra.telefono_cliente || "—")}</span>
+    </div>
+    <div class="detail-item">
+      <span class="detail-label">Dirección</span>
+      <span class="detail-value">${escapeHtml(obra.direccion || "—")}</span>
+    </div>
+    <div class="detail-item">
+      <span class="detail-label">Inicio</span>
+      <span class="detail-value">${formatDate(obra.fecha_inicio)}</span>
+    </div>
+    <div class="detail-item">
+      <span class="detail-label">Fin</span>
+      <span class="detail-value">${formatDate(obra.fecha_fin)}</span>
+    </div>
+    <div class="detail-item full">
+      <span class="detail-label">Descripción</span>
+      <span class="detail-value">${escapeHtml(obra.descripcion || "—")}</span>
+    </div>
+    <div class="detail-item full">
+      <span class="detail-label">Contrato</span>
+      <span class="detail-value">${escapeHtml(obra.contrato_nombre_archivo || "Sin contrato cargado")}</span>
+    </div>
+  `;
+
+  if (materiales.length) {
+    detailMaterialesWrap.classList.remove("hidden");
+    detailMaterialesEmpty.classList.add("hidden");
+    detailMaterialesBody.innerHTML = materiales.map((m) => `
+      <tr>
+        <td>${escapeHtml(m.nombre)}</td>
+        <td>${Number(m.cantidad_total).toLocaleString("es-UY")}</td>
+        <td>$ ${Number(m.costo_total || 0).toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+      </tr>
+    `).join("");
+  } else {
+    detailMaterialesWrap.classList.add("hidden");
+    detailMaterialesEmpty.classList.remove("hidden");
+    detailMaterialesBody.innerHTML = "";
+  }
+
+  if (herramientas.length) {
+    detailHerramientasWrap.classList.remove("hidden");
+    detailHerramientasEmpty.classList.add("hidden");
+    detailHerramientasBody.innerHTML = herramientas.map((h) => `
+      <tr>
+        <td>${escapeHtml(h.nombre)}</td>
+        <td>${Number(h.cantidad_total).toLocaleString("es-UY")}</td>
+      </tr>
+    `).join("");
+  } else {
+    detailHerramientasWrap.classList.add("hidden");
+    detailHerramientasEmpty.classList.remove("hidden");
+    detailHerramientasBody.innerHTML = "";
+  }
+
+  if (obreros.length) {
+    detailObrerosWrap.classList.remove("hidden");
+    detailObrerosEmpty.classList.add("hidden");
+    detailObrerosBody.innerHTML = obreros.map((o) => `
+      <tr>
+        <td>${escapeHtml(`${o.apellido || ""}, ${o.nombre || ""}`.trim())}</td>
+        <td>${Number(o.horas_totales || 0).toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+      </tr>
+    `).join("");
+  } else {
+    detailObrerosWrap.classList.add("hidden");
+    detailObrerosEmpty.classList.remove("hidden");
+    detailObrerosBody.innerHTML = "";
+  }
+
+  if (maquinaria.length) {
+    detailMaquinariaWrap.classList.remove("hidden");
+    detailMaquinariaEmpty.classList.add("hidden");
+    detailMaquinariaBody.innerHTML = maquinaria.map((m) => `
+      <tr>
+        <td>${escapeHtml(m.nombre)}</td>
+        <td>${escapeHtml(m.marca || "—")}</td>
+        <td>${formatDate(m.fecha_asignacion)}</td>
+        <td>${formatDate(m.fecha_retiro)}</td>
+      </tr>
+    `).join("");
+  } else {
+    detailMaquinariaWrap.classList.add("hidden");
+    detailMaquinariaEmpty.classList.remove("hidden");
+    detailMaquinariaBody.innerHTML = "";
+  }
+
+  detailBtnEdit.disabled = false;
+  detailBtnDownload.disabled = !obra.contrato_nombre_archivo;
+  detailBtnDelete.disabled = false;
+  detailBtnToggleStatus.disabled = false;
+
+  const esActiva = obra.activo === 1 || obra.activo === "1";
+  detailToggleStatusText.textContent = esActiva ? "Finalizar Obra" : "Activar Obra";
+  detailBtnToggleStatus.className = esActiva ? "btn-save" : "btn-secondary";
+
+  detailBtnToggleStatus.onclick = (event) => {
+    event.stopPropagation();
+    cerrarDetalle();
+    const nuevoEstado = esActiva ? 0 : 1;
+    const accion = esActiva ? "finalizar" : "activar";
+    
+    abrirConfirmacion({
+      title: `Confirmar ${accion} de obra`,
+      message: `¿Estás seguro de que querés ${accion} la obra "${obra.nombre}"?`,
+      acceptLabel: esActiva ? "Finalizar" : "Activar",
+      onAccept: async () => {
+        try {
+          await cambiarEstadoObra(obra.id_obra, nuevoEstado);
+          cerrarDetalle();
+          await cargarObras();
+          setFeedback(`Obra ${accion}da correctamente.`, "success");
+        } catch (error) {
+          console.error(error);
+          setFeedback(error.message || "No se pudo cambiar el estado de la obra.", "error");
+        }
+      },
+    });
+  };
+
+  detailBtnEdit.onclick = (event) => {
+    event.stopPropagation();
+    cerrarDetalle();
+    const obraLocal = obras.find((item) => item.id_obra === obra.id_obra);
+    if (obraLocal) {
+      abrirConfirmacion({
+        title: "Confirmar edición",
+        message: `¿Querés cargar "${obraLocal.nombre}" en el formulario para editarla?`,
+        acceptLabel: "Editar",
+        onAccept: async () => {
+          fillForm(obraLocal);
+          setFeedback(`Editando ${obraLocal.nombre}.`, "info");
+        },
+      });
+    }
+  };
+
+  detailBtnDownload.onclick = async (event) => {
+    event.stopPropagation();
+    try {
+      await descargarContrato(obra.id_obra);
+    } catch (error) {
+      console.error(error);
+      setFeedback(error.message || "No se pudo descargar el contrato.", "error");
+    }
+  };
+
+  detailBtnDelete.onclick = (event) => {
+    event.stopPropagation();
+    cerrarDetalle();
+    const obraLocal = obras.find((item) => item.id_obra === obra.id_obra);
+    if (!obraLocal) {
+      return;
+    }
+    abrirConfirmacion({
+      title: "Confirmar eliminación",
+      message: `¿Eliminar la obra "${obraLocal.nombre}"? Esta acción no se puede deshacer.`,
+      acceptLabel: "Eliminar",
+      onAccept: async () => {
+        try {
+          if (apiBase && !csrfToken) {
+            csrfToken = await obtenerCsrf();
+          }
+          const data = await eliminarObra(obra.id_obra);
+          if (obraEnEdicion === obra.id_obra) {
+            resetForm();
+          }
+          await cargarObras();
+          setFeedback(data.message || "Obra eliminada correctamente.", "success");
+        } catch (error) {
+          console.error(error);
+          setFeedback(error.message || "No se pudo eliminar la obra.", "error");
+        }
+      },
+    });
+  };
+}
+
+async function cambiarEstadoObra(idObra, activo) {
+  if (apiBase) {
+    const response = await fetch(`${apiBase}/Obras.php`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken,
+      },
+      credentials: "include",
+      body: JSON.stringify({ id_obra: idObra, activo: activo, accion: "cambiar_estado" }),
+    });
+
+    const data = await parseJsonResponse(response, "No se pudo cambiar el estado de la obra.");
+    if (!response.ok) {
+      throw new Error(data.error || "No se pudo cambiar el estado de la obra.");
+    }
+    return data;
+  }
+
+  return sendDesktopRequest(
+    "obras_cambiar_estado",
+    { id_obra: idObra, activo: activo },
+    "obras_cambiar_estado_response",
+  );
 }
 
 function formatDate(value) {

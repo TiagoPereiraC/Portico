@@ -61,6 +61,9 @@
         }
     }
 
+    // Ocultar la página inmediatamente para evitar el parpadeo de contenido protegido
+    document.documentElement.style.visibility = 'hidden';
+
     // Interceptar clicks en cualquier enlace a Login.html (botón Salir)
     document.addEventListener('click', function (e) {
         var link = e.target.closest('a[href="Login.html"]');
@@ -69,16 +72,10 @@
         doLogout();
     });
 
-    const rolStored = sessionStorage.getItem('rol') || '';
-    const nombreStored = sessionStorage.getItem('nombre') || 'Usuario';
-
-    if (rolStored) {
-        applySession(rolStored, nombreStored);
-        return;
-    }
-
     if (!isHttp) {
-        window.location.replace('Login.html');
+        // En modo escritorio, el control de sesión suele ser manejado por la app contenedora
+        // pero mantenemos la visibilidad la cual será controlada por el cargador de la app
+        document.documentElement.style.visibility = 'visible';
         return;
     }
 
@@ -90,7 +87,10 @@
                 sessionStorage.setItem('user_id', String(data.user_id));
                 sessionStorage.setItem('rol', data.rol);
                 sessionStorage.setItem('nombre', data.nombre);
-                applySession(data.rol, data.nombre);
+                
+                if (applySession(data.rol, data.nombre)) {
+                    document.documentElement.style.visibility = 'visible';
+                }
             } else {
                 window.location.replace('Login.html');
             }

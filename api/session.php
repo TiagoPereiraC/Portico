@@ -19,19 +19,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 iniciarSesion();
 
 $autenticado = !empty($_SESSION['user_id']);
+$respuesta = [
+    'autenticado' => $autenticado,
+    'user_id'     => $autenticado ? (int) $_SESSION['user_id'] : null,
+    'nombre'      => $autenticado ? ($_SESSION['nombre'] ?? '') : '',
+    'rol'         => $autenticado ? ($_SESSION['rol'] ?? '') : '',
+];
 
-if ($autenticado) {
-    echo json_encode([
-        'autenticado' => true,
-        'user_id'     => (int) $_SESSION['user_id'],
-        'nombre'      => $_SESSION['nombre'] ?? '',
-        'rol'         => $_SESSION['rol'] ?? '',
-    ]);
-} else {
-    echo json_encode([
-        'autenticado' => false,
-        'user_id'     => null,
-        'nombre'      => '',
-        'rol'         => '',
-    ]);
-}
+session_write_close();
+
+echo json_encode($respuesta);

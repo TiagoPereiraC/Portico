@@ -128,3 +128,4 @@ git push -u origin nombre-de-tu-rama
 
 ToDo: 
 - Protección de sesiones en todas las paginas.
+- Sistema de logs visible únicamente para el Admin. 

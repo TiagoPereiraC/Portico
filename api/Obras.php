@@ -36,17 +36,30 @@ try {
                 responderDescargaContrato($pdo);
                 break;
             }
+            if (isset($_GET['detalle'])) {
+                responderDetalle($pdo);
+                break;
+            }
             responderListado($pdo);
             break;
 
         case 'POST':
+            validarCsrf();
+            $body = leerJson();
+            if (($body['accion'] ?? '') === 'cambiar_estado') {
+                if (!$esAdmin) {
+                    http_response_code(403);
+                    echo json_encode(['error' => 'No tenés permisos para gestionar obras.']);
+                    exit;
+                }
+                responderCambioEstado($pdo, $body);
+                break;
+            }
             if (!$esAdmin) {
                 http_response_code(403);
                 echo json_encode(['error' => 'No tenés permisos para gestionar obras.']);
                 exit;
             }
-            validarCsrf();
-            $body = leerJson();
             responderGuardado($pdo, $body);
             break;
 
@@ -85,6 +98,87 @@ try {
     error_log('Obras.php error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Error interno del servidor.']);
+}
+
+function responderDetalle(PDO $pdo): void
+{
+    $idObra = isset($_GET['id_obra']) ? (int) $_GET['id_obra'] : 0;
+    if ($idObra <= 0) {
+        throw new InvalidArgumentException('Debés indicar una obra válida.');
+    }
+
+    $obra = obtenerObra($pdo, $idObra);
+
+    $stmt = $pdo->prepare(
+        'SELECT nombre, SUM(cantidad) as cantidad_total, SUM(cantidad * COALESCE(precio_unitario, 0)) as costo_total
+         FROM recursos
+         WHERE id_obra = ? AND es_material = 1
+         GROUP BY nombre
+         ORDER BY nombre'
+    );
+    $stmt->execute([$idObra]);
+    $materiales = $stmt->fetchAll();
+
+    $stmt = $pdo->prepare(
+        'SELECT nombre, SUM(cantidad) as cantidad_total
+         FROM recursos
+         WHERE id_obra = ? AND es_material = 0
+         GROUP BY nombre
+         ORDER BY nombre'
+    );
+    $stmt->execute([$idObra]);
+    $herramientas = $stmt->fetchAll();
+
+    $stmt = $pdo->prepare(
+        'SELECT obr.id_obrero, obr.nombre, obr.apellido, SUM(reg.horas_trabajadas) as horas_totales
+         FROM registros reg
+         INNER JOIN obreros obr ON obr.id_obrero = reg.id_obrero
+         WHERE reg.id_obra = ?
+         GROUP BY obr.id_obrero, obr.nombre, obr.apellido
+         ORDER BY obr.apellido, obr.nombre'
+    );
+    $stmt->execute([$idObra]);
+    $obreros = $stmt->fetchAll();
+
+    $stmt = $pdo->prepare(
+        'SELECT m.nombre, m.marca, om.fecha_asignacion, om.fecha_retiro
+         FROM obra_maquinaria om
+         INNER JOIN maquinaria m ON m.id_maquinaria = om.id_maquinaria
+         WHERE om.id_obra = ?
+         ORDER BY om.fecha_asignacion DESC, m.nombre'
+    );
+    $stmt->execute([$idObra]);
+    $maquinaria = $stmt->fetchAll();
+
+    echo json_encode([
+        'obra' => $obra,
+        'materiales' => $materiales,
+        'herramientas' => $herramientas,
+        'obreros' => $obreros,
+        'maquinaria' => $maquinaria,
+    ]);
+}
+
+function responderCambioEstado(PDO $pdo, array $body): void
+{
+    $idObra = isset($body['id_obra']) ? (int) $body['id_obra'] : 0;
+    $activo = isset($body['activo']) ? (int) $body['activo'] : null;
+
+    if ($idObra <= 0 || $activo === null) {
+        throw new InvalidArgumentException('Debés indicar una obra válida y el estado deseado.');
+    }
+
+    $stmt = $pdo->prepare('UPDATE obras SET activo = ? WHERE id_obra = ?');
+    $stmt->execute([$activo, $idObra]);
+
+    if ($stmt->rowCount() === 0) {
+        throw new RuntimeException('No se pudo actualizar la obra o ya tenía ese estado.');
+    }
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Estado de la obra actualizado correctamente.',
+    ]);
 }
 
 function responderListado(PDO $pdo): void
