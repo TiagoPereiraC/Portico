@@ -27,9 +27,20 @@ const confirmMessage = document.getElementById("confirmMessage");
 const confirmCancel = document.getElementById("confirmCancel");
 const confirmAccept = document.getElementById("confirmAccept");
 const isDesktopWebView = Boolean(window.chrome?.webview);
-const apiBase = window.location.protocol.startsWith("http")
-  ? `${window.location.origin}/api`
-  : null;
+
+function resolveApiBase() {
+  if (!window.location.protocol.startsWith("http")) {
+    return null;
+  }
+  const path = window.location.pathname;
+  const idx = path.lastIndexOf("/web-ui/");
+  if (idx !== -1) {
+    return window.location.origin + path.substring(0, idx) + "/api";
+  }
+  return window.location.origin + "/api";
+}
+
+const apiBase = resolveApiBase();
 const MAX_CONTRATO_SIZE = 10 * 1024 * 1024;
 const OBRAS_POR_PAGINA = 10;
 

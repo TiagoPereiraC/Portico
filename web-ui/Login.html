@@ -67,6 +67,18 @@
             const btnLogin = document.getElementById("btn-login");
             const isBrowserHttp = window.location.protocol.startsWith("http");
 
+            function resolveApiBase() {
+                if (!isBrowserHttp) return null;
+                const path = window.location.pathname;
+                const idx = path.lastIndexOf("/web-ui/");
+                if (idx !== -1) {
+                    return window.location.origin + path.substring(0, idx) + "/api";
+                }
+                return window.location.origin + "/api";
+            }
+
+            const apiBase = resolveApiBase();
+
             // Recibe la respuesta de C# y actúa en consecuencia
             window.chrome?.webview?.addEventListener("message", function (e) {
                 const data =
@@ -121,14 +133,14 @@
                     return;
                 }
 
-                if (!isBrowserHttp) {
+                if (!isBrowserHttp || !apiBase) {
                     throw new Error(
                         "Abrí esta pantalla desde un servidor local PHP para iniciar sesión en navegador.",
                     );
                 }
 
                 const csrfResponse = await fetch(
-                    `${window.location.origin}/api/csrf.php`,
+                    `${apiBase}/csrf.php`,
                     {
                         credentials: "include",
                     },
@@ -146,7 +158,7 @@
                 }
 
                 const response = await fetch(
-                    `${window.location.origin}/api/login.php`,
+                    `${apiBase}/login.php`,
                     {
                         method: "POST",
                         headers: {

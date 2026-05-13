@@ -5,6 +5,18 @@
     let desktopListenerRegistered = false;
     let csrfTokenPromise = null;
 
+    function resolveApiBase() {
+        if (!isBrowserHttp) return null;
+        const path = global.location.pathname;
+        const idx = path.lastIndexOf('/web-ui/');
+        if (idx !== -1) {
+            return global.location.origin + path.substring(0, idx) + '/api';
+        }
+        return global.location.origin + '/api';
+    }
+
+    const apiBase = resolveApiBase();
+
     function registerDesktopListener() {
         if (!isDesktop || desktopListenerRegistered) {
             return;
@@ -56,7 +68,7 @@
         }
 
         if (!csrfTokenPromise) {
-            csrfTokenPromise = fetch(`${global.location.origin}/api/csrf.php`, {
+            csrfTokenPromise = fetch(`${apiBase}/csrf.php`, {
                 credentials: 'include'
             }).then(async function (response) {
                 const data = await parseJsonResponse(response, 'No se pudo obtener el token de seguridad.');
@@ -80,7 +92,7 @@
             throw new Error('Abrí esta pantalla desde un servidor local PHP para gestionar usuarios en navegador.');
         }
 
-        const url = new URL(`${global.location.origin}/api/usuarios.php`);
+        const url = new URL(`${apiBase}/usuarios.php`);
         if (query) {
             Object.entries(query).forEach(function ([key, value]) {
                 if (value !== undefined && value !== null && value !== '') {

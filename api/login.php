@@ -69,23 +69,23 @@ try {
     exit(json_encode(['error' => 'Servicio no disponible. Intente más tarde.']));
 }
 
-// 5 fallos por usuario en 15 min > bloquear ese usuario
+// 5 fallos por usuario en 5 min > bloquear ese usuario
 $stmt = $pdo->prepare(
     'SELECT COUNT(*) FROM intentos_login
      WHERE username = ? AND exitoso = 0
-     AND fecha > DATE_SUB(NOW(), INTERVAL 15 MINUTE)'
+     AND fecha > DATE_SUB(NOW(), INTERVAL 5 MINUTE)'
 );
 $stmt->execute([$username]);
 if ((int) $stmt->fetchColumn() >= 5) {
     http_response_code(429);
-    exit(json_encode(['error' => 'Cuenta bloqueada temporalmente. Intentá en 15 minutos.']));
+    exit(json_encode(['error' => 'Cuenta bloqueada temporalmente. Intentá en 5 minutos.']));
 }
 
-// 20 intentos por IP en 15 min > bloquear esa IP
+// 20 intentos por IP en 5 min > bloquear esa IP
 $stmt = $pdo->prepare(
     'SELECT COUNT(*) FROM intentos_login
      WHERE ip_address = ?
-     AND fecha > DATE_SUB(NOW(), INTERVAL 15 MINUTE)'
+     AND fecha > DATE_SUB(NOW(), INTERVAL 5 MINUTE)'
 );
 $stmt->execute([$ip]);
 if ((int) $stmt->fetchColumn() >= 20) {
