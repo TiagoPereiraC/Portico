@@ -445,7 +445,7 @@ main {
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: var(--text-dark);
+    color: var(--input-bg);
     margin-bottom: 6px;
 }
 
@@ -507,7 +507,7 @@ main {
 
 .file-upload-name {
     font-size: 13px;
-    color: var(--text-muted);
+    color: var(--text-dark);
     word-break: break-all;
     flex: 1;
     min-width: 0;

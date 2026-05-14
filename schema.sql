@@ -39,7 +39,9 @@ CREATE TABLE IF NOT EXISTS obreros (
 CREATE TABLE IF NOT EXISTS contrato_obrero (
     id_contrato_obrero INT AUTO_INCREMENT PRIMARY KEY,
     archivo LONGBLOB NOT NULL,
+    nombre_archivo VARCHAR(255),
     id_obrero INT NOT NULL,
+    fecha_vencimiento DATE,
 
     FOREIGN KEY (id_obrero) REFERENCES obreros(id_obrero)
         ON UPDATE CASCADE ON DELETE CASCADE

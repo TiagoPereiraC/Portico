@@ -26,6 +26,13 @@ const confirmTitle = document.getElementById("confirmTitle");
 const confirmMessage = document.getElementById("confirmMessage");
 const confirmCancel = document.getElementById("confirmCancel");
 const confirmAccept = document.getElementById("confirmAccept");
+const contratoModal = document.getElementById("contratoModal");
+const contratoModalTitle = document.getElementById("contratoModalTitle");
+const contratoForm = document.getElementById("contratoForm");
+const contratoCancel = document.getElementById("contratoCancel");
+const contratoAccept = document.getElementById("contratoAccept");
+const contratoFileInput = document.getElementById("contrato_file");
+const contratoFileName = document.getElementById("contratoFileName");
 
 const isDesktopWebView = Boolean(window.chrome?.webview);
 
@@ -78,6 +85,49 @@ confirmModal.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !confirmModal.classList.contains("hidden")) {
     cerrarConfirmacion();
+  }
+  if (event.key === "Escape" && !contratoModal.classList.contains("hidden")) {
+    cerrarContratoModal();
+  }
+});
+contratoCancel.addEventListener("click", cerrarContratoModal);
+contratoModal.addEventListener("click", (event) => {
+  if (event.target === contratoModal) {
+    cerrarContratoModal();
+  }
+});
+contratoFileInput.addEventListener("change", () => {
+  const file = contratoFileInput.files?.[0];
+  contratoFileName.textContent = file ? file.name : "Ningún archivo seleccionado";
+});
+contratoAccept.addEventListener("click", async () => {
+  if (!contratoAccept.dataset.idObrero) {
+    cerrarContratoModal();
+    return;
+  }
+  const file = contratoFileInput.files?.[0];
+  if (!file) {
+    setFeedback("Debés seleccionar un archivo.", "error");
+    return;
+  }
+  const fechaVencimiento = document.getElementById("fecha_vencimiento").value;
+  if (!fechaVencimiento) {
+    setFeedback("Debés indicar una fecha de vencimiento.", "error");
+    return;
+  }
+  contratoAccept.disabled = true;
+  contratoAccept.textContent = "Guardando...";
+  try {
+    await subirContratoObrero(Number(contratoAccept.dataset.idObrero), file, fechaVencimiento);
+    cerrarContratoModal();
+    await cargarObreros();
+    setFeedback("Contrato subido correctamente.", "success");
+  } catch (error) {
+    console.error(error);
+    setFeedback(error.message || "No se pudo subir el contrato.", "error");
+  } finally {
+    contratoAccept.disabled = false;
+    contratoAccept.textContent = "Guardar contrato";
   }
 });
 paginationPrev.addEventListener("click", () => cambiarPagina(-1));
@@ -197,6 +247,20 @@ document.addEventListener("click", async (event) => {
         }
       },
     });
+    return;
+  }
+
+  if (button.dataset.action === "contrato") {
+    event.stopPropagation();
+    const nombre = button.dataset.nombre || "";
+    document.getElementById("contrato_id_obrero").value = idObrero;
+    contratoModalTitle.textContent = `Subir contrato de ${nombre}`;
+    contratoFileInput.value = "";
+    contratoFileName.textContent = "Ningún archivo seleccionado";
+    document.getElementById("fecha_vencimiento").value = "";
+    contratoAccept.dataset.idObrero = String(idObrero);
+    contratoModal.classList.remove("hidden");
+    return;
   }
 });
 
@@ -444,8 +508,25 @@ function renderObreros() {
     return;
   }
 
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
   obreros.forEach((obrero) => {
     const row = document.createElement("tr");
+    let claseAlerta = "";
+    if (obrero.vencimiento) {
+      const fechaVenc = new Date(obrero.vencimiento);
+      const diffDays = Math.ceil((fechaVenc - hoy) / (1000 * 60 * 60 * 24));
+      if (diffDays <= 30 && diffDays > 0) {
+        claseAlerta = "table-warning";
+      } else if (diffDays <= 0) {
+        claseAlerta = "table-danger";
+      }
+    }
+    if (claseAlerta) {
+      row.classList.add(claseAlerta);
+    }
+
     row.innerHTML = `
       <td><strong>${escapeHtml(obrero.nombre)}</strong> ${escapeHtml(obrero.apellido || "")}</td>
       <td>${escapeHtml(obrero.documento)}</td>
@@ -458,6 +539,9 @@ function renderObreros() {
           </button>
           <button type="button" class="action-btn delete" data-action="delete" data-id="${obrero.id_obrero}" title="Eliminar obrero">
             <i class="fas fa-trash"></i>
+          </button>
+          <button type="button" class="action-btn" style="background:#d88f2d;color:#fff;" data-action="contrato" data-id="${obrero.id_obrero}" data-nombre="${escapeHtml(obrero.nombre + " " + (obrero.apellido || "")).trim()}" title="Subir contrato">
+            <i class="fas fa-file-pdf"></i>
           </button>
         </div>
       </td>
@@ -571,6 +655,42 @@ function obtenerMensajeSinResultados(busqueda) {
   }
 
   return "No hay obreros registrados todavía.";
+}
+
+function cerrarContratoModal() {
+  contratoModal.classList.add("hidden");
+  contratoAccept.dataset.idObrero = "";
+}
+
+async function subirContratoObrero(idObrero, file, fechaVencimiento) {
+  if (apiBase) {
+    const formData = new FormData();
+    formData.append("accion", "subir_contrato");
+    formData.append("id_obrero", String(idObrero));
+    formData.append("fecha_vencimiento", fechaVencimiento);
+    formData.append("contrato", file);
+
+    const response = await fetch(`${apiBase}/obreros.php`, {
+      method: "POST",
+      headers: {
+        "X-CSRF-Token": csrfToken,
+      },
+      credentials: "include",
+      body: formData,
+    });
+
+    const data = await parseJsonResponse(response, "No se pudo subir el contrato.");
+    if (!response.ok) {
+      throw new Error(data.error || "No se pudo subir el contrato.");
+    }
+    return data;
+  }
+
+  return sendDesktopRequest(
+    "obreros_subir_contrato",
+    { id_obrero: idObrero, fecha_vencimiento: fechaVencimiento, nombre_archivo: file.name },
+    "obreros_subir_contrato_response",
+  );
 }
 
 function escapeHtml(value) {

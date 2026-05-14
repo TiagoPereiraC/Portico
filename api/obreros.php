@@ -42,6 +42,10 @@ try {
                 exit;
             }
             validarCsrf();
+            if (isset($_POST['accion']) && $_POST['accion'] === 'subir_contrato') {
+                responderSubirContrato($pdo);
+                break;
+            }
             $body = leerJson();
             responderGuardado($pdo, $body);
             break;
@@ -113,9 +117,11 @@ function responderListado(PDO $pdo): void
     $offset = ($page - 1) * $limit;
 
     $stmt = $pdo->prepare(
-        'SELECT id_obrero, nombre, apellido, documento, telefono, fecha_contratacion FROM obreros'
+        'SELECT o.id_obrero, o.nombre, o.apellido, o.documento, o.telefono, o.fecha_contratacion,
+                (SELECT c.fecha_vencimiento FROM contrato_obrero c WHERE c.id_obrero = o.id_obrero ORDER BY c.fecha_vencimiento DESC LIMIT 1) as vencimiento
+         FROM obreros o'
         . $whereSql
-        . ' ORDER BY id_obrero DESC LIMIT ? OFFSET ?'
+        . ' ORDER BY o.id_obrero DESC LIMIT ? OFFSET ?'
     );
 
     $bindIndex = 1;
@@ -216,6 +222,41 @@ function responderEliminacion(PDO $pdo, array $body): void
     echo json_encode([
         'success' => true,
         'message' => 'Obrero eliminado correctamente.',
+    ]);
+}
+
+function responderSubirContrato(PDO $pdo): void
+{
+    $idObrero = isset($_POST['id_obrero']) ? (int) $_POST['id_obrero'] : 0;
+    $fechaVencimiento = normalizarFecha($_POST['fecha_vencimiento'] ?? null);
+
+    if ($idObrero <= 0) {
+        throw new InvalidArgumentException('Debés indicar un obrero válido.');
+    }
+    if (empty($fechaVencimiento)) {
+        throw new InvalidArgumentException('Debés indicar una fecha de vencimiento.');
+    }
+    if (!isset($_FILES['contrato']) || $_FILES['contrato']['error'] !== UPLOAD_ERR_OK) {
+        throw new InvalidArgumentException('Error al subir el archivo.');
+    }
+
+    $archivoContenido = file_get_contents($_FILES['contrato']['tmp_name']);
+    $nombreOriginal = $_FILES['contrato']['name'];
+
+    if (strlen($archivoContenido) > 10 * 1024 * 1024) {
+        throw new InvalidArgumentException('El contrato no puede superar los 10 MB.');
+    }
+
+    $stmt = $pdo->prepare('INSERT INTO contrato_obrero (archivo, nombre_archivo, id_obrero, fecha_vencimiento) VALUES (?, ?, ?, ?)');
+    $stmt->bindValue(1, $archivoContenido, PDO::PARAM_LOB);
+    $stmt->bindValue(2, $nombreOriginal);
+    $stmt->bindValue(3, $idObrero, PDO::PARAM_INT);
+    $stmt->bindValue(4, $fechaVencimiento);
+    $stmt->execute();
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Contrato subido correctamente.',
     ]);
 }
 

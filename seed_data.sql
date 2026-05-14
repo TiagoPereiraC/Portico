@@ -80,8 +80,8 @@ SET @obrero_2 = (SELECT id_obrero FROM obreros WHERE documento = '38999111' LIMI
 SET @obrero_3 = (SELECT id_obrero FROM obreros WHERE documento = '41222333' LIMIT 1);
 SET @obrero_4 = (SELECT id_obrero FROM obreros WHERE documento = '37888444' LIMIT 1);
 
-INSERT INTO contrato_obrero (archivo, id_obrero)
-SELECT _binary 'Contrato demo de Luis Benitez', @obrero_1
+INSERT INTO contrato_obrero (archivo, fecha_vencimiento, id_obrero)
+SELECT _binary 'Contrato demo de Luis Benitez', '2026-12-31', @obrero_1
 FROM DUAL
 WHERE @obrero_1 IS NOT NULL
   AND NOT EXISTS (
@@ -90,8 +90,8 @@ WHERE @obrero_1 IS NOT NULL
       WHERE id_obrero = @obrero_1
   );
 
-INSERT INTO contrato_obrero (archivo, id_obrero)
-SELECT _binary 'Contrato demo de Carlos Gomez', @obrero_2
+INSERT INTO contrato_obrero (archivo, fecha_vencimiento, id_obrero)
+SELECT _binary 'Contrato demo de Carlos Gomez', '2026-11-30', @obrero_2
 FROM DUAL
 WHERE @obrero_2 IS NOT NULL
   AND NOT EXISTS (
