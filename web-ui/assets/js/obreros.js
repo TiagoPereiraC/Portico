@@ -686,9 +686,21 @@ async function subirContratoObrero(idObrero, file, fechaVencimiento) {
     return data;
   }
 
+  const contenidoBase64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = () => reject(new Error("No se pudo leer el archivo."));
+    reader.readAsDataURL(file);
+  });
+
   return sendDesktopRequest(
     "obreros_subir_contrato",
-    { id_obrero: idObrero, fecha_vencimiento: fechaVencimiento, nombre_archivo: file.name },
+    {
+      id_obrero: idObrero,
+      fecha_vencimiento: fechaVencimiento,
+      nombre_archivo: file.name,
+      contenido_base64: contenidoBase64,
+    },
     "obreros_subir_contrato_response",
   );
 }

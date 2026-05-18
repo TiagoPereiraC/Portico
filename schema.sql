@@ -121,10 +121,27 @@ CREATE TABLE IF NOT EXISTS obra_maquinaria (
 CREATE TABLE IF NOT EXISTS certificado (
     id_certificado INT AUTO_INCREMENT PRIMARY KEY,
     archivo LONGBLOB NOT NULL,
-    id_obra_maquinaria INT NOT NULL,
+    nombre_archivo VARCHAR(255),
+    id_maquinaria INT NOT NULL,
+    fecha_vencimiento DATE,
 
-    FOREIGN KEY (id_obra_maquinaria) REFERENCES obra_maquinaria(id_obra_maquinaria)
+    FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
         ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS asistencia_maquinaria (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_obra INT NOT NULL,
+    id_maquinaria INT NOT NULL,
+    fecha DATE NOT NULL,
+
+    FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    UNIQUE KEY uq_asistencia_maquinaria (id_obra, id_maquinaria, fecha)
 );
 
 CREATE TABLE IF NOT EXISTS intentos_login (

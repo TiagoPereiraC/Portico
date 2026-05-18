@@ -121,6 +121,21 @@ try {
         }
     }
 
+    // ===== MAQUINARIA =====
+    if (!empty($_POST['maquinaria']) && is_array($_POST['maquinaria'])) {
+        $stmt = $pdo->prepare("
+            INSERT IGNORE INTO asistencia_maquinaria (id_obra, id_maquinaria, fecha)
+            VALUES (?, ?, ?)
+        ");
+
+        foreach ($_POST['maquinaria'] as $id_maquinaria) {
+            $id_maquinaria = (int) $id_maquinaria;
+            if ($id_maquinaria > 0) {
+                $stmt->execute([$id_obra, $id_maquinaria, $fecha]);
+            }
+        }
+    }
+
     $pdo->commit();
 
     echo json_encode([

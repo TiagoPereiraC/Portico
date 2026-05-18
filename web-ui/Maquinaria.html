@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Pórtico - Obreros</title>
+        <title>Pórtico - Maquinaria</title>
         <link rel="icon" type="image/png" href="assets/img/logo.png" />
         <link rel="stylesheet" href="assets/css/theme.css" />
         <link rel="stylesheet" href="assets/css/RegObrero.css" />
@@ -32,12 +32,12 @@
                     >
                 </li>
                 <li>
-                    <a href="RegistrarObrero.html" class="active"
+                    <a href="RegistrarObrero.html"
                         ><i class="fas fa-helmet-safety"></i> Obreros</a
                     >
                 </li>
                 <li>
-                    <a href="Maquinaria.html"
+                    <a href="Maquinaria.html" class="active"
                         ><i class="fas fa-truck-monster"></i> Maquinaria</a
                     >
                 </li>
@@ -132,72 +132,52 @@
                 </div>
 
                 <div
-                    id="contratoModal"
+                    id="certModal"
                     class="confirm-modal hidden"
                     role="dialog"
                     aria-modal="true"
-                    aria-labelledby="contratoModalTitle"
                 >
-                    <div class="confirm-box">
-                        <h3 id="contratoModalTitle">Subir contrato</h3>
-                        <form id="contratoForm" novalidate>
-                            <input type="hidden" id="contrato_id_obrero" name="id_obrero" />
-                            <div class="field file-field" style="margin-bottom: 14px;">
-                                <label for="contrato_file">Archivo (PDF, imagen, etc.)</label>
-                                <div class="file-upload-wrap">
-                                    <label class="file-upload-btn" for="contrato_file">
-                                        <i class="fas fa-cloud-arrow-up"></i>
-                                        <span>Seleccionar archivo</span>
-                                    </label>
-                                    <span class="file-upload-name" id="contratoFileName">Ningún archivo seleccionado</span>
-                                    <input
-                                        type="file"
-                                        id="contrato_file"
-                                        name="contrato"
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                    />
-                                </div>
-                            </div>
-                            <div class="field">
-                                <label for="fecha_vencimiento">Fecha de vencimiento</label>
-                                <input type="date" id="fecha_vencimiento" name="fecha_vencimiento" required />
-                            </div>
-                        </form>
-                        <div class="confirm-actions">
-                            <button
-                                type="button"
-                                class="btn-secondary"
-                                id="contratoCancel"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="button"
-                                class="btn-save"
-                                id="contratoAccept"
-                            >
-                                Guardar contrato
-                            </button>
+                    <div class="confirm-box" style="max-width: 640px; width: 90%;">
+                        <h3 id="certModalTitle">Certificados</h3>
+
+                        <div class="grupo" style="margin-top: 16px;">
+                            <div class="label">Subir certificado</div>
+                            <input type="file" id="certArchivo" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" />
+                        </div>
+
+                        <div class="grupo">
+                            <div class="label">Fecha de vencimiento</div>
+                            <input type="date" id="certVencimiento" class="input" />
+                        </div>
+
+                        <div class="confirm-actions" style="margin-top: 12px; justify-content: flex-start;">
+                            <button type="button" class="btn-save" id="certSubirBtn">Subir</button>
+                            <button type="button" class="btn-secondary" id="certCancelarBtn">Cerrar</button>
+                        </div>
+
+                        <div id="certListaWrap" style="margin-top: 20px;">
+                            <h4 style="font-size: 14px; color: #444; margin-bottom: 10px;">Certificados cargados</h4>
+                            <div id="certLista"></div>
                         </div>
                     </div>
                 </div>
 
-                <section id="panelObreros" class="panel-view active">
+                <section id="panelListado" class="panel-view active">
                     <div class="panel-head panel-head-spread">
-                        <h2>Obreros</h2>
-                        <span class="results-count" id="resultsCount">0 obreros</span>
+                        <h2>Maquinaria</h2>
+                        <span class="results-count" id="resultsCount">0 equipos</span>
                     </div>
 
                     <div class="list-filters">
-                        <label class="search-box" for="searchObreros">
+                        <label class="search-box" for="searchMaquinaria">
                             <i
                                 class="fas fa-magnifying-glass"
                                 aria-hidden="true"
                             ></i>
                             <input
                                 type="search"
-                                id="searchObreros"
-                                placeholder="Buscar por nombre, apellido o documento"
+                                id="searchMaquinaria"
+                                placeholder="Buscar por nombre o marca"
                                 autocomplete="off"
                             />
                         </label>
@@ -206,9 +186,9 @@
                     <button
                         type="button"
                         class="btn-new"
-                        id="openRegisterPanel"
+                        id="openFormPanel"
                     >
-                        <i class="fas fa-user-plus"></i> Registrar
+                        <i class="fas fa-plus"></i> Nueva maquinaria
                     </button>
 
                     <div
@@ -218,7 +198,7 @@
                         aria-live="polite"
                     >
                         <span class="loader" aria-hidden="true"></span>
-                        <p>Cargando obreros...</p>
+                        <p>Cargando maquinaria...</p>
                     </div>
 
                     <div class="table-container hidden" id="tableWrap">
@@ -226,18 +206,16 @@
                             <thead>
                                 <tr>
                                     <th>Nombre</th>
-                                    <th>DNI / Cédula</th>
-                                    <th>Teléfono</th>
-                                    <th>Fecha contratación</th>
+                                    <th>Marca</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="obreroTableBody"></tbody>
+                            <tbody id="maquinariaTableBody"></tbody>
                         </table>
                     </div>
 
                     <div class="pagination hidden" id="pagination">
-                        <span class="pagination-info" id="paginationInfo">Mostrando 0-0 de 0 obreros</span>
+                        <span class="pagination-info" id="paginationInfo">Mostrando 0-0 de 0 equipos</span>
                         <div class="pagination-actions">
                             <button type="button" class="pagination-btn" id="paginationPrev">Anterior</button>
                             <span class="pagination-page" id="paginationPage">Página 1 de 1</span>
@@ -246,24 +224,24 @@
                     </div>
 
                     <div class="empty-state hidden" id="emptyState">
-                        <i class="fas fa-user-slash"></i>
-                        <p id="emptyStateMessage">No hay obreros registrados todavía.</p>
+                        <i class="fas fa-truck-monster"></i>
+                        <p id="emptyStateMessage">No hay maquinaria registrada todavía.</p>
                     </div>
 
                     <a href="PanelInicio.html" class="btn-back">Volver</a>
                 </section>
 
-                <section id="panelRegistro" class="panel-view hidden">
+                <section id="panelFormulario" class="panel-view hidden">
                     <div class="form-wrap">
                         <h2 class="form-title" id="formTitle">
-                            Registrar obrero
+                            Registrar maquinaria
                         </h2>
 
-                        <form id="obreroForm" novalidate>
+                        <form id="maquinariaForm" novalidate>
                             <input
                                 type="hidden"
-                                id="id_obrero"
-                                name="id_obrero"
+                                id="id_maquinaria"
+                                name="id_maquinaria"
                             />
 
                             <div class="grupo">
@@ -273,53 +251,19 @@
                                     id="nombre"
                                     name="nombre"
                                     class="input"
-                                    placeholder="Ej: Juan"
+                                    placeholder="Ej: Excavadora hidráulica"
                                     required
                                 />
                             </div>
 
                             <div class="grupo">
-                                <div class="label">Apellido</div>
+                                <div class="label">Marca</div>
                                 <input
                                     type="text"
-                                    id="apellido"
-                                    name="apellido"
+                                    id="marca"
+                                    name="marca"
                                     class="input"
-                                    placeholder="Ej: Carlos Mendoza"
-                                />
-                            </div>
-
-                            <div class="grupo">
-                                <div class="label">DNI / Cédula</div>
-                                <input
-                                    type="text"
-                                    id="documento"
-                                    name="documento"
-                                    class="input"
-                                    placeholder="Ej: 5.123.456-7"
-                                    required
-                                />
-                            </div>
-
-                            <div class="grupo">
-                                <div class="label">Teléfono</div>
-                                <input
-                                    type="text"
-                                    id="telefono"
-                                    name="telefono"
-                                    class="input"
-                                    placeholder="Ej: 099 123 456"
-                                />
-                            </div>
-
-                            <div class="fecha">
-                                <label for="fecha_contratacion"
-                                    >Fecha contratación</label
-                                >
-                                <input
-                                    type="date"
-                                    id="fecha_contratacion"
-                                    name="fecha_contratacion"
+                                    placeholder="Ej: Caterpillar"
                                 />
                             </div>
 
@@ -330,7 +274,7 @@
                                 <button
                                     type="button"
                                     class="btn-back"
-                                    id="cancelRegisterPanel"
+                                    id="cancelFormPanel"
                                 >
                                     Cancelar
                                 </button>
@@ -341,6 +285,6 @@
             </div>
         </main>
 
-        <script src="assets/js/obreros.js"></script>
+        <script src="assets/js/maquinaria.js"></script>
     </body>
 </html>

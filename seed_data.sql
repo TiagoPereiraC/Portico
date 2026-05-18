@@ -179,21 +179,14 @@ VALUES
 ON DUPLICATE KEY UPDATE
     fecha_retiro = VALUES(fecha_retiro);
 
-SET @obra_maq_1 = (
-    SELECT id_obra_maquinaria
-    FROM obra_maquinaria
-    WHERE id_obra = @obra_1 AND id_maquinaria = @maq_1 AND fecha_asignacion = '2026-01-20'
-    LIMIT 1
-);
-
-INSERT INTO certificado (archivo, id_obra_maquinaria)
-SELECT _binary 'Certificado tecnico demo retroexcavadora', @obra_maq_1
+INSERT INTO certificado (archivo, nombre_archivo, id_maquinaria, fecha_vencimiento)
+SELECT _binary 'Certificado tecnico demo retroexcavadora', 'certificado_retroexcavadora_demo.pdf', @maq_1, '2026-12-31'
 FROM DUAL
-WHERE @obra_maq_1 IS NOT NULL
+WHERE @maq_1 IS NOT NULL
   AND NOT EXISTS (
       SELECT 1
       FROM certificado
-      WHERE id_obra_maquinaria = @obra_maq_1
+      WHERE id_maquinaria = @maq_1
   );
 
 INSERT INTO registros (

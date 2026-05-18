@@ -19,6 +19,7 @@
     <li class="nav-admin"><a href="PanelInicio.html"><i class="fas fa-home"></i> Panel</a></li>
     <li class="nav-admin"><a href="Obras.html"><i class="fas fa-building"></i> Obras</a></li>
     <li class="nav-admin"><a href="RegistrarObrero.html"><i class="fas fa-helmet-safety"></i> Obreros</a></li>
+    <li class="nav-admin"><a href="Maquinaria.html"><i class="fas fa-truck-monster"></i> Maquinaria</a></li>
     <li><a href="Asistencia.html" class="active"><i class="fas fa-clipboard-list"></i> Asistencia</a></li>
     <li class="nav-admin"><a href="Consultas.html"><i class="fas fa-chart-column"></i> Consultas</a></li>
     <li><a href="Login.html"><i class="fas fa-right-from-bracket"></i> Salir</a></li>
@@ -139,6 +140,18 @@
 <div id="listaHerramientas"></div>
 </div>
 
+<!-- MAQUINARIA -->
+<div class="full">
+<h3>Maquinaria</h3>
+
+<div class="custom-select">
+  <div class="custom-select-box" id="selectBoxMaquinaria">Seleccionar maquinaria</div>
+  <div class="custom-select-options" id="optionsMaquinaria"></div>
+</div>
+
+<div id="listaMaquinaria"></div>
+</div>
+
 <!-- BOTÓN -->
 <div class="full">
 <button class="btn" type="submit">Guardar</button>
@@ -166,10 +179,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const boxHerr = document.getElementById("selectBoxHerramienta");
   const optHerr = document.getElementById("optionsHerramienta");
 
+  const boxMaquinaria = document.getElementById("selectBoxMaquinaria");
+  const optMaquinaria = document.getElementById("optionsMaquinaria");
+  const listaMaquinaria = document.getElementById("listaMaquinaria");
+
   const lista = document.getElementById("listaObreros");
   const horarios = document.getElementById("contenedorHorarios");
 
   let obrerosSeleccionados = [];
+  let maquinariaSeleccionada = [];
 
   // ================= FETCH =================
   fetch("../api/datos_asistencia.php")
@@ -263,6 +281,35 @@ document.addEventListener("DOMContentLoaded", () => {
         optHerr.appendChild(div);
       });
 
+      // ===== MAQUINARIA =====
+      data.maquinaria.forEach(m => {
+        const div = document.createElement("div");
+        div.textContent = m.nombre + (m.marca ? " (" + m.marca + ")" : "");
+
+        div.onclick = () => {
+          const id = m.id_maquinaria;
+          if (maquinariaSeleccionada.includes(id)) return;
+
+          maquinariaSeleccionada.push(id);
+          boxMaquinaria.textContent = m.nombre + (m.marca ? " (" + m.marca + ")" : "");
+          optMaquinaria.style.display = "none";
+
+          const item = document.createElement("div");
+          item.classList.add("obrero-item");
+          item.id = "maquinaria-" + id;
+          item.innerHTML = `
+            <span class="obrero-name">${m.nombre}${m.marca ? " (" + m.marca + ")" : ""}</span>
+            <div class="obrero-actions">
+              <button type="button" class="btn-delete" onclick="eliminarMaquinaria('${id}')">X</button>
+            </div>
+            <input type="hidden" name="maquinaria[]" value="${id}">
+          `;
+          listaMaquinaria.appendChild(item);
+        };
+
+        optMaquinaria.appendChild(div);
+      });
+
     });
 
   // ================= OPEN / CLOSE =================
@@ -276,6 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
   toggle(boxObrero, optObrero);
   toggle(boxMaterial, optMaterial);
   toggle(boxHerr, optHerr);
+  toggle(boxMaquinaria, optMaquinaria);
 
   // cerrar afuera
   document.addEventListener("click", (e) => {
@@ -290,6 +338,12 @@ document.addEventListener("DOMContentLoaded", () => {
     obrerosSeleccionados = obrerosSeleccionados.filter(o => o !== id);
     document.getElementById("obrero-" + id)?.remove();
     document.getElementById("horario-" + id)?.remove();
+  };
+
+  // ================= ELIMINAR MAQUINARIA =================
+  window.eliminarMaquinaria = (id) => {
+    maquinariaSeleccionada = maquinariaSeleccionada.filter(m => m !== Number(id));
+    document.getElementById("maquinaria-" + id)?.remove();
   };
 
 });

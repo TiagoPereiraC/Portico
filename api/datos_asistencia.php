@@ -32,11 +32,16 @@ try {
     $stmt = $pdo->query("SELECT DISTINCT nombre FROM recursos WHERE es_material = 0");
     $herramientas = $stmt->fetchAll();
 
+    // ================= MAQUINARIA =================
+    $stmt = $pdo->query("SELECT id_maquinaria, nombre, marca FROM maquinaria ORDER BY nombre ASC");
+    $maquinaria = $stmt->fetchAll();
+
     echo json_encode([
         "obras" => $obras,
         "obreros" => $obreros,
         "materiales" => $materiales,
-        "herramientas" => $herramientas
+        "herramientas" => $herramientas,
+        "maquinaria" => $maquinaria
     ]);
 
 } catch (Exception $e) {

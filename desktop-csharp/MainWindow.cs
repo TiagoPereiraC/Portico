@@ -129,6 +129,12 @@ public sealed class MainWindow : Form
 			case "obras_descargar_contrato":
 				await HandleDescargarContratoAsync(root);
 				break;
+			case "obras_detalle":
+				await HandleObrasDetalleAsync(root);
+				break;
+			case "obras_cambiar_estado":
+				await HandleObrasCambiarEstadoAsync(root);
+				break;
 			case "obreros_listar":
 				await HandleObrerosListarAsync(root);
 				break;
@@ -137,6 +143,30 @@ public sealed class MainWindow : Form
 				break;
 			case "obreros_eliminar":
 				await HandleEliminarObreroAsync(root);
+				break;
+			case "obreros_subir_contrato":
+				await HandleObrerosSubirContratoAsync(root);
+				break;
+			case "maquinaria_listar":
+				await HandleMaquinariaListarAsync(root);
+				break;
+			case "maquinaria_guardar":
+				await HandleGuardarMaquinariaAsync(root);
+				break;
+			case "maquinaria_eliminar":
+				await HandleEliminarMaquinariaAsync(root);
+				break;
+			case "maquinaria_certificados_listar":
+				await HandleMaquinariaCertificadosListarAsync(root);
+				break;
+			case "maquinaria_certificado_subir":
+				await HandleMaquinariaCertificadoSubirAsync(root);
+				break;
+			case "maquinaria_certificado_descargar":
+				await HandleMaquinariaCertificadoDescargarAsync(root);
+				break;
+			case "maquinaria_certificado_eliminar":
+				await HandleMaquinariaCertificadoEliminarAsync(root);
 				break;
 			case "asistencia_catalogos":
 				await HandleAsistenciaCatalogosAsync(root);
@@ -299,6 +329,22 @@ public sealed class MainWindow : Form
 			var materiales = await LeerRecursosAsync(conn, true);
 			var herramientas = await LeerRecursosAsync(conn, false);
 
+			var maquinaria = new List<object>();
+			await using (var cmd = conn.CreateCommand())
+			{
+				cmd.CommandText = "SELECT id_maquinaria, nombre, marca FROM maquinaria ORDER BY nombre ASC";
+				await using var reader = await cmd.ExecuteReaderAsync();
+				while (await reader.ReadAsync())
+				{
+					maquinaria.Add(new
+					{
+						id_maquinaria = reader.GetInt32("id_maquinaria"),
+						nombre = reader.GetString("nombre"),
+						marca = ReadNullableString(reader, "marca")
+					});
+				}
+			}
+
 			PostToJs(new
 			{
 				type = "asistencia_catalogos_response",
@@ -307,7 +353,8 @@ public sealed class MainWindow : Form
 				obras,
 				obreros,
 				materiales,
-				herramientas
+				herramientas,
+				maquinaria
 			});
 		}
 		catch (Exception ex)
@@ -1194,6 +1241,681 @@ public sealed class MainWindow : Form
 		}
 	}
 
+	private async Task HandleObrasDetalleAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAutenticado(requestId, "obras_detalle_response"))
+			return;
+
+		try
+		{
+			var idObra = ReadPositiveInt(root, "id_obra");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			var obra = await GetObraByIdAsync(conn, idObra);
+
+			var materiales = new List<object>();
+			await using (var cmd = conn.CreateCommand())
+			{
+				cmd.CommandText =
+					"SELECT nombre, SUM(cantidad) as cantidad_total, SUM(cantidad * COALESCE(precio_unitario, 0)) as costo_total " +
+					"FROM recursos WHERE id_obra = @idObra AND es_material = 1 GROUP BY nombre ORDER BY nombre";
+				cmd.Parameters.AddWithValue("@idObra", idObra);
+				await using var reader = await cmd.ExecuteReaderAsync();
+				while (await reader.ReadAsync())
+				{
+					materiales.Add(new
+					{
+						nombre = reader.GetString("nombre"),
+						cantidad_total = reader.GetDecimal("cantidad_total"),
+						costo_total = reader.IsDBNull(reader.GetOrdinal("costo_total")) ? 0m : reader.GetDecimal("costo_total")
+					});
+				}
+			}
+
+			var herramientas = new List<object>();
+			await using (var cmd = conn.CreateCommand())
+			{
+				cmd.CommandText =
+					"SELECT nombre, SUM(cantidad) as cantidad_total " +
+					"FROM recursos WHERE id_obra = @idObra AND es_material = 0 GROUP BY nombre ORDER BY nombre";
+				cmd.Parameters.AddWithValue("@idObra", idObra);
+				await using var reader = await cmd.ExecuteReaderAsync();
+				while (await reader.ReadAsync())
+				{
+					herramientas.Add(new
+					{
+						nombre = reader.GetString("nombre"),
+						cantidad_total = reader.GetDecimal("cantidad_total")
+					});
+				}
+			}
+
+			var obreros = new List<object>();
+			await using (var cmd = conn.CreateCommand())
+			{
+				cmd.CommandText =
+					"SELECT obr.id_obrero, obr.nombre, obr.apellido, SUM(reg.horas_trabajadas) as horas_totales " +
+					"FROM registros reg INNER JOIN obreros obr ON obr.id_obrero = reg.id_obrero " +
+					"WHERE reg.id_obra = @idObra GROUP BY obr.id_obrero, obr.nombre, obr.apellido ORDER BY obr.apellido, obr.nombre";
+				cmd.Parameters.AddWithValue("@idObra", idObra);
+				await using var reader = await cmd.ExecuteReaderAsync();
+				while (await reader.ReadAsync())
+				{
+					obreros.Add(new
+					{
+						id_obrero = reader.GetInt32("id_obrero"),
+						nombre = reader.GetString("nombre"),
+						apellido = ReadNullableString(reader, "apellido"),
+						horas_totales = reader.GetDecimal("horas_totales")
+					});
+				}
+			}
+
+			var maquinaria = new List<object>();
+			await using (var cmd = conn.CreateCommand())
+			{
+				cmd.CommandText =
+					"SELECT m.nombre, m.marca, om.fecha_asignacion, om.fecha_retiro " +
+					"FROM obra_maquinaria om INNER JOIN maquinaria m ON m.id_maquinaria = om.id_maquinaria " +
+					"WHERE om.id_obra = @idObra ORDER BY om.fecha_asignacion DESC, m.nombre";
+				cmd.Parameters.AddWithValue("@idObra", idObra);
+				await using var reader = await cmd.ExecuteReaderAsync();
+				while (await reader.ReadAsync())
+				{
+					maquinaria.Add(new
+					{
+						nombre = reader.GetString("nombre"),
+						marca = ReadNullableString(reader, "marca"),
+						fecha_asignacion = ReadNullableDate(reader, "fecha_asignacion"),
+						fecha_retiro = ReadNullableDate(reader, "fecha_retiro")
+					});
+				}
+			}
+
+			PostToJs(new
+			{
+				type = "obras_detalle_response",
+				requestId,
+				success = true,
+				obra,
+				materiales,
+				herramientas,
+				obreros,
+				maquinaria
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "obras_detalle_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Obras detalle error] {ex}");
+			PostToJs(new { type = "obras_detalle_response", requestId, success = false, error = "No se pudo cargar el detalle de la obra." });
+		}
+	}
+
+	private async Task HandleObrasCambiarEstadoAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAdministrador(requestId, "obras_cambiar_estado_response"))
+			return;
+
+		try
+		{
+			var idObra = ReadPositiveInt(root, "id_obra");
+			var activo = ReadPositiveInt(root, "activo");
+			if (activo != 0 && activo != 1)
+				throw new InvalidOperationException("El estado debe ser 0 o 1.");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText = "UPDATE obras SET activo = @activo WHERE id_obra = @idObra";
+			cmd.Parameters.AddWithValue("@activo", activo);
+			cmd.Parameters.AddWithValue("@idObra", idObra);
+			var affected = await cmd.ExecuteNonQueryAsync();
+
+			if (affected == 0)
+				throw new InvalidOperationException("No se pudo actualizar la obra o ya tenía ese estado.");
+
+			PostToJs(new
+			{
+				type = "obras_cambiar_estado_response",
+				requestId,
+				success = true,
+				message = "Estado de la obra actualizado correctamente."
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "obras_cambiar_estado_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Obras cambiar estado error] {ex}");
+			PostToJs(new { type = "obras_cambiar_estado_response", requestId, success = false, error = "No se pudo cambiar el estado de la obra." });
+		}
+	}
+
+	private async Task HandleObrerosSubirContratoAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAdministrador(requestId, "obreros_subir_contrato_response"))
+			return;
+
+		try
+		{
+			var idObrero = ReadPositiveInt(root, "id_obrero");
+			var fechaVencimiento = ReadRequiredString(root, "fecha_vencimiento");
+			var nombreArchivo = ReadRequiredString(root, "nombre_archivo");
+			var contenidoBase64 = ReadRequiredString(root, "contenido_base64");
+
+			if (!DateTime.TryParseExact(fechaVencimiento, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
+				throw new InvalidOperationException("Formato de fecha inválido.");
+
+			byte[] archivo;
+			try
+			{
+				archivo = Convert.FromBase64String(contenidoBase64);
+			}
+			catch (FormatException)
+			{
+				throw new InvalidOperationException("El archivo seleccionado es inválido.");
+			}
+
+			if (archivo.Length > 10 * 1024 * 1024)
+				throw new InvalidOperationException("El contrato no puede superar los 10 MB.");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText =
+				"INSERT INTO contrato_obrero (archivo, nombre_archivo, id_obrero, fecha_vencimiento) VALUES (@archivo, @nombreArchivo, @idObrero, @fechaVencimiento)";
+			cmd.Parameters.Add("@archivo", MySqlDbType.LongBlob).Value = archivo;
+			cmd.Parameters.AddWithValue("@nombreArchivo", nombreArchivo);
+			cmd.Parameters.AddWithValue("@idObrero", idObrero);
+			cmd.Parameters.AddWithValue("@fechaVencimiento", fechaVencimiento);
+			await cmd.ExecuteNonQueryAsync();
+
+			PostToJs(new
+			{
+				type = "obreros_subir_contrato_response",
+				requestId,
+				success = true,
+				message = "Contrato subido correctamente."
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "obreros_subir_contrato_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Obreros subir contrato error] {ex}");
+			PostToJs(new { type = "obreros_subir_contrato_response", requestId, success = false, error = "No se pudo subir el contrato." });
+		}
+	}
+
+	private async Task HandleMaquinariaCertificadosListarAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAutenticado(requestId, "maquinaria_certificados_listar_response"))
+			return;
+
+		try
+		{
+			var idMaquinaria = ReadPositiveInt(root, "id_maquinaria");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			var certificados = new List<object>();
+			await using (var cmd = conn.CreateCommand())
+			{
+				cmd.CommandText = "SELECT id_certificado, nombre_archivo, fecha_vencimiento FROM certificado WHERE id_maquinaria = @idMaquinaria ORDER BY fecha_vencimiento ASC";
+				cmd.Parameters.AddWithValue("@idMaquinaria", idMaquinaria);
+				await using var reader = await cmd.ExecuteReaderAsync();
+				while (await reader.ReadAsync())
+				{
+					certificados.Add(new
+					{
+						id_certificado = reader.GetInt32("id_certificado"),
+						nombre_archivo = ReadNullableString(reader, "nombre_archivo"),
+						fecha_vencimiento = ReadNullableDate(reader, "fecha_vencimiento")
+					});
+				}
+			}
+
+			PostToJs(new
+			{
+				type = "maquinaria_certificados_listar_response",
+				requestId,
+				success = true,
+				certificados
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "maquinaria_certificados_listar_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Maquinaria certificados listar error] {ex}");
+			PostToJs(new { type = "maquinaria_certificados_listar_response", requestId, success = false, error = "No se pudieron cargar los certificados." });
+		}
+	}
+
+	private async Task HandleMaquinariaCertificadoSubirAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAdministrador(requestId, "maquinaria_certificado_subir_response"))
+			return;
+
+		try
+		{
+			var idMaquinaria = ReadPositiveInt(root, "id_maquinaria");
+			var fechaVencimiento = root.TryGetProperty("fecha_vencimiento", out var fechaProp) && fechaProp.ValueKind == JsonValueKind.String
+				? (fechaProp.GetString()?.Trim() ?? string.Empty)
+				: string.Empty;
+			var nombreArchivo = ReadRequiredString(root, "nombre_archivo");
+			var contenidoBase64 = ReadRequiredString(root, "contenido_base64");
+
+			string? fechaDb = null;
+			if (!string.IsNullOrWhiteSpace(fechaVencimiento))
+			{
+				if (!DateTime.TryParseExact(fechaVencimiento, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
+					throw new InvalidOperationException("Formato de fecha inválido.");
+				fechaDb = fechaVencimiento;
+			}
+
+			byte[] archivo;
+			try
+			{
+				archivo = Convert.FromBase64String(contenidoBase64);
+			}
+			catch (FormatException)
+			{
+				throw new InvalidOperationException("El archivo seleccionado es inválido.");
+			}
+
+			if (archivo.Length > 10 * 1024 * 1024)
+				throw new InvalidOperationException("El certificado no puede superar los 10 MB.");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText =
+				"INSERT INTO certificado (archivo, nombre_archivo, id_maquinaria, fecha_vencimiento) VALUES (@archivo, @nombreArchivo, @idMaquinaria, @fechaVencimiento)";
+			cmd.Parameters.Add("@archivo", MySqlDbType.LongBlob).Value = archivo;
+			cmd.Parameters.AddWithValue("@nombreArchivo", nombreArchivo);
+			cmd.Parameters.AddWithValue("@idMaquinaria", idMaquinaria);
+			cmd.Parameters.AddWithValue("@fechaVencimiento", fechaDb is null ? DBNull.Value : fechaDb);
+			await cmd.ExecuteNonQueryAsync();
+
+			PostToJs(new
+			{
+				type = "maquinaria_certificado_subir_response",
+				requestId,
+				success = true,
+				message = "Certificado subido correctamente."
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "maquinaria_certificado_subir_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Maquinaria certificado subir error] {ex}");
+			PostToJs(new { type = "maquinaria_certificado_subir_response", requestId, success = false, error = "No se pudo subir el certificado." });
+		}
+	}
+
+	private async Task HandleMaquinariaCertificadoDescargarAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAutenticado(requestId, "maquinaria_certificado_descargar_response"))
+			return;
+
+		try
+		{
+			var idCertificado = ReadPositiveInt(root, "id_certificado");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText =
+				"SELECT nombre_archivo, archivo FROM certificado WHERE id_certificado = @idCertificado LIMIT 1";
+			cmd.Parameters.AddWithValue("@idCertificado", idCertificado);
+
+			await using var reader = await cmd.ExecuteReaderAsync(System.Data.CommandBehavior.SequentialAccess);
+			if (!await reader.ReadAsync())
+				throw new InvalidOperationException("El certificado indicado no existe.");
+
+			var nombreArchivo = ReadNullableString(reader, "nombre_archivo") ?? $"certificado-{idCertificado}";
+			var archivoOrdinal = reader.GetOrdinal("archivo");
+			var archivo = (byte[])reader.GetValue(archivoOrdinal);
+
+			PostToJs(new
+			{
+				type = "maquinaria_certificado_descargar_response",
+				requestId,
+				success = true,
+				nombre_archivo = nombreArchivo,
+				tipo_contenido = GuessMimeType(nombreArchivo),
+				contenido_base64 = Convert.ToBase64String(archivo)
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "maquinaria_certificado_descargar_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Maquinaria certificado descargar error] {ex}");
+			PostToJs(new { type = "maquinaria_certificado_descargar_response", requestId, success = false, error = "No se pudo descargar el certificado." });
+		}
+	}
+
+	private async Task HandleMaquinariaCertificadoEliminarAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAdministrador(requestId, "maquinaria_certificado_eliminar_response"))
+			return;
+
+		try
+		{
+			var idCertificado = ReadPositiveInt(root, "id_certificado");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText = "DELETE FROM certificado WHERE id_certificado = @idCertificado";
+			cmd.Parameters.AddWithValue("@idCertificado", idCertificado);
+			var affected = await cmd.ExecuteNonQueryAsync();
+
+			if (affected == 0)
+				throw new InvalidOperationException("El certificado indicado no existe.");
+
+			PostToJs(new
+			{
+				type = "maquinaria_certificado_eliminar_response",
+				requestId,
+				success = true,
+				message = "Certificado eliminado correctamente."
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "maquinaria_certificado_eliminar_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Maquinaria certificado eliminar error] {ex}");
+			PostToJs(new { type = "maquinaria_certificado_eliminar_response", requestId, success = false, error = "No se pudo eliminar el certificado." });
+		}
+	}
+
+	private async Task HandleMaquinariaListarAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAutenticado(requestId, "maquinaria_listar_response"))
+			return;
+
+		try
+		{
+			var page = 1;
+			if (root.TryGetProperty("page", out var pageProp))
+			{
+				if (pageProp.ValueKind == JsonValueKind.Number && pageProp.TryGetInt32(out var pageNumber) && pageNumber > 0)
+					page = pageNumber;
+				else if (pageProp.ValueKind == JsonValueKind.String && int.TryParse(pageProp.GetString(), out pageNumber) && pageNumber > 0)
+					page = pageNumber;
+			}
+
+			var limit = 10;
+			if (root.TryGetProperty("limit", out var limitProp))
+			{
+				if (limitProp.ValueKind == JsonValueKind.Number && limitProp.TryGetInt32(out var limitNumber) && limitNumber > 0)
+					limit = limitNumber;
+				else if (limitProp.ValueKind == JsonValueKind.String && int.TryParse(limitProp.GetString(), out limitNumber) && limitNumber > 0)
+					limit = limitNumber;
+			}
+			limit = Math.Clamp(limit, 1, 100);
+
+			var search = root.TryGetProperty("search", out var searchProp) && searchProp.ValueKind == JsonValueKind.String
+				? (searchProp.GetString()?.Trim() ?? string.Empty)
+				: string.Empty;
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			var where = new List<string>();
+			var countParams = new List<MySqlParameter>();
+
+			if (!string.IsNullOrWhiteSpace(search))
+			{
+				where.Add("(nombre LIKE @search OR marca LIKE @search)");
+				countParams.Add(new MySqlParameter("@search", $"%{search}%"));
+			}
+
+			var whereSql = where.Count > 0 ? " WHERE " + string.Join(" AND ", where) : string.Empty;
+
+			var total = 0;
+			await using (var countCmd = conn.CreateCommand())
+			{
+				countCmd.CommandText = "SELECT COUNT(*) FROM maquinaria" + whereSql;
+				foreach (var param in countParams)
+					countCmd.Parameters.AddWithValue(param.ParameterName, param.Value);
+				total = Convert.ToInt32(await countCmd.ExecuteScalarAsync());
+			}
+
+			var totalPages = Math.Max(1, (int)Math.Ceiling(total / (double)limit));
+			page = Math.Min(page, totalPages);
+			var offset = (page - 1) * limit;
+
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText =
+				"SELECT id_maquinaria, nombre, marca FROM maquinaria"
+				+ whereSql
+				+ " ORDER BY id_maquinaria DESC LIMIT @limit OFFSET @offset";
+
+			foreach (var param in countParams)
+				cmd.Parameters.AddWithValue(param.ParameterName, param.Value);
+			cmd.Parameters.AddWithValue("@limit", limit);
+			cmd.Parameters.AddWithValue("@offset", offset);
+
+			var items = new List<object>();
+			await using var reader = await cmd.ExecuteReaderAsync();
+			while (await reader.ReadAsync())
+			{
+				items.Add(new
+				{
+					id_maquinaria = reader.GetInt32("id_maquinaria"),
+					nombre = reader.GetString("nombre"),
+					marca = ReadNullableString(reader, "marca")
+				});
+			}
+
+			PostToJs(new
+			{
+				type = "maquinaria_listar_response",
+				requestId,
+				success = true,
+				maquinaria = items,
+				total,
+				page,
+				per_page = limit,
+				total_pages = totalPages
+			});
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Maquinaria listar error] {ex}");
+			PostToJs(new { type = "maquinaria_listar_response", requestId, success = false, error = "No se pudo cargar la maquinaria." });
+		}
+	}
+
+	private async Task HandleGuardarMaquinariaAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAdministrador(requestId, "maquinaria_guardar_response"))
+			return;
+
+		try
+		{
+			var nombre = ReadRequiredString(root, "nombre");
+			var marca = root.TryGetProperty("marca", out var marcaProp) && marcaProp.ValueKind == JsonValueKind.String
+				? (marcaProp.GetString()?.Trim() ?? string.Empty)
+				: string.Empty;
+			var idMaquinaria = TryReadPositiveInt(root, "id_maquinaria");
+
+			if (nombre.Length > 150)
+				throw new InvalidOperationException("El nombre es demasiado largo.");
+			if (marca.Length > 100)
+				throw new InvalidOperationException("La marca es demasiado larga.");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			if (idMaquinaria.HasValue)
+			{
+				await using (var existsCmd = conn.CreateCommand())
+				{
+					existsCmd.CommandText = "SELECT id_maquinaria FROM maquinaria WHERE id_maquinaria = @id LIMIT 1";
+					existsCmd.Parameters.AddWithValue("@id", idMaquinaria.Value);
+					var exists = await existsCmd.ExecuteScalarAsync();
+					if (exists is null)
+						throw new InvalidOperationException("La maquinaria indicada no existe.");
+				}
+
+				await using var updateCmd = conn.CreateCommand();
+				updateCmd.CommandText =
+					"UPDATE maquinaria SET nombre = @nombre, marca = @marca WHERE id_maquinaria = @id";
+				updateCmd.Parameters.AddWithValue("@nombre", nombre);
+				updateCmd.Parameters.AddWithValue("@marca", string.IsNullOrWhiteSpace(marca) ? DBNull.Value : marca);
+				updateCmd.Parameters.AddWithValue("@id", idMaquinaria.Value);
+				await updateCmd.ExecuteNonQueryAsync();
+
+				PostToJs(new
+				{
+					type = "maquinaria_guardar_response",
+					requestId,
+					success = true,
+					message = "Maquinaria actualizada correctamente."
+				});
+				return;
+			}
+
+			await using var insertCmd = conn.CreateCommand();
+			insertCmd.CommandText =
+				"INSERT INTO maquinaria (nombre, marca) VALUES (@nombre, @marca)";
+			insertCmd.Parameters.AddWithValue("@nombre", nombre);
+			insertCmd.Parameters.AddWithValue("@marca", string.IsNullOrWhiteSpace(marca) ? DBNull.Value : marca);
+			await insertCmd.ExecuteNonQueryAsync();
+
+			PostToJs(new
+			{
+				type = "maquinaria_guardar_response",
+				requestId,
+				success = true,
+				message = "Maquinaria registrada correctamente."
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "maquinaria_guardar_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Maquinaria guardar error] {ex}");
+			PostToJs(new { type = "maquinaria_guardar_response", requestId, success = false, error = "No se pudo guardar la maquinaria." });
+		}
+	}
+
+	private async Task HandleEliminarMaquinariaAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAdministrador(requestId, "maquinaria_eliminar_response"))
+			return;
+
+		try
+		{
+			var idMaquinaria = ReadPositiveInt(root, "id_maquinaria");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText = "DELETE FROM maquinaria WHERE id_maquinaria = @id";
+			cmd.Parameters.AddWithValue("@id", idMaquinaria);
+			var affected = await cmd.ExecuteNonQueryAsync();
+
+			if (affected == 0)
+				throw new InvalidOperationException("La maquinaria indicada no existe.");
+
+			PostToJs(new
+			{
+				type = "maquinaria_eliminar_response",
+				requestId,
+				success = true,
+				message = "Maquinaria eliminada correctamente."
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "maquinaria_eliminar_response", requestId, success = false, error = ex.Message });
+		}
+		catch (MySqlException ex) when (ex.Number == 1451)
+		{
+			PostToJs(new { type = "maquinaria_eliminar_response", requestId, success = false, error = "No se puede eliminar porque está asignada a una obra." });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Maquinaria eliminar error] {ex}");
+			PostToJs(new { type = "maquinaria_eliminar_response", requestId, success = false, error = "No se pudo eliminar la maquinaria." });
+		}
+	}
+
 	private async Task HandleGuardarAsistenciaAsync(JsonElement root)
 	{
 		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
@@ -1253,6 +1975,23 @@ public sealed class MainWindow : Form
 			recursosInsertados += await InsertarRecursosAsync(conn, tx, root, "materiales", idObra, fecha, true);
 			recursosInsertados += await InsertarRecursosAsync(conn, tx, root, "herramientas", idObra, fecha, false);
 
+			var maquinariaInsertada = 0;
+			if (root.TryGetProperty("maquinaria", out var maquinariaElement) && maquinariaElement.ValueKind == JsonValueKind.Array)
+			{
+				foreach (var item in maquinariaElement.EnumerateArray())
+				{
+					var idMaquinaria = ReadPositiveInt(item, "id_maquinaria");
+					await using var cmd = conn.CreateCommand();
+					cmd.Transaction = tx;
+					cmd.CommandText = "INSERT IGNORE INTO asistencia_maquinaria (id_obra, id_maquinaria, fecha) VALUES (@idObra, @idMaquinaria, @fecha)";
+					cmd.Parameters.AddWithValue("@idObra", idObra);
+					cmd.Parameters.AddWithValue("@idMaquinaria", idMaquinaria);
+					cmd.Parameters.AddWithValue("@fecha", fecha);
+					await cmd.ExecuteNonQueryAsync();
+					maquinariaInsertada++;
+				}
+			}
+
 			if (finalizaObra)
 			{
 				await using var updateObra = conn.CreateCommand();
@@ -1271,7 +2010,8 @@ public sealed class MainWindow : Form
 				requestId,
 				success = true,
 				registros_insertados = registrosInsertados,
-				recursos_insertados = recursosInsertados
+				recursos_insertados = recursosInsertados,
+				maquinaria_insertada = maquinariaInsertada
 			});
 		}
 		catch (InvalidOperationException ex)
