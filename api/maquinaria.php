@@ -117,7 +117,9 @@ function responderListado(PDO $pdo): void
     $offset = ($page - 1) * $limit;
 
     $stmt = $pdo->prepare(
-        'SELECT id_maquinaria, nombre, marca FROM maquinaria'
+        'SELECT id_maquinaria, nombre, marca,'
+        . ' (SELECT MIN(fecha_vencimiento) FROM certificado WHERE certificado.id_maquinaria = maquinaria.id_maquinaria) AS cert_vencimiento'
+        . ' FROM maquinaria'
         . $whereSql
         . ' ORDER BY id_maquinaria DESC LIMIT ? OFFSET ?'
     );

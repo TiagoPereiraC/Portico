@@ -1749,7 +1749,9 @@ public sealed class MainWindow : Form
 
 			await using var cmd = conn.CreateCommand();
 			cmd.CommandText =
-				"SELECT id_maquinaria, nombre, marca FROM maquinaria"
+				"SELECT id_maquinaria, nombre, marca,"
+				+ " (SELECT MIN(fecha_vencimiento) FROM certificado WHERE certificado.id_maquinaria = maquinaria.id_maquinaria) AS cert_vencimiento"
+				+ " FROM maquinaria"
 				+ whereSql
 				+ " ORDER BY id_maquinaria DESC LIMIT @limit OFFSET @offset";
 
@@ -1762,11 +1764,13 @@ public sealed class MainWindow : Form
 			await using var reader = await cmd.ExecuteReaderAsync();
 			while (await reader.ReadAsync())
 			{
+				var vencOrdinal = reader.GetOrdinal("cert_vencimiento");
 				items.Add(new
 				{
 					id_maquinaria = reader.GetInt32("id_maquinaria"),
 					nombre = reader.GetString("nombre"),
-					marca = ReadNullableString(reader, "marca")
+					marca = ReadNullableString(reader, "marca"),
+					cert_vencimiento = reader.IsDBNull(vencOrdinal) ? null : ReadNullableString(reader, "cert_vencimiento")
 				});
 			}
 

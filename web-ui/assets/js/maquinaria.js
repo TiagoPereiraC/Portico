@@ -483,10 +483,25 @@ function renderMaquinaria() {
     return;
   }
 
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
   maquinaria.forEach((item) => {
     const row = document.createElement("tr");
+
+    let certIcono = "";
+    if (item.cert_vencimiento) {
+      const fechaVenc = new Date(item.cert_vencimiento + "T00:00:00");
+      const diffDays = Math.ceil((fechaVenc - hoy) / (1000 * 60 * 60 * 24));
+      if (diffDays <= 0) {
+        certIcono = ` <i class="fas fa-circle-exclamation" style="color:#b91c1c;" title="Certificado vencido"></i>`;
+      } else if (diffDays <= 30) {
+        certIcono = ` <i class="fas fa-triangle-exclamation" style="color:#856404;" title="Vence en ${diffDays} ${diffDays === 1 ? "día" : "días"}"></i>`;
+      }
+    }
+
     row.innerHTML = `
-      <td><strong>${escapeHtml(item.nombre)}</strong></td>
+      <td><strong>${escapeHtml(item.nombre)}</strong>${certIcono}</td>
       <td>${escapeHtml(item.marca || "—")}</td>
       <td>
         <div class="table-actions">
@@ -626,7 +641,7 @@ async function cargarCertificados(idMaquinaria) {
   try {
     let data;
     if (apiBase) {
-      data = await fetchJson(`${apiBase}/maquinaria_certificados.php?id_maquinaria=${encodeURIComponent(idMaquinaria)}`);
+      data = await fetchJson(`${apiBase}/cert_maq.php?id_maquinaria=${encodeURIComponent(idMaquinaria)}`);
     } else {
       data = await sendDesktopRequest(
         "maquinaria_certificados_listar",
@@ -641,9 +656,23 @@ async function cargarCertificados(idMaquinaria) {
       return;
     }
 
-    certLista.innerHTML = certificados.map((c) => `
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    certLista.innerHTML = certificados.map((c) => {
+      let badge = "";
+      if (c.fecha_vencimiento) {
+        const fechaVenc = new Date(c.fecha_vencimiento + "T00:00:00");
+        const diffDays = Math.ceil((fechaVenc - hoy) / (1000 * 60 * 60 * 24));
+        if (diffDays <= 0) {
+          badge = ' <span class="cert-badge vencido">VENCIDO</span>';
+        } else if (diffDays <= 30) {
+          badge = ` <span class="cert-badge por-vencer">Vence en ${diffDays} ${diffDays === 1 ? "día" : "días"}</span>`;
+        }
+      }
+      return `
       <div class="obrero-item" style="margin-bottom:6px;">
-        <span class="obrero-name">${escapeHtml(c.nombre_archivo || "Certificado")}${c.fecha_vencimiento ? ` — Vence: ${formatDate(c.fecha_vencimiento)}` : ""}</span>
+        <span class="obrero-name">${escapeHtml(c.nombre_archivo || "Certificado")}${c.fecha_vencimiento ? ` — Vence: ${formatDate(c.fecha_vencimiento)}` : ""}${badge}</span>
         <div class="obrero-actions">
           <button type="button" class="btn-delete" onclick="descargarCertificado(${c.id_certificado}, '${escapeHtml(c.nombre_archivo || "certificado").replaceAll("'", "\\'")}')" title="Descargar">
             <i class="fas fa-download"></i>
@@ -653,7 +682,7 @@ async function cargarCertificados(idMaquinaria) {
           </button>
         </div>
       </div>
-    `).join("");
+    `}).join("");
   } catch (error) {
     console.error(error);
     certLista.innerHTML = "<p style='font-size:13px;color:#c44;'>No se pudieron cargar los certificados.</p>";
@@ -667,7 +696,7 @@ async function subirCertificado(idMaquinaria, file, fechaVencimiento) {
     formData.append("fecha_vencimiento", fechaVencimiento);
     formData.append("certificado", file);
 
-    const response = await fetch(`${apiBase}/maquinaria_certificados.php`, {
+    const response = await fetch(`${apiBase}/cert_maq.php`, {
       method: "POST",
       headers: { "X-CSRF-Token": csrfToken },
       credentials: "include",
@@ -704,7 +733,7 @@ async function descargarCertificado(idCertificado, nombreArchivo) {
   try {
     let data;
     if (apiBase) {
-      data = await fetchJson(`${apiBase}/maquinaria_certificados.php?descargar=${encodeURIComponent(idCertificado)}`);
+      data = await fetchJson(`${apiBase}/cert_maq.php?descargar=${encodeURIComponent(idCertificado)}`);
     } else {
       data = await sendDesktopRequest(
         "maquinaria_certificado_descargar",
@@ -729,7 +758,7 @@ async function eliminarCertificado(idCertificado) {
   try {
     let data;
     if (apiBase) {
-      const response = await fetch(`${apiBase}/maquinaria_certificados.php`, {
+      const response = await fetch(`${apiBase}/cert_maq.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

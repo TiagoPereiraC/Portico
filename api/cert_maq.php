@@ -45,12 +45,20 @@ try {
                 exit;
             }
             validarCsrf();
+
+            // Multipart: archivo real desde el frontend web
+            if (!empty($_FILES['certificado']) && $_FILES['certificado']['error'] === UPLOAD_ERR_OK) {
+                responderSubirMultipart($pdo);
+                break;
+            }
+
+            // JSON: eliminar o subir con base64 (desktop)
             $body = leerJson();
             if (($body['accion'] ?? '') === 'eliminar') {
                 responderEliminacion($pdo, $body);
                 break;
             }
-            responderSubir($pdo);
+            responderSubirBase64($pdo, $body);
             break;
 
         default:
@@ -64,11 +72,11 @@ try {
     http_response_code(404);
     echo json_encode(['error' => $e->getMessage()]);
 } catch (PDOException $e) {
-    error_log('maquinaria_certificados.php PDO error: ' . $e->getMessage());
+    error_log('cert_maq.php PDO error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Error interno del servidor.']);
 } catch (Throwable $e) {
-    error_log('maquinaria_certificados.php error: ' . $e->getMessage());
+    error_log('cert_maq.php error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Error interno del servidor.']);
 }
@@ -118,16 +126,13 @@ function responderDescarga(PDO $pdo): void
     ]);
 }
 
-function responderSubir(PDO $pdo): void
+function responderSubirMultipart(PDO $pdo): void
 {
     $idMaquinaria = isset($_POST['id_maquinaria']) ? (int) $_POST['id_maquinaria'] : 0;
     $fechaVencimiento = normalizarFecha($_POST['fecha_vencimiento'] ?? null);
 
     if ($idMaquinaria <= 0) {
         throw new InvalidArgumentException('Debés indicar una maquinaria válida.');
-    }
-    if (!isset($_FILES['certificado']) || $_FILES['certificado']['error'] !== UPLOAD_ERR_OK) {
-        throw new InvalidArgumentException('Error al subir el archivo.');
     }
 
     $archivoContenido = file_get_contents($_FILES['certificado']['tmp_name']);
@@ -140,6 +145,42 @@ function responderSubir(PDO $pdo): void
     $stmt = $pdo->prepare('INSERT INTO certificado (archivo, nombre_archivo, id_maquinaria, fecha_vencimiento) VALUES (?, ?, ?, ?)');
     $stmt->bindValue(1, $archivoContenido, PDO::PARAM_LOB);
     $stmt->bindValue(2, $nombreOriginal);
+    $stmt->bindValue(3, $idMaquinaria, PDO::PARAM_INT);
+    $stmt->bindValue(4, $fechaVencimiento);
+    $stmt->execute();
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Certificado subido correctamente.',
+    ]);
+}
+
+function responderSubirBase64(PDO $pdo, array $body): void
+{
+    $idMaquinaria = isset($body['id_maquinaria']) ? (int) $body['id_maquinaria'] : 0;
+    $fechaVencimiento = normalizarFecha($body['fecha_vencimiento'] ?? null);
+    $nombreArchivo = limpiarTexto($body['nombre_archivo'] ?? '', 255, true);
+    $contenidoBase64 = $body['contenido_base64'] ?? '';
+
+    if ($idMaquinaria <= 0) {
+        throw new InvalidArgumentException('Debés indicar una maquinaria válida.');
+    }
+    if ($contenidoBase64 === '') {
+        throw new InvalidArgumentException('El archivo seleccionado es inválido.');
+    }
+
+    $archivo = base64_decode($contenidoBase64, true);
+    if ($archivo === false) {
+        throw new InvalidArgumentException('El archivo seleccionado es inválido.');
+    }
+
+    if (strlen($archivo) > 10 * 1024 * 1024) {
+        throw new InvalidArgumentException('El certificado no puede superar los 10 MB.');
+    }
+
+    $stmt = $pdo->prepare('INSERT INTO certificado (archivo, nombre_archivo, id_maquinaria, fecha_vencimiento) VALUES (?, ?, ?, ?)');
+    $stmt->bindValue(1, $archivo, PDO::PARAM_LOB);
+    $stmt->bindValue(2, $nombreArchivo);
     $stmt->bindValue(3, $idMaquinaria, PDO::PARAM_INT);
     $stmt->bindValue(4, $fechaVencimiento);
     $stmt->execute();
@@ -206,6 +247,24 @@ function normalizarFecha(mixed $value): ?string
     }
 
     return $date->format('Y-m-d');
+}
+
+function limpiarTexto(mixed $value, int $maxLength, bool $required = true): string
+{
+    $text = trim((string) $value);
+    if ($text === '') {
+        if ($required) {
+            throw new InvalidArgumentException('Uno de los campos obligatorios está vacío.');
+        }
+        return '';
+    }
+
+    $length = function_exists('mb_strlen') ? mb_strlen($text) : strlen($text);
+    if ($length > $maxLength) {
+        throw new InvalidArgumentException('Uno de los campos supera la longitud permitida.');
+    }
+
+    return $text;
 }
 
 function GuessMimeType(string $nombreArchivo): string

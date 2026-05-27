@@ -2,9 +2,21 @@
 require_once __DIR__ . "/config/db.php";
 require_once __DIR__ . "/config/session.php";
 
-iniciarSesion();
+$origin = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
+    . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
 
+header("Access-Control-Allow-Origin: {$origin}");
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Content-Type: application/json');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+iniciarSesion();
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     http_response_code(405);
@@ -134,6 +146,13 @@ try {
                 $stmt->execute([$id_obra, $id_maquinaria, $fecha]);
             }
         }
+    }
+
+    // ===== FINALIZA OBRA =====
+    $finaliza = isset($_POST['finaliza']) ? trim((string) $_POST['finaliza']) : 'No';
+    if ($finaliza === 'Sí' || $finaliza === 'Si') {
+        $stmt = $pdo->prepare("UPDATE obras SET fecha_fin = ? WHERE id_obra = ?");
+        $stmt->execute([$fecha, $id_obra]);
     }
 
     $pdo->commit();

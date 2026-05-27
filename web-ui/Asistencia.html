@@ -8,6 +8,14 @@
 <link rel="stylesheet" href="assets/css/Asistencias.css">
 <link rel="stylesheet" href="assets/css/nav-sidebar.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  .feedback-msg { padding: 14px 18px; border-radius: 10px; margin-bottom: 18px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; }
+  .feedback-msg.error   { background: #fde8e8; color: #b91c1c; border: 1px solid #f5c6c6; }
+  .feedback-msg.success { background: #e6f4ea; color: #137333; border: 1px solid #c3e6cc; }
+  .feedback-msg.warning { background: #fef3cd; color: #856404; border: 1px solid #ffeaa7; }
+  .feedback-msg i { font-size: 18px; }
+  .hidden { display: none !important; }
+</style>
 <script src="assets/js/auth.js"></script>
 </head>
 
@@ -41,9 +49,12 @@
 
 <main>
 
-<form class="form" method="POST" action="../api/guardar_asistencia.php">
+<form class="form" id="asistenciaForm">
 
 <h2>Registrar Asistencia</h2>
+
+<!-- FEEDBACK -->
+<div id="feedback" class="feedback-msg hidden"></div>
 
 <div class="grid">
 
@@ -185,6 +196,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const lista = document.getElementById("listaObreros");
   const horarios = document.getElementById("contenedorHorarios");
+
+  const form = document.getElementById("asistenciaForm");
+  const feedback = document.getElementById("feedback");
+  const btnGuardar = form.querySelector("button[type='submit']");
 
   let obrerosSeleccionados = [];
   let maquinariaSeleccionada = [];
@@ -345,6 +360,98 @@ document.addEventListener("DOMContentLoaded", () => {
     maquinariaSeleccionada = maquinariaSeleccionada.filter(m => m !== Number(id));
     document.getElementById("maquinaria-" + id)?.remove();
   };
+
+  // ================= MOSTRAR FEEDBACK =================
+  function mostrarFeedback(mensaje, tipo) {
+    feedback.innerHTML = `<i class="fas ${tipo === "error" ? "fa-circle-exclamation" : tipo === "success" ? "fa-circle-check" : "fa-triangle-exclamation"}"></i><span>${mensaje}</span>`;
+    feedback.className = `feedback-msg ${tipo}`;
+  }
+
+  function ocultarFeedback() {
+    feedback.classList.add("hidden");
+  }
+
+  // ================= SUBMIT CON FETCH =================
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    ocultarFeedback();
+
+    const idObra = parseInt(inputObra.value, 10);
+    const fecha = form.querySelector("input[name='fecha']").value.trim();
+    const finaliza = form.querySelector("select[name='finaliza']").value;
+
+    if (!idObra) {
+      mostrarFeedback("Seleccioná una obra.", "error");
+      return;
+    }
+    if (!fecha) {
+      mostrarFeedback("Seleccioná una fecha.", "error");
+      return;
+    }
+    if (!obrerosSeleccionados.length) {
+      mostrarFeedback("Seleccioná al menos un obrero.", "error");
+      return;
+    }
+
+    btnGuardar.disabled = true;
+    btnGuardar.textContent = "Guardando...";
+
+    try {
+      const csrfResp = await fetch("../api/csrf.php", { credentials: "include" });
+      const csrfData = await csrfResp.json();
+      const csrfToken = csrfData.token || "";
+
+      const formData = new FormData();
+      formData.append("id_obra", String(idObra));
+      formData.append("fecha", fecha);
+      formData.append("finaliza", finaliza);
+
+      obrerosSeleccionados.forEach(id => {
+        formData.append("obreros[]", String(id));
+        const entrada = form.querySelector(`input[name="hora_entrada[${id}]"]`);
+        const salida = form.querySelector(`input[name="hora_salida[${id}]"]`);
+        formData.append(`hora_entrada[${id}]`, entrada ? entrada.value : "");
+        formData.append(`hora_salida[${id}]`, salida ? salida.value : "");
+      });
+
+      const listaEl = document.getElementById("listaMateriales");
+      listaEl.querySelectorAll("input[name='material_nombre[]']").forEach(inp => formData.append("material_nombre[]", inp.value));
+      listaEl.querySelectorAll("input[name='material_cantidad[]']").forEach(inp => formData.append("material_cantidad[]", inp.value));
+      listaEl.querySelectorAll("input[name='material_costo[]']").forEach(inp => formData.append("material_costo[]", inp.value));
+
+      const listaHerr = document.getElementById("listaHerramientas");
+      listaHerr.querySelectorAll("input[name='herramienta_nombre[]']").forEach(inp => formData.append("herramienta_nombre[]", inp.value));
+      listaHerr.querySelectorAll("input[name='herramienta_cantidad[]']").forEach(inp => formData.append("herramienta_cantidad[]", inp.value));
+
+      maquinariaSeleccionada.forEach(id => {
+        formData.append("maquinaria[]", String(id));
+      });
+
+      const response = await fetch("../api/guardar_asistencia.php", {
+        method: "POST",
+        headers: { "X-CSRF-Token": csrfToken },
+        credentials: "include",
+        body: formData,
+      });
+
+      const text = await response.text();
+      let result;
+      try { result = JSON.parse(text); } catch { result = { error: text }; }
+
+      if (!response.ok || !result.success) {
+        mostrarFeedback(result.error || "Error al guardar la asistencia.", "error");
+        return;
+      }
+
+      mostrarFeedback(result.message || "Asistencia guardada correctamente.", "success");
+    } catch (err) {
+      console.error(err);
+      mostrarFeedback(err.message || "No se pudo guardar la asistencia. Revisá los datos.", "error");
+    } finally {
+      btnGuardar.disabled = false;
+      btnGuardar.textContent = "Guardar";
+    }
+  });
 
 });
 </script>
