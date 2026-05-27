@@ -34,6 +34,14 @@ const certSubirBtn = document.getElementById("certSubirBtn");
 const certCancelarBtn = document.getElementById("certCancelarBtn");
 const certLista = document.getElementById("certLista");
 const certListaWrap = document.getElementById("certListaWrap");
+const alertasVencimiento = document.getElementById("alertasVencimiento");
+const alertasLista = document.getElementById("alertasLista");
+const alertasCerrar = document.getElementById("alertasCerrar");
+const certSection = document.getElementById("certSection");
+const certArchivoForm = document.getElementById("certArchivoForm");
+const certVencimientoForm = document.getElementById("certVencimientoForm");
+const certSubirFormBtn = document.getElementById("certSubirFormBtn");
+const certListaForm = document.getElementById("certListaForm");
 
 const isDesktopWebView = Boolean(window.chrome?.webview);
 
@@ -92,6 +100,31 @@ paginationPrev.addEventListener("click", () => cambiarPagina(-1));
 paginationNext.addEventListener("click", () => cambiarPagina(1));
 
 certCancelarBtn.addEventListener("click", cerrarCertModal);
+alertasCerrar.addEventListener("click", () => {
+  alertasVencimiento.classList.add("hidden");
+});
+certSubirFormBtn.addEventListener("click", async () => {
+  if (!itemEnEdicion) return;
+  const file = certArchivoForm.files[0];
+  if (!file) {
+    setFeedback("Seleccioná un archivo primero.", "error");
+    return;
+  }
+  certSubirFormBtn.disabled = true;
+  try {
+    await subirCertificado(itemEnEdicion, file, certVencimientoForm.value);
+    certArchivoForm.value = "";
+    certVencimientoForm.value = "";
+    await cargarCertificadosForm(itemEnEdicion);
+    setFeedback("Certificado subido correctamente.", "success");
+  } catch (error) {
+    console.error(error);
+    setFeedback(error.message || "No se pudo subir el certificado.", "error");
+  } finally {
+    certSubirFormBtn.disabled = false;
+  }
+});
+
 certSubirBtn.addEventListener("click", async () => {
   if (!certModal.dataset.idMaquinaria) return;
   const file = certArchivo.files[0];
@@ -203,6 +236,7 @@ document.addEventListener("click", async (event) => {
         onAccept: async () => {
           fillForm(item);
           togglePanels(true);
+          cargarCertificadosForm(item.id_maquinaria);
           setFeedback(`Editando ${item.nombre}.`, "info");
         },
       });
@@ -262,6 +296,9 @@ async function inicializarVista() {
       csrfToken = await obtenerCsrf();
     }
     await cargarMaquinaria();
+    if (apiBase) {
+      cargarAlertas();
+    }
   } finally {
     setLoading(false);
   }
@@ -489,9 +526,14 @@ function renderMaquinaria() {
   maquinaria.forEach((item) => {
     const row = document.createElement("tr");
 
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
     let certIcono = "";
-    if (item.cert_vencimiento) {
-      const fechaVenc = new Date(item.cert_vencimiento + "T00:00:00");
+    let vencimiento = '<span style="color:#9ca3af;">No asignado</span>';
+    if (item.vencimiento) {
+      vencimiento = formatDate(item.vencimiento);
+      const fechaVenc = new Date(item.vencimiento + "T00:00:00");
       const diffDays = Math.ceil((fechaVenc - hoy) / (1000 * 60 * 60 * 24));
       if (diffDays <= 0) {
         certIcono = ` <i class="fas fa-circle-exclamation" style="color:#b91c1c;" title="Certificado vencido"></i>`;
@@ -503,6 +545,7 @@ function renderMaquinaria() {
     row.innerHTML = `
       <td><strong>${escapeHtml(item.nombre)}</strong>${certIcono}</td>
       <td>${escapeHtml(item.marca || "—")}</td>
+      <td>${vencimiento}</td>
       <td>
         <div class="table-actions">
           <button type="button" class="action-btn" data-action="cert" data-id="${item.id_maquinaria}" title="Certificados" style="background:#e8e3df;color:#666;">
@@ -546,6 +589,10 @@ function fillForm(item) {
   document.getElementById("marca").value = item.marca || "";
   formTitle.textContent = "Editar maquinaria";
   btnGuardar.textContent = "Guardar";
+  certSection.classList.remove("hidden");
+  certArchivoForm.value = "";
+  certVencimientoForm.value = "";
+  certListaForm.innerHTML = "<p style='font-size:13px;color:#888;'>Cargando...</p>";
 }
 
 function resetForm() {
@@ -554,6 +601,8 @@ function resetForm() {
   document.getElementById("id_maquinaria").value = "";
   formTitle.textContent = "Registrar maquinaria";
   btnGuardar.textContent = "Guardar";
+  certSection.classList.add("hidden");
+  certListaForm.innerHTML = "";
 }
 
 function setLoading(isLoading) {
@@ -637,6 +686,35 @@ function cerrarCertModal() {
   certLista.innerHTML = "";
 }
 
+function claseVencimientoCert(fechaVencimiento) {
+  if (!fechaVencimiento) return "";
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const vence = new Date(fechaVencimiento + "T00:00:00");
+  const dias = Math.ceil((vence - hoy) / (1000 * 60 * 60 * 24));
+  if (dias < 0) return "vencido";
+  if (dias <= 15) return "critico";
+  if (dias <= 30) return "advertencia";
+  return "";
+}
+
+function renderCertItem(cert) {
+  const clase = claseVencimientoCert(cert.fecha_vencimiento);
+  return `
+    <div class="obrero-item cert-item ${clase}" style="margin-bottom:6px;">
+      <span class="obrero-name">${escapeHtml(cert.nombre_archivo || "Certificado")}${cert.fecha_vencimiento ? ` — Vence: ${formatDate(cert.fecha_vencimiento)}` : ""}</span>
+      <div class="obrero-actions">
+        <button type="button" class="btn-delete" onclick="descargarCertificado(${cert.id_certificado}, '${escapeHtml(cert.nombre_archivo || "certificado").replaceAll("'", "\\'")}')" title="Descargar">
+          <i class="fas fa-download"></i>
+        </button>
+        <button type="button" class="btn-delete" onclick="eliminarCertForm(${cert.id_certificado})" title="Eliminar">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 async function cargarCertificados(idMaquinaria) {
   try {
     let data;
@@ -656,36 +734,29 @@ async function cargarCertificados(idMaquinaria) {
       return;
     }
 
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-
-    certLista.innerHTML = certificados.map((c) => {
-      let badge = "";
-      if (c.fecha_vencimiento) {
-        const fechaVenc = new Date(c.fecha_vencimiento + "T00:00:00");
-        const diffDays = Math.ceil((fechaVenc - hoy) / (1000 * 60 * 60 * 24));
-        if (diffDays <= 0) {
-          badge = ' <span class="cert-badge vencido">VENCIDO</span>';
-        } else if (diffDays <= 30) {
-          badge = ` <span class="cert-badge por-vencer">Vence en ${diffDays} ${diffDays === 1 ? "día" : "días"}</span>`;
-        }
-      }
-      return `
-      <div class="obrero-item" style="margin-bottom:6px;">
-        <span class="obrero-name">${escapeHtml(c.nombre_archivo || "Certificado")}${c.fecha_vencimiento ? ` — Vence: ${formatDate(c.fecha_vencimiento)}` : ""}${badge}</span>
-        <div class="obrero-actions">
-          <button type="button" class="btn-delete" onclick="descargarCertificado(${c.id_certificado}, '${escapeHtml(c.nombre_archivo || "certificado").replaceAll("'", "\\'")}')" title="Descargar">
-            <i class="fas fa-download"></i>
-          </button>
-          <button type="button" class="btn-delete" onclick="eliminarCertificado(${c.id_certificado})" title="Eliminar">
-            <i class="fas fa-trash"></i>
-          </button>
-        </div>
-      </div>
-    `}).join("");
+    certLista.innerHTML = certificados.map(renderCertItem).join("");
+    certLista.querySelectorAll(".btn-delete[onclick*='eliminarCertForm']").forEach(btn => {
+      btn.setAttribute("onclick", btn.getAttribute("onclick").replace("eliminarCertForm", "eliminarCertificado"));
+    });
   } catch (error) {
     console.error(error);
     certLista.innerHTML = "<p style='font-size:13px;color:#c44;'>No se pudieron cargar los certificados.</p>";
+  }
+}
+
+async function cargarCertificadosForm(idMaquinaria) {
+  if (!apiBase) return;
+  try {
+    const data = await fetchJson(`${apiBase}/cert_maq.php?id_maquinaria=${encodeURIComponent(idMaquinaria)}`);
+    const certificados = data.certificados || [];
+    if (!certificados.length) {
+      certListaForm.innerHTML = "<p style='font-size:13px;color:#888;'>No hay certificados cargados.</p>";
+      return;
+    }
+    certListaForm.innerHTML = certificados.map(renderCertItem).join("");
+  } catch (error) {
+    console.error(error);
+    certListaForm.innerHTML = "<p style='font-size:13px;color:#c44;'>No se pudieron cargar los certificados.</p>";
   }
 }
 
@@ -782,7 +853,38 @@ async function eliminarCertificado(idCertificado) {
     if (certModal.dataset.idMaquinaria) {
       await cargarCertificados(Number(certModal.dataset.idMaquinaria));
     }
+    if (itemEnEdicion && apiBase) {
+      await cargarCertificadosForm(itemEnEdicion);
+    }
     setFeedback(data.message || "Certificado eliminado correctamente.", "success");
+  } catch (error) {
+    console.error(error);
+    setFeedback(error.message || "No se pudo eliminar el certificado.", "error");
+  }
+}
+
+async function eliminarCertForm(idCertificado) {
+  if (!confirm("¿Eliminar este certificado? Esta acción no se puede deshacer.")) return;
+  try {
+    if (apiBase) {
+      const response = await fetch(`${apiBase}/cert_maq.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
+        credentials: "include",
+        body: JSON.stringify({ accion: "eliminar", id_certificado: idCertificado }),
+      });
+      const data = await parseJsonResponse(response, "No se pudo eliminar el certificado.");
+      if (!response.ok) {
+        throw new Error(data.error || "No se pudo eliminar el certificado.");
+      }
+    }
+    if (itemEnEdicion) {
+      await cargarCertificadosForm(itemEnEdicion);
+    }
+    setFeedback("Certificado eliminado correctamente.", "success");
   } catch (error) {
     console.error(error);
     setFeedback(error.message || "No se pudo eliminar el certificado.", "error");
@@ -815,4 +917,34 @@ function formatDate(value) {
   const [year, month, day] = value.split("-");
   if (!year || !month || !day) return value;
   return `${day}/${month}/${year}`;
+}
+
+async function cargarAlertas() {
+  try {
+    const data = await fetchJson(`${apiBase}/alertas_certificados.php?dias=30`);
+    const alertas = data.alertas || [];
+    if (!alertas.length) {
+      alertasVencimiento.classList.add("hidden");
+      return;
+    }
+    alertasVencimiento.classList.remove("hidden");
+    alertasLista.innerHTML = alertas.map((a) => {
+      const diasRestantes = parseInt(a.dias_restantes, 10);
+      let claseBadge = "";
+      if (diasRestantes < 0) claseBadge = "expirado";
+      else if (diasRestantes <= 15) claseBadge = "critico";
+      else claseBadge = "advertencia";
+      const textoDias = diasRestantes < 0
+        ? `Expirado (${Math.abs(diasRestantes)} día(s))`
+        : `Vence en ${diasRestantes} día(s)`;
+      return `<li>
+        <span class="alerta-badge ${claseBadge}">${textoDias}</span>
+        <strong>${escapeHtml(a.nombre_maquinaria)}</strong>${a.marca ? " (" + escapeHtml(a.marca) + ")" : ""}
+        — ${escapeHtml(a.nombre_archivo || "Certificado")}
+        <span style="margin-left:auto;font-size:11px;color:#9ca3af;">${formatDate(a.fecha_vencimiento)}</span>
+      </li>`;
+    }).join("");
+  } catch (e) {
+    console.error("Error cargando alertas:", e);
+  }
 }

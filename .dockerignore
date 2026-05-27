@@ -1,0 +1,9 @@
+.git
+.gitignore
+.vscode
+.env
+.env.example
+*.md
+desktop-csharp
+migracion_certificado.sql
+portico.sln
