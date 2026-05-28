@@ -153,3 +153,21 @@ CREATE TABLE IF NOT EXISTS intentos_login (
     INDEX idx_username_fecha (username, fecha),
     INDEX idx_ip_fecha (ip_address, fecha)
 );
+
+CREATE TABLE IF NOT EXISTS auditoria_logs (
+    id_log INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NULL,
+    usuario VARCHAR(50) NULL,
+    rol VARCHAR(20) NULL,
+    accion VARCHAR(20) NOT NULL,
+    entidad VARCHAR(50) NOT NULL,
+    entidad_id INT NULL,
+    detalle_json TEXT NULL,
+    ip_address VARCHAR(45) NULL,
+    created_at DATETIME NOT NULL,
+    INDEX idx_accion (accion),
+    INDEX idx_entidad (entidad),
+    INDEX idx_created_at (created_at),
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE SET NULL
+);

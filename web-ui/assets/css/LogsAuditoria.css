@@ -1,0 +1,263 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: var(--bg);
+    min-height: 100vh;
+}
+
+nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 24px;
+    height: 140px;
+    background-color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.logo-wrap img {
+    width: 120px;
+    height: auto;
+}
+
+.user-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.user-pill svg {
+    width: 20px;
+    height: 20px;
+    fill: var(--text-muted);
+}
+
+main {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.card {
+    background-color: var(--card-bg);
+    border-radius: 25px;
+    padding: 36px;
+    width: 95%;
+    max-width: 1380px;
+}
+
+.header-row {
+    margin-bottom: 20px;
+}
+
+.header-row h2 {
+    color: var(--text-dark);
+    margin-bottom: 8px;
+}
+
+.header-row p {
+    color: var(--text-muted);
+}
+
+.feedback {
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.feedback-success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.feedback-error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.filters-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--text-dark);
+    font-size: 14px;
+}
+
+.filters-grid input,
+.filters-grid select {
+    border: 1px solid var(--input-border);
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+    color: #444;
+}
+
+.filters-actions {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.btn-primary,
+.btn-secondary,
+.pager-btn,
+.btn-back {
+    border: none;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: 0.2s;
+}
+
+.btn-primary {
+    background: var(--btn-bg);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: var(--btn-hover);
+}
+
+.btn-secondary,
+.pager-btn {
+    background: #fff;
+    color: var(--text-dark);
+    border: 1px solid var(--input-border);
+}
+
+.pager-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.summary-bar {
+    margin-bottom: 14px;
+    color: var(--text-dark);
+    font-size: 14px;
+}
+
+.table-container {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead {
+    background-color: var(--accent);
+    color: #fff;
+}
+
+th,
+td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--input-border);
+    color: #444;
+    vertical-align: top;
+    font-size: 14px;
+}
+
+.table-status {
+    text-align: center;
+    color: #777;
+    padding: 24px 12px;
+}
+
+tbody tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+tbody tr:hover {
+    background-color: #f4efed;
+}
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    background: #f5e4e4;
+    color: var(--btn-bg);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.detail-cell {
+    min-width: 280px;
+    color: #666;
+    line-height: 1.45;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.btn-back {
+    display: block;
+    text-align: center;
+    background: var(--text-muted);
+    color: #fff;
+    margin-top: 20px;
+}
+
+.btn-back:hover {
+    background: var(--text-dark);
+}
+
+@media (max-width: 1200px) {
+    .filters-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .card {
+        padding: 22px;
+    }
+
+    .filters-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filters-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .pagination {
+        flex-direction: column;
+    }
+}

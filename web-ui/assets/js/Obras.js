@@ -50,6 +50,7 @@ const detailBtnDownload = document.getElementById("detailBtnDownload");
 const detailBtnDelete = document.getElementById("detailBtnDelete");
 const detailBtnToggleStatus = document.getElementById("detailBtnToggleStatus");
 const detailToggleStatusText = document.getElementById("detailToggleStatusText");
+const detailBtnMap = document.getElementById("detailBtnMap");
 const isDesktopWebView = Boolean(window.chrome?.webview);
 
 function resolveApiBase() {
@@ -647,9 +648,11 @@ function fillForm(obra) {
   document.getElementById("activo").checked = obra.activo === 1 || obra.activo === "1";
   contratoInput.value = "";
   actualizarEstadoContratoActual(obra.contrato_nombre_archivo || "");
-  formTitle.textContent = "Editar obra";
-  btnGuardar.textContent = "Guardar";
+  formTitle.textContent = "Editando: " + obra.nombre;
+  btnGuardar.textContent = "Guardar cambios";
   btnBack.textContent = "Cancelar edición";
+  document.querySelector(".editor-panel").classList.add("editing");
+  document.querySelector(".layout-grid").classList.add("editing-list");
 }
 
 function resetForm() {
@@ -659,7 +662,10 @@ function resetForm() {
   contratoInput.value = "";
   actualizarEstadoContratoActual("");
   formTitle.textContent = "Nueva obra";
+  btnGuardar.textContent = "Guardar";
   btnBack.textContent = "Volver";
+  document.querySelector(".editor-panel").classList.remove("editing");
+  document.querySelector(".layout-grid").classList.remove("editing-list");
 }
 
 async function leerContratoSeleccionado() {
@@ -812,10 +818,13 @@ function abrirDetalle(idObra) {
 
 function cerrarDetalle() {
   obraDetailModal.classList.add("hidden");
+  obraDetailModal.style.display = "none";
   obraDetalleActual = null;
-  detailBtnEdit.onclick = null;
-  detailBtnDownload.onclick = null;
-  detailBtnDelete.onclick = null;
+  if (detailBtnEdit) detailBtnEdit.onclick = null;
+  if (detailBtnDownload) detailBtnDownload.onclick = null;
+  if (detailBtnDelete) detailBtnDelete.onclick = null;
+  if (detailBtnToggleStatus) detailBtnToggleStatus.onclick = null;
+  if (detailBtnMap) detailBtnMap.onclick = null;
 }
 
 async function cargarDetalleObra(idObra) {
@@ -832,6 +841,7 @@ async function cargarDetalleObra(idObra) {
   }
 
   renderDetalle(data);
+  obraDetailModal.style.display = "";
   obraDetailModal.classList.remove("hidden");
 }
 

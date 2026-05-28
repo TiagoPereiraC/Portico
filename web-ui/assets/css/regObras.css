@@ -109,6 +109,19 @@ main {
     gap: 24px;
 }
 
+.layout-grid.editing-list {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.layout-grid.editing-list .editor-panel {
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.layout-grid.editing-list .list-panel {
+    display: none;
+}
+
 .editor-panel,
 .list-panel {
     background: #fff;
@@ -117,6 +130,39 @@ main {
     padding: 24px;
     box-shadow: var(--input-shadow);
     min-width: 0;
+    transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+}
+
+.editor-panel.editing {
+    border: 2px solid var(--accent);
+    background: #fef5f5;
+    box-shadow: 0 4px 24px rgba(181, 71, 71, 0.2);
+}
+
+.editor-panel.editing .panel-head h2 {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.editor-panel.editing .btn-save {
+    background: var(--btn-bg);
+    box-shadow: 0 4px 16px rgba(181, 71, 71, 0.3);
+}
+
+.editor-panel.editing .btn-save:hover {
+    background: var(--btn-hover);
+}
+
+.editor-panel.editing .btn-back {
+    background: #aaa;
+    color: #fff;
+    box-shadow: none;
+}
+
+.editor-panel.editing .btn-back:hover {
+    background: #888;
+    transform: scale(1.02);
 }
 
 .panel-head {
@@ -445,7 +491,7 @@ main {
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: var(--input-bg);
+    color: var(--text-dark);
     margin-bottom: 6px;
 }
 

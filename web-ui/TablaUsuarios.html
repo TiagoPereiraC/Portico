@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
     <head>
         <meta charset="UTF-8" />
@@ -27,6 +27,11 @@
                         ><i class="fas fa-home"></i> Panel</a
                     >
                 </li>
+                    <li>
+                        <a href="TablaUsuarios.html"
+                            ><i class="fas fa-user"></i> Usuarios</a
+                        >
+                    </li>
                 <li>
                     <a href="Obras.html"
                         ><i class="fas fa-building"></i> Obras</a
@@ -52,6 +57,11 @@
                         ><i class="fas fa-chart-column"></i> Consultas</a
                     >
                 </li>
+                    <li>
+                        <a href="LogsAuditoria.html"
+                            ><i class="fas fa-clipboard-list"></i> Logs</a
+                        >
+                    </li>
                 <li>
                     <a href="Login.html"
                         ><i class="fas fa-right-from-bracket"></i> Salir</a
@@ -93,7 +103,6 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Nombre</th>
                                 <th>Usuario</th>
                                 <th>Contraseña</th>
@@ -104,7 +113,7 @@
 
                         <tbody id="users-body">
                             <tr>
-                                <td colspan="6" class="table-status">
+                                <td colspan="5" class="table-status">
                                     Cargando usuarios...
                                 </td>
                             </tr>
@@ -184,13 +193,13 @@
 
             async function loadUsers() {
                 tbody.innerHTML =
-                    '<tr><td colspan="6" class="table-status">Cargando usuarios...</td></tr>';
+                    '<tr><td colspan="5" class="table-status">Cargando usuarios...</td></tr>';
 
                 try {
                     const data = await window.userApi.listUsers();
                     renderUsers(data.users || []);
                 } catch (error) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="table-status">${escapeHtml(error.message || "No se pudieron cargar los usuarios.")}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" class="table-status">${escapeHtml(error.message || "No se pudieron cargar los usuarios.")}</td></tr>`;
                     showFeedback(
                         error.message || "No se pudieron cargar los usuarios.",
                         "error",
@@ -201,7 +210,7 @@
             function renderUsers(users) {
                 if (!Array.isArray(users) || users.length === 0) {
                     tbody.innerHTML =
-                        '<tr><td colspan="6" class="table-status">No hay usuarios registrados.</td></tr>';
+                        '<tr><td colspan="5" class="table-status">No hay usuarios registrados.</td></tr>';
                     return;
                 }
 
@@ -209,8 +218,8 @@
                     .map(function (user) {
                         return `
       <tr>
-        <td>${user.id_usuario}</td>
         <td>${escapeHtml(user.nombre)}</td>
+        <td>${escapeHtml(user.usuario)}</td>
         <td>${escapeHtml(user.usuario)}</td>
         <td>••••••••</td>
         <td>${escapeHtml(user.rol)}</td>
