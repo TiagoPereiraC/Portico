@@ -147,10 +147,19 @@ function manejarPut(PDO $pdo): void
 
     [$nombre, $usuario, $rol, $nuevaPassword] = validarPayloadActualizacion($body);
 
-    $stmt = $pdo->prepare('SELECT id_usuario FROM usuarios WHERE id_usuario = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT rol FROM usuarios WHERE id_usuario = ? LIMIT 1');
     $stmt->execute([$id]);
-    if (!$stmt->fetch()) {
+    $userActual = $stmt->fetch();
+    if (!$userActual) {
         responder(404, ['error' => 'Usuario no encontrado.']);
+    }
+
+    if ($userActual['rol'] === 'Administrador' && $rol !== 'Administrador') {
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM usuarios WHERE rol = ?');
+        $stmt->execute(['Administrador']);
+        if ((int) $stmt->fetchColumn() <= 1) {
+            responder(409, ['error' => 'No se puede cambiar el rol del único administrador del sistema.']);
+        }
     }
 
     $stmt = $pdo->prepare('SELECT id_usuario FROM usuarios WHERE usuario = ? AND id_usuario <> ? LIMIT 1');
@@ -193,11 +202,19 @@ function manejarDelete(PDO $pdo): void
         responder(400, ['error' => 'ID de usuario inválido.']);
     }
 
-    $stmt = $pdo->prepare('SELECT usuario FROM usuarios WHERE id_usuario = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT usuario, rol FROM usuarios WHERE id_usuario = ? LIMIT 1');
     $stmt->execute([$id]);
     $user = $stmt->fetch();
     if (!$user) {
         responder(404, ['error' => 'Usuario no encontrado.']);
+    }
+
+    if ($user['rol'] === 'Administrador') {
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM usuarios WHERE rol = ?');
+        $stmt->execute(['Administrador']);
+        if ((int) $stmt->fetchColumn() <= 1) {
+            responder(409, ['error' => 'No se puede eliminar el único administrador del sistema.']);
+        }
     }
 
     $stmt = $pdo->prepare('DELETE FROM usuarios WHERE id_usuario = ?');
