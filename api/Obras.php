@@ -350,16 +350,17 @@ function responderEliminacion(PDO $pdo, array $body): void
         throw new InvalidArgumentException('Debés indicar una obra válida.');
     }
 
-    $stmt = $pdo->prepare('DELETE FROM obras WHERE id_obra = ?');
+    $stmt = $pdo->prepare('SELECT id_obra FROM obras WHERE id_obra = ? LIMIT 1');
     $stmt->execute([$idObra]);
-
-    if ($stmt->rowCount() === 0) {
+    if (!$stmt->fetchColumn()) {
         throw new RuntimeException('La obra indicada no existe.');
     }
 
+    $pdo->prepare('UPDATE obras SET activo = 0 WHERE id_obra = ?')->execute([$idObra]);
+
     echo json_encode([
         'success' => true,
-        'message' => 'Obra eliminada correctamente.',
+        'message' => 'Obra desactivada correctamente.',
     ]);
 }
 

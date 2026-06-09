@@ -209,20 +209,31 @@ function manejarDelete(PDO $pdo): void
         responder(404, ['error' => 'Usuario no encontrado.']);
     }
 
+    $currentUserId = (int) ($_SESSION['user_id'] ?? 0);
+    if ($id === $currentUserId) {
+        responder(403, ['error' => 'No podés desactivar tu propio usuario.']);
+    }
+
     if ($user['rol'] === 'Administrador') {
-        $stmt = $pdo->prepare('SELECT COUNT(*) FROM usuarios WHERE rol = ?');
-        $stmt->execute(['Administrador']);
-        if ((int) $stmt->fetchColumn() <= 1) {
-            responder(409, ['error' => 'No se puede eliminar el único administrador del sistema.']);
+        $stmt = $pdo->prepare(
+            'SELECT COUNT(*) FROM usuarios WHERE rol = ? AND activo = 1 AND id_usuario <> ?'
+        );
+        $stmt->execute(['Administrador', $id]);
+        if ((int) $stmt->fetchColumn() < 1) {
+            responder(403, ['error' => 'No podés desactivar el último administrador del sistema.']);
         }
     }
 
-    $stmt = $pdo->prepare('DELETE FROM usuarios WHERE id_usuario = ?');
+    $stmt = $pdo->prepare('UPDATE usuarios SET activo = 0 WHERE id_usuario = ?');
     $stmt->execute([$id]);
+
+    registrarAuditoria($pdo, 'eliminar', 'usuarios', $id, [
+        'usuario' => $user['usuario'],
+    ]);
 
     responder(200, [
         'success' => true,
-        'message' => "Usuario '{$user['usuario']}' eliminado correctamente.",
+        'message' => "Usuario '{$user['usuario']}' desactivado correctamente.",
     ]);
 }
 

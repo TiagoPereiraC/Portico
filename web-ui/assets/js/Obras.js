@@ -51,6 +51,8 @@ const detailBtnDelete = document.getElementById("detailBtnDelete");
 const detailBtnToggleStatus = document.getElementById("detailBtnToggleStatus");
 const detailToggleStatusText = document.getElementById("detailToggleStatusText");
 const detailBtnMap = document.getElementById("detailBtnMap");
+const detailMapSection = document.getElementById("detailMapSection");
+const detailMapIframe = document.getElementById("detailMapIframe");
 const isDesktopWebView = Boolean(window.chrome?.webview);
 
 function resolveApiBase() {
@@ -825,6 +827,8 @@ function cerrarDetalle() {
   if (detailBtnDelete) detailBtnDelete.onclick = null;
   if (detailBtnToggleStatus) detailBtnToggleStatus.onclick = null;
   if (detailBtnMap) detailBtnMap.onclick = null;
+  if (detailMapSection) detailMapSection.classList.add("hidden");
+  if (detailMapIframe) detailMapIframe.src = "";
 }
 
 async function cargarDetalleObra(idObra) {
@@ -955,6 +959,31 @@ function renderDetalle(data) {
   detailBtnDownload.disabled = !obra.contrato_nombre_archivo;
   detailBtnDelete.disabled = false;
   detailBtnToggleStatus.disabled = false;
+  detailBtnMap.disabled = !obra.direccion;
+
+  detailBtnMap.onclick = async (event) => {
+    event.stopPropagation();
+    if (!obra.direccion) return;
+    const visible = !detailMapSection.classList.contains("hidden");
+    if (visible) {
+      detailMapSection.classList.add("hidden");
+      return;
+    }
+    try {
+      const geo = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(obra.direccion)}`
+      ).then(r => r.json());
+      if (geo.length) {
+        const { lat, lon } = geo[0];
+        detailMapIframe.src = `https://www.openstreetmap.org/export/embed.html?bbox=${lon},${lat},${lon},${lat}&layer=mapnik&marker=${lat},${lon}`;
+      } else {
+        detailMapIframe.src = "https://www.openstreetmap.org/export/embed.html?bbox=&layer=mapnik";
+      }
+    } catch {
+      detailMapIframe.src = "https://www.openstreetmap.org/export/embed.html?bbox=&layer=mapnik";
+    }
+    detailMapSection.classList.remove("hidden");
+  };
 
   const esActiva = obra.activo === 1 || obra.activo === "1";
   detailToggleStatusText.textContent = esActiva ? "Finalizar Obra" : "Activar Obra";

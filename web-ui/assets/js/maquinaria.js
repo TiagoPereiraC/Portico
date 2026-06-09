@@ -43,6 +43,10 @@ const certVencimientoForm = document.getElementById("certVencimientoForm");
 const certSubirFormBtn = document.getElementById("certSubirFormBtn");
 const certListaForm = document.getElementById("certListaForm");
 
+// Nuevo: filtro de certificados vencidos/por vencer
+const filtroCertCheckbox = document.getElementById("filtroCertificados");
+let filtroCertActivo = false;
+
 const isDesktopWebView = Boolean(window.chrome?.webview);
 
 function resolveApiBase() {
@@ -205,6 +209,17 @@ searchMaquinaria.addEventListener("input", (event) => {
       setFeedback(error.message || "No se pudo cargar la maquinaria.", "error");
     });
   }, 200);
+});
+
+// Nuevo: evento del filtro de certificados
+filtroCertCheckbox.addEventListener("change", (e) => {
+  filtroCertActivo = e.target.checked;
+  paginaActual = 1;
+  terminoBusqueda = searchMaquinaria.value;
+  cargarMaquinaria().catch((error) => {
+    console.error(error);
+    setFeedback(error.message || "No se pudo aplicar el filtro.", "error");
+  });
 });
 
 document.addEventListener("click", async (event) => {
@@ -469,17 +484,20 @@ async function cargarMaquinaria() {
         limit: String(ITEMS_POR_PAGINA),
         search: terminoBusqueda,
       });
+      if (filtroCertActivo) {
+        params.append("estado_cert", "criticos");
+      }
       data = await fetchJson(`${apiBase}/maquinaria.php?${params.toString()}`);
     } else {
-      data = await sendDesktopRequest(
-        "maquinaria_listar",
-        {
-          page: paginaActual,
-          limit: ITEMS_POR_PAGINA,
-          search: terminoBusqueda,
-        },
-        "maquinaria_listar_response",
-      );
+      const payload = {
+        page: paginaActual,
+        limit: ITEMS_POR_PAGINA,
+        search: terminoBusqueda,
+      };
+      if (filtroCertActivo) {
+        payload.estado_cert = "criticos";
+      }
+      data = await sendDesktopRequest("maquinaria_listar", payload, "maquinaria_listar_response");
     }
 
     if (solicitudId !== ultimaSolicitudListado) {
@@ -525,9 +543,6 @@ function renderMaquinaria() {
 
   maquinaria.forEach((item) => {
     const row = document.createElement("tr");
-
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
 
     let certIcono = "";
     let vencimiento = '<span style="color:#9ca3af;">No asignado</span>';

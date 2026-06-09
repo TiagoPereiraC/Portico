@@ -105,7 +105,6 @@
                             <tr>
                                 <th>Nombre</th>
                                 <th>Usuario</th>
-                                <th>Contraseña</th>
                                 <th>Rol</th>
                                 <th>Acciones</th>
                             </tr>
@@ -113,7 +112,7 @@
 
                         <tbody id="users-body">
                             <tr>
-                                <td colspan="5" class="table-status">
+                                <td colspan="4" class="table-status">
                                     Cargando usuarios...
                                 </td>
                             </tr>
@@ -199,7 +198,7 @@
                     const data = await window.userApi.listUsers();
                     renderUsers(data.users || []);
                 } catch (error) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="table-status">${escapeHtml(error.message || "No se pudieron cargar los usuarios.")}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" class="table-status">${escapeHtml(error.message || "No se pudieron cargar los usuarios.")}</td></tr>`;
                     showFeedback(
                         error.message || "No se pudieron cargar los usuarios.",
                         "error",
@@ -210,7 +209,7 @@
             function renderUsers(users) {
                 if (!Array.isArray(users) || users.length === 0) {
                     tbody.innerHTML =
-                        '<tr><td colspan="5" class="table-status">No hay usuarios registrados.</td></tr>';
+                        '<tr><td colspan="4" class="table-status">No hay usuarios registrados.</td></tr>';
                     return;
                 }
 
@@ -220,8 +219,6 @@
       <tr>
         <td>${escapeHtml(user.nombre)}</td>
         <td>${escapeHtml(user.usuario)}</td>
-        <td>${escapeHtml(user.usuario)}</td>
-        <td>••••••••</td>
         <td>${escapeHtml(user.rol)}</td>
         <td>
           <div class="table-actions">

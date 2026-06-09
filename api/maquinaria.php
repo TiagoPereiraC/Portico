@@ -72,15 +72,9 @@ try {
     http_response_code(404);
     echo json_encode(['error' => $e->getMessage()]);
 } catch (PDOException $e) {
-    if ((int) $e->getCode() === 23000) {
-        http_response_code(409);
-        echo json_encode(['error' => 'No se puede eliminar porque está asignada a una obra.']);
-        exit;
-    }
-
     error_log('maquinaria.php PDO error: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['error' => 'Error interno del servidor.']);
+    echo json_encode(['error' => 'Error al procesar la operación.']);
 } catch (Throwable $e) {
     error_log('maquinaria.php error: ' . $e->getMessage());
     http_response_code(500);
@@ -92,23 +86,50 @@ function responderListado(PDO $pdo): void
     $page = max(1, (int) ($_GET['page'] ?? 1));
     $limit = (int) ($_GET['limit'] ?? 10);
     $limit = max(1, min($limit, 100));
+
     $search = trim((string) ($_GET['search'] ?? ''));
+    $estadoCert = trim((string) ($_GET['estado_cert'] ?? ''));
 
     $where = [];
     $params = [];
 
     if ($search !== '') {
-        $where[] = '(nombre LIKE ? OR marca LIKE ?)';
-        $searchLike = $search . '%';
-        $params = array_merge($params, [$searchLike, $searchLike]);
+        $where[] = '(
+            m.nombre LIKE ?
+            OR m.marca LIKE ?
+            OR CONCAT(m.nombre, " ", COALESCE(m.marca, "")) LIKE ?
+        )';
+
+        $searchLike = '%' . $search . '%';
+
+        $params[] = $searchLike;
+        $params[] = $searchLike;
+        $params[] = $searchLike;
+    }
+
+    if ($estadoCert === 'criticos') {
+        $where[] = '(
+            EXISTS (
+                SELECT 1
+                FROM certificado c
+                WHERE c.id_maquinaria = m.id_maquinaria
+                AND c.fecha_vencimiento IS NOT NULL
+                AND c.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            )
+        )';
     }
 
     $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
 
-    $countStmt = $pdo->prepare('SELECT COUNT(*) FROM maquinaria' . $whereSql);
+    $countStmt = $pdo->prepare(
+        'SELECT COUNT(*) 
+         FROM maquinaria m' . $whereSql
+    );
+
     foreach ($params as $index => $value) {
         $countStmt->bindValue($index + 1, $value, PDO::PARAM_STR);
     }
+
     $countStmt->execute();
     $total = (int) $countStmt->fetchColumn();
 
@@ -117,19 +138,30 @@ function responderListado(PDO $pdo): void
     $offset = ($page - 1) * $limit;
 
     $stmt = $pdo->prepare(
-        'SELECT m.id_maquinaria, m.nombre, m.marca,
-                (SELECT MIN(c.fecha_vencimiento) FROM certificado c WHERE c.id_maquinaria = m.id_maquinaria) as vencimiento
-         FROM maquinaria m'
-        . $whereSql
-        . ' ORDER BY m.id_maquinaria DESC LIMIT ? OFFSET ?'
+        'SELECT
+            m.id_maquinaria,
+            m.nombre,
+            m.marca,
+            (
+                SELECT MIN(c.fecha_vencimiento)
+                FROM certificado c
+                WHERE c.id_maquinaria = m.id_maquinaria
+            ) AS vencimiento
+        FROM maquinaria m'
+        . $whereSql .
+        ' ORDER BY m.nombre ASC
+          LIMIT ? OFFSET ?'
     );
 
     $bindIndex = 1;
+
     foreach ($params as $value) {
         $stmt->bindValue($bindIndex++, $value, PDO::PARAM_STR);
     }
+
     $stmt->bindValue($bindIndex++, $limit, PDO::PARAM_INT);
     $stmt->bindValue($bindIndex, $offset, PDO::PARAM_INT);
+
     $stmt->execute();
 
     echo json_encode([

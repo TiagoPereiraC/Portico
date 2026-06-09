@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
     <head>
         <meta charset="UTF-8" />
@@ -12,7 +12,6 @@
             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
         />
         <link rel="stylesheet" href="assets/css/nav-sidebar.css" />
-        <link rel="stylesheet" href="assets/css/cert_alertas.css" />
         <script src="assets/js/auth.js" data-role="Administrador"></script>
         <style>
             .alertas-vencimiento {
@@ -89,6 +88,39 @@
                 display: flex;
                 align-items: center;
             }
+            /* Estilo para el filtro de certificados */
+            .filter-checkbox {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: #fff;
+                padding: 0 12px;
+                border-radius: 10px;
+                border: 1.5px solid var(--input-border);
+                height: 42px;
+                cursor: pointer;
+                font-size: 13px;
+                white-space: nowrap;
+            }
+            .filter-checkbox input {
+                margin: 0;
+                width: 16px;
+                height: 16px;
+                cursor: pointer;
+            }
+            .filter-checkbox span {
+                color: var(--text-dark);
+                user-select: none;
+            }
+            @media (max-width: 640px) {
+                .list-filters {
+                    flex-wrap: wrap;
+                }
+                .filter-checkbox {
+                    white-space: normal;
+                    flex: 1;
+                }
+            }
         </style>
     </head>
 
@@ -159,7 +191,7 @@
                         d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"
                     />
                 </svg>
-                Admin
+                <span class="user-pill-name">Admin</span>
             </div>
         </nav>
 
@@ -283,6 +315,10 @@
                                 placeholder="Buscar por nombre o marca"
                                 autocomplete="off"
                             />
+                        </label>
+                        <label class="filter-checkbox" id="filterCertLabel">
+                            <input type="checkbox" id="filtroCertificados" />
+                            <span>Certificados vencidos o por vencer</span>
                         </label>
                     </div>
 
