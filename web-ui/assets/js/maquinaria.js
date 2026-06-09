@@ -223,10 +223,28 @@ filtroCertCheckbox.addEventListener("change", (e) => {
 });
 
 document.addEventListener("click", async (event) => {
-  const button = event.target.closest("button[data-action]");
-  if (!button) {
+  // Cert download via data attribute (delegated)
+  const descargarBtn = event.target.closest("button[data-descargar]");
+  if (descargarBtn) {
+    const certId = Number(descargarBtn.dataset.descargar);
+    const nombre = descargarBtn.dataset.nombre || "certificado";
+    descargarCertificado(certId, nombre).catch(err => {
+      console.error(err);
+      setFeedback("No se pudo descargar el certificado.", "error");
+    });
     return;
   }
+
+  // Cert delete via data attribute (delegated)
+  const eliminarCertBtn = event.target.closest("button[data-eliminar-cert]");
+  if (eliminarCertBtn) {
+    const certId = Number(eliminarCertBtn.dataset.eliminarCert);
+    eliminarCertForm(certId);
+    return;
+  }
+
+  const button = event.target.closest("button[data-action]");
+  if (!button) {
 
   const id = Number.parseInt(button.dataset.id, 10);
   if (!id) {
@@ -312,7 +330,7 @@ async function inicializarVista() {
     }
     await cargarMaquinaria();
     if (apiBase) {
-      cargarAlertas();
+      cargarAlertas().catch(err => console.error('Error cargando alertas:', err));
     }
   } finally {
     setLoading(false);
@@ -719,10 +737,10 @@ function renderCertItem(cert) {
     <div class="obrero-item cert-item ${clase}" style="margin-bottom:6px;">
       <span class="obrero-name">${escapeHtml(cert.nombre_archivo || "Certificado")}${cert.fecha_vencimiento ? ` — Vence: ${formatDate(cert.fecha_vencimiento)}` : ""}</span>
       <div class="obrero-actions">
-        <button type="button" class="btn-delete" onclick="descargarCertificado(${cert.id_certificado}, '${escapeHtml(cert.nombre_archivo || "certificado").replaceAll("'", "\\'")}')" title="Descargar">
+        <button type="button" class="btn-delete" data-descargar="${cert.id_certificado}" data-nombre="${escapeHtml(cert.nombre_archivo || "certificado")}" title="Descargar">
           <i class="fas fa-download"></i>
         </button>
-        <button type="button" class="btn-delete" onclick="eliminarCertForm(${cert.id_certificado})" title="Eliminar">
+        <button type="button" class="btn-delete" data-eliminar-cert="${cert.id_certificado}" title="Eliminar">
           <i class="fas fa-trash"></i>
         </button>
       </div>
@@ -750,9 +768,6 @@ async function cargarCertificados(idMaquinaria) {
     }
 
     certLista.innerHTML = certificados.map(renderCertItem).join("");
-    certLista.querySelectorAll(".btn-delete[onclick*='eliminarCertForm']").forEach(btn => {
-      btn.setAttribute("onclick", btn.getAttribute("onclick").replace("eliminarCertForm", "eliminarCertificado"));
-    });
   } catch (error) {
     console.error(error);
     certLista.innerHTML = "<p style='font-size:13px;color:#c44;'>No se pudieron cargar los certificados.</p>";

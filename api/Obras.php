@@ -356,11 +356,11 @@ function responderEliminacion(PDO $pdo, array $body): void
         throw new RuntimeException('La obra indicada no existe.');
     }
 
-    $pdo->prepare('UPDATE obras SET activo = 0 WHERE id_obra = ?')->execute([$idObra]);
+    $pdo->prepare('DELETE FROM obras WHERE id_obra = ?')->execute([$idObra]);
 
     echo json_encode([
         'success' => true,
-        'message' => 'Obra desactivada correctamente.',
+        'message' => 'Obra eliminada correctamente.',
     ]);
 }
 

@@ -1111,7 +1111,7 @@ function formatDate(value) {
 }
 
 function obtenerMensajeSinResultados(busqueda, estado) {
-  if (!obras.length) {
+  if (!busqueda && estado === "all") {
     return "No hay obras registradas todavía.";
   }
 

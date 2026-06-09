@@ -28,7 +28,7 @@
             window.location.replace(rol === 'Capataz' ? 'Asistencia.html' : 'Login.html');
             return false;
         }
-        document.addEventListener('DOMContentLoaded', function () {
+        function updatePill() {
             const pill = document.querySelector('.user-pill');
             const pillName = document.querySelector('.user-pill-name');
             if (pillName) {
@@ -36,7 +36,12 @@
             } else if (pill) {
                 pill.textContent = nombre;
             }
-        });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', updatePill);
+        } else {
+            updatePill();
+        }
         return true;
     }
 

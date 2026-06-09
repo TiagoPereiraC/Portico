@@ -89,6 +89,18 @@
             const requestId = nextRequestId('auditoria_listar');
             pendingRequests.set(requestId, { resolve, reject });
 
+            const timeoutId = window.setTimeout(() => {
+                pendingRequests.delete(requestId);
+                reject(new Error('La aplicación de escritorio no respondió a tiempo.'));
+            }, 15000);
+
+            const originalResolve = resolve;
+            const originalReject = reject;
+            pendingRequests.set(requestId, {
+                resolve: (data) => { window.clearTimeout(timeoutId); originalResolve(data); },
+                reject: (err) => { window.clearTimeout(timeoutId); originalReject(err); }
+            });
+
             global.chrome.webview.postMessage(JSON.stringify({
                 type: 'auditoria_listar',
                 requestId,

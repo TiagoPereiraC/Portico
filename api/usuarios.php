@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/config/session.php';
+require_once __DIR__ . '/config/auditoria.php';
 
 $origin = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
         . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
@@ -35,26 +36,26 @@ if ($method !== 'GET') {
 
 try {
     $pdo = conectar();
-} catch (Throwable $e) {
-    error_log('DB connection error: ' . $e->getMessage());
-    responder(503, ['error' => 'Servicio no disponible. Intente más tarde.']);
-}
 
-switch ($method) {
-    case 'GET':
-        manejarGet($pdo);
-        break;
-    case 'POST':
-        manejarPost($pdo);
-        break;
-    case 'PUT':
-        manejarPut($pdo);
-        break;
-    case 'DELETE':
-        manejarDelete($pdo);
-        break;
-    default:
-        responder(405, ['error' => 'Método no permitido']);
+    switch ($method) {
+        case 'GET':
+            manejarGet($pdo);
+            break;
+        case 'POST':
+            manejarPost($pdo);
+            break;
+        case 'PUT':
+            manejarPut($pdo);
+            break;
+        case 'DELETE':
+            manejarDelete($pdo);
+            break;
+        default:
+            responder(405, ['error' => 'Método no permitido']);
+    }
+} catch (Throwable $e) {
+    error_log('usuarios.php error: ' . $e->getMessage());
+    responder(500, ['error' => 'Error interno del servidor.']);
 }
 
 function validarCsrf(): void

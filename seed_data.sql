@@ -390,5 +390,3 @@ COMMIT;
 INSERT INTO usuarios (nombre, usuario, password_hash, rol, activo) VALUES
 ('Administrador', 'admin',   '$2y$12$ATczWwHjwfhi9BVElVybR..BYXJ5X4PFRjjJ9EWR/8Ew3/.hHxItm', 'Administrador', 1),
 ('Capataz',  'capataz', '$2y$12$eFL7X6dijAsHUsEapoACFOn.9AoS.DBK1wPH4Izh9IxTXCdc4Bmpq', 'Capataz',       1);
-
-// admin : admin123 && capataz : cap123

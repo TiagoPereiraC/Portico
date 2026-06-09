@@ -132,7 +132,15 @@
 
         return new Promise(function (resolve, reject) {
             const requestId = nextRequestId(type);
-            pendingRequests.set(requestId, { resolve, reject });
+            const timeoutId = window.setTimeout(() => {
+                pendingRequests.delete(requestId);
+                reject(new Error('La aplicación de escritorio no respondió a tiempo.'));
+            }, 15000);
+
+            pendingRequests.set(requestId, {
+                resolve: (data) => { window.clearTimeout(timeoutId); resolve(data); },
+                reject: (err) => { window.clearTimeout(timeoutId); reject(err); }
+            });
 
             global.chrome.webview.postMessage(JSON.stringify({
                 type,

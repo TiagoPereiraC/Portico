@@ -24,6 +24,16 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     exit;
 }
 
+// Validación CSRF
+$csrfRecibido = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+$csrfGuardado = $_SESSION['csrf_token'] ?? '';
+
+if ($csrfGuardado === '' || !hash_equals($csrfGuardado, $csrfRecibido)) {
+    http_response_code(403);
+    echo json_encode(["success" => false, "error" => "Token de seguridad inválido. Recargá la página."]);
+    exit;
+}
+
 if (empty($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(["success" => false, "error" => "Sesión no válida. Iniciá sesión nuevamente."]);
@@ -136,7 +146,7 @@ try {
     // ===== MAQUINARIA =====
     if (!empty($_POST['maquinaria']) && is_array($_POST['maquinaria'])) {
         $stmt = $pdo->prepare("
-            INSERT IGNORE INTO asistencia_maquinaria (id_obra, id_maquinaria, fecha)
+            INSERT IGNORE INTO obra_maquinaria (id_obra, id_maquinaria, fecha_asignacion)
             VALUES (?, ?, ?)
         ");
 
@@ -150,7 +160,7 @@ try {
 
     // ===== FINALIZA OBRA =====
     $finaliza = isset($_POST['finaliza']) ? trim((string) $_POST['finaliza']) : 'No';
-    if ($finaliza === 'Sí' || $finaliza === 'Si') {
+    if (strtolower($finaliza) === 'si' || $finaliza === 'Sí') {
         $stmt = $pdo->prepare("UPDATE obras SET fecha_fin = ? WHERE id_obra = ?");
         $stmt->execute([$fecha, $id_obra]);
     }
@@ -161,7 +171,7 @@ try {
         "success" => true,
         "message" => "Asistencia guardada correctamente"
     ]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }

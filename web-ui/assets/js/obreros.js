@@ -34,6 +34,10 @@ const contratoAccept = document.getElementById("contratoAccept");
 const contratoFileInput = document.getElementById("contrato_file");
 const contratoFileName = document.getElementById("contratoFileName");
 
+// NUEVO: Elementos del filtro de contrato
+const filtroButtons = document.querySelectorAll("[data-filtro-contrato]");
+let filtroContrato = "todos"; // valores: todos, vencido, por_vencer, vigente
+
 const isDesktopWebView = Boolean(window.chrome?.webview);
 
 function resolveApiBase() {
@@ -61,6 +65,22 @@ let paginaActual = 1;
 let terminoBusqueda = "";
 let busquedaTimeoutId = null;
 let ultimaSolicitudListado = 0;
+
+// NUEVO: Listeners para los botones de filtro
+if (filtroButtons.length) {
+  filtroButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const nuevoFiltro = btn.dataset.filtroContrato;
+      if (nuevoFiltro === filtroContrato) return;
+      filtroContrato = nuevoFiltro;
+      // Actualizar estilo activo
+      filtroButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      paginaActual = 1;
+      cargarObreros();
+    });
+  });
+}
 
 feedbackClose.addEventListener("click", ocultarFeedback);
 confirmCancel.addEventListener("click", cerrarConfirmacion);
@@ -456,6 +476,7 @@ async function cargarObreros() {
         page: String(paginaActual),
         limit: String(OBREROS_POR_PAGINA),
         search: terminoBusqueda,
+        filtro_contrato: filtroContrato,  // NUEVO: enviar filtro
       });
       data = await fetchJson(`${apiBase}/obreros.php?${params.toString()}`);
     } else {
@@ -465,6 +486,7 @@ async function cargarObreros() {
           page: paginaActual,
           limit: OBREROS_POR_PAGINA,
           search: terminoBusqueda,
+          filtro_contrato: filtroContrato,
         },
         "obreros_listar_response",
       );
@@ -498,9 +520,16 @@ function renderObreros() {
   pagination.classList.toggle("hidden", totalObreros === 0 || totalPaginas === 1);
 
   if (totalObreros === 0) {
-    emptyStateMessage.textContent = obtenerMensajeSinResultados(
-      terminoBusqueda.trim(),
-    );
+    let mensaje = obtenerMensajeSinResultados(terminoBusqueda.trim());
+    if (filtroContrato !== "todos") {
+      const textosFiltro = {
+        vencido: "contratos vencidos",
+        por_vencer: "contratos por vencer (próximos 30 días)",
+        vigente: "contratos vigentes"
+      };
+      mensaje = `No hay obreros con ${textosFiltro[filtroContrato] || filtroContrato}.`;
+    }
+    emptyStateMessage.textContent = mensaje;
     paginationInfo.textContent = "Mostrando 0-0 de 0 obreros";
     paginationPage.textContent = "Página 0 de 0";
     paginationPrev.disabled = true;
@@ -646,7 +675,7 @@ function formatDate(value) {
 }
 
 function obtenerMensajeSinResultados(busqueda) {
-  if (!obreros.length) {
+  if (!obreros.length && busqueda === "") {
     return "No hay obreros registrados todavía.";
   }
 

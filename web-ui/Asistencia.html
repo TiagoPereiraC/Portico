@@ -418,6 +418,48 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("maquinaria-" + id)?.remove();
   };
 
+  // ================= AGREGAR MATERIAL =================
+  document.getElementById("btnMaterial").addEventListener("click", () => {
+    const nombreSelect = boxMaterial.textContent.trim();
+    const nombreNuevo = document.getElementById("nuevoMaterial").value.trim();
+    const nombre = nombreNuevo || (nombreSelect !== "Seleccionar material" ? nombreSelect : "");
+    const cantidad = document.getElementById("cantidadMaterial").value;
+    const costo = document.getElementById("costoMaterial").value;
+
+    if (!nombre) { mostrarFeedback("Seleccioná o escribí un material.", "warning"); return; }
+    if (!cantidad || cantidad <= 0) { mostrarFeedback("Ingresá una cantidad válida.", "warning"); return; }
+
+    const item = document.createElement("div");
+    item.classList.add("obrero-item");
+    item.innerHTML = `<span class="obrero-name">${nombre} - Cant: ${cantidad} - Costo: ${costo || 0}</span><div class="obrero-actions"><button type="button" class="btn-delete">X</button></div><input type="hidden" name="material_nombre[]" value="${nombre}"><input type="hidden" name="material_cantidad[]" value="${cantidad}"><input type="hidden" name="material_costo[]" value="${costo || 0}">`;
+    item.querySelector(".btn-delete").addEventListener("click", () => item.remove());
+    document.getElementById("listaMateriales").appendChild(item);
+    document.getElementById("nuevoMaterial").value = "";
+    document.getElementById("cantidadMaterial").value = "";
+    document.getElementById("costoMaterial").value = "";
+    boxMaterial.textContent = "Seleccionar material";
+  });
+
+  // ================= AGREGAR HERRAMIENTA =================
+  document.getElementById("btnHerramienta").addEventListener("click", () => {
+    const nombreSelect = boxHerr.textContent.trim();
+    const nombreNuevo = document.getElementById("nuevaHerramienta").value.trim();
+    const nombre = nombreNuevo || (nombreSelect !== "Seleccionar herramienta" ? nombreSelect : "");
+    const cantidad = document.getElementById("cantidadHerramienta").value;
+
+    if (!nombre) { mostrarFeedback("Seleccioná o escribí una herramienta.", "warning"); return; }
+    if (!cantidad || cantidad <= 0) { mostrarFeedback("Ingresá una cantidad válida.", "warning"); return; }
+
+    const item = document.createElement("div");
+    item.classList.add("obrero-item");
+    item.innerHTML = `<span class="obrero-name">${nombre} - Cant: ${cantidad}</span><div class="obrero-actions"><button type="button" class="btn-delete">X</button></div><input type="hidden" name="herramienta_nombre[]" value="${nombre}"><input type="hidden" name="herramienta_cantidad[]" value="${cantidad}">`;
+    item.querySelector(".btn-delete").addEventListener("click", () => item.remove());
+    document.getElementById("listaHerramientas").appendChild(item);
+    document.getElementById("nuevaHerramienta").value = "";
+    document.getElementById("cantidadHerramienta").value = "";
+    boxHerr.textContent = "Seleccionar herramienta";
+  });
+
   // ================= MOSTRAR FEEDBACK =================
   function mostrarFeedback(mensaje, tipo) {
     feedback.innerHTML = `<i class="fas ${tipo === "error" ? "fa-circle-exclamation" : tipo === "success" ? "fa-circle-check" : "fa-triangle-exclamation"}"></i><span>${mensaje}</span>`;

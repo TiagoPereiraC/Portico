@@ -63,54 +63,54 @@ $ip = filter_var($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0', FILTER_VALIDATE_IP)
 // Rate limiting 
 try {
     $pdo = conectar();
+
+    // 5 fallos por usuario en 5 min > bloquear ese usuario
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(*) FROM intentos_login
+         WHERE username = ? AND exitoso = 0
+         AND fecha > DATE_SUB(NOW(), INTERVAL 5 MINUTE)'
+    );
+    $stmt->execute([$username]);
+    if ((int) $stmt->fetchColumn() >= 5) {
+        http_response_code(429);
+        exit(json_encode(['error' => 'Cuenta bloqueada temporalmente. Intentá en 5 minutos.']));
+    }
+
+    // 20 intentos por IP en 5 min > bloquear esa IP
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(*) FROM intentos_login
+         WHERE ip_address = ?
+         AND fecha > DATE_SUB(NOW(), INTERVAL 5 MINUTE)'
+    );
+    $stmt->execute([$ip]);
+    if ((int) $stmt->fetchColumn() >= 20) {
+        http_response_code(429);
+        exit(json_encode(['error' => 'Demasiados intentos desde esta red. Intentá más tarde.']));
+    }
+
+    // Búsqueda del usuario
+    $stmt = $pdo->prepare(
+        'SELECT id_usuario, nombre, usuario, password_hash, rol, activo
+         FROM usuarios WHERE usuario = ? LIMIT 1'
+    );
+    $stmt->execute([$username]);
+    $user = $stmt->fetch();
+
+    // password_verify() trabaja con hashes bcrypt/argon2 generados por password_hash()
+    $valido = $user
+        && (bool) $user['activo']
+        && password_verify($password, $user['password_hash']);
+
+    // Registrar intento (siempre, para auditoría y rate limiting)
+    $pdo->prepare(
+        'INSERT INTO intentos_login (username, ip_address, fecha, exitoso)
+         VALUES (?, ?, NOW(), ?)'
+    )->execute([$username, $ip, $valido ? 1 : 0]);
 } catch (Throwable $e) {
-    error_log('DB connection error: ' . $e->getMessage());
+    error_log('login.php error: ' . $e->getMessage());
     http_response_code(503);
     exit(json_encode(['error' => 'Servicio no disponible. Intente más tarde.']));
 }
-
-// 5 fallos por usuario en 5 min > bloquear ese usuario
-$stmt = $pdo->prepare(
-    'SELECT COUNT(*) FROM intentos_login
-     WHERE username = ? AND exitoso = 0
-     AND fecha > DATE_SUB(NOW(), INTERVAL 5 MINUTE)'
-);
-$stmt->execute([$username]);
-if ((int) $stmt->fetchColumn() >= 5) {
-    http_response_code(429);
-    exit(json_encode(['error' => 'Cuenta bloqueada temporalmente. Intentá en 5 minutos.']));
-}
-
-// 20 intentos por IP en 5 min > bloquear esa IP
-$stmt = $pdo->prepare(
-    'SELECT COUNT(*) FROM intentos_login
-     WHERE ip_address = ?
-     AND fecha > DATE_SUB(NOW(), INTERVAL 5 MINUTE)'
-);
-$stmt->execute([$ip]);
-if ((int) $stmt->fetchColumn() >= 20) {
-    http_response_code(429);
-    exit(json_encode(['error' => 'Demasiados intentos desde esta red. Intentá más tarde.']));
-}
-
-// Búsqueda del usuario
-$stmt = $pdo->prepare(
-    'SELECT id_usuario, nombre, usuario, password_hash, rol, activo
-     FROM usuarios WHERE usuario = ? LIMIT 1'
-);
-$stmt->execute([$username]);
-$user = $stmt->fetch();
-
-// password_verify() trabaja con hashes bcrypt/argon2 generados por password_hash()
-$valido = $user
-    && (bool) $user['activo']
-    && password_verify($password, $user['password_hash']);
-
-// Registrar intento (siempre, para auditoría y rate limiting)
-$pdo->prepare(
-    'INSERT INTO intentos_login (username, ip_address, fecha, exitoso)
-     VALUES (?, ?, NOW(), ?)'
-)->execute([$username, $ip, $valido ? 1 : 0]);
 
 // Respuesta genérica en fallo (no filtrar si fue usuario o contraseña)
 if (!$valido) {

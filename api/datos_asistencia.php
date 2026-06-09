@@ -29,7 +29,7 @@ try {
     $pdo = conectar();
 
     // ================= OBRAS =================
-    $stmt = $pdo->query("SELECT id_obra, nombre FROM obras");
+    $stmt = $pdo->query("SELECT id_obra, nombre FROM obras WHERE activo = 1");
     $obras = $stmt->fetchAll();
 
     // ================= OBREROS =================
@@ -56,7 +56,8 @@ try {
         "maquinaria" => $maquinaria
     ]);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
+    error_log('datos_asistencia.php error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         "error" => "Error al cargar datos"
