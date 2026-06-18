@@ -609,33 +609,47 @@ public sealed class MainWindow : Form
 			await using var conn = new MySqlConnection(BuildConnectionString());
 			await conn.OpenAsync();
 
-			string? usuario;
+			string? usuario, rol;
 			await using (var selectCmd = conn.CreateCommand())
 			{
-				selectCmd.CommandText = "SELECT usuario FROM usuarios WHERE id_usuario = @idUsuario LIMIT 1";
+				selectCmd.CommandText = "SELECT usuario, rol FROM usuarios WHERE id_usuario = @idUsuario LIMIT 1";
 				selectCmd.Parameters.AddWithValue("@idUsuario", idUsuario);
 
-				var result = await selectCmd.ExecuteScalarAsync();
-				if (result is null)
+				await using var reader = await selectCmd.ExecuteReaderAsync();
+				if (!await reader.ReadAsync())
 				{
 					PostToJs(new { type = responseType, requestId, success = false, error = "Usuario no encontrado." });
 					return;
 				}
 
-				usuario = Convert.ToString(result);
+				usuario = reader.GetString("usuario");
+				rol = reader.GetString("rol");
 			}
 
-			await using var deleteCmd = conn.CreateCommand();
-			deleteCmd.CommandText = "DELETE FROM usuarios WHERE id_usuario = @idUsuario";
-			deleteCmd.Parameters.AddWithValue("@idUsuario", idUsuario);
-			await deleteCmd.ExecuteNonQueryAsync();
+			if (rol == "Administrador")
+			{
+				await using var countCmd = conn.CreateCommand();
+				countCmd.CommandText = "SELECT COUNT(*) FROM usuarios WHERE rol = 'Administrador' AND activo = 1 AND id_usuario <> @idUsuario";
+				countCmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+				var adminCount = Convert.ToInt32(await countCmd.ExecuteScalarAsync());
+				if (adminCount < 1)
+				{
+					PostToJs(new { type = responseType, requestId, success = false, error = "No se puede desactivar el último administrador del sistema." });
+					return;
+				}
+			}
+
+			await using var updateCmd = conn.CreateCommand();
+			updateCmd.CommandText = "UPDATE usuarios SET activo = 0 WHERE id_usuario = @idUsuario";
+			updateCmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+			await updateCmd.ExecuteNonQueryAsync();
 
 			PostToJs(new
 			{
 				type = responseType,
 				requestId,
 				success = true,
-				message = $"Usuario '{usuario}' eliminado correctamente."
+				message = $"Usuario '{usuario}' desactivado correctamente."
 			});
 		}
 		catch (InvalidOperationException ex)
@@ -645,7 +659,7 @@ public sealed class MainWindow : Form
 		catch (Exception ex)
 		{
 			System.Diagnostics.Debug.WriteLine($"[User delete error] {ex}");
-			PostToJs(new { type = responseType, requestId, success = false, error = "No se pudo eliminar el usuario." });
+			PostToJs(new { type = responseType, requestId, success = false, error = "No se pudo desactivar el usuario." });
 		}
 	}
 
@@ -1017,7 +1031,7 @@ public sealed class MainWindow : Form
 
 			await using var cmd = conn.CreateCommand();
 			cmd.CommandText =
-				"SELECT id_obrero, nombre, apellido, documento, telefono, fecha_contratacion FROM obreros"
+				"SELECT id_obrero, nombre, apellido, documento, telefono, fecha_contratacion, fecha_fin FROM obreros"
 				+ whereSql
 				+ " ORDER BY id_obrero DESC LIMIT @limit OFFSET @offset";
 
@@ -1037,7 +1051,8 @@ public sealed class MainWindow : Form
 					apellido = ReadNullableString(reader, "apellido"),
 					documento = reader.GetString("documento"),
 					telefono = ReadNullableString(reader, "telefono"),
-					fecha_contratacion = ReadNullableDate(reader, "fecha_contratacion")
+					fecha_contratacion = ReadNullableDate(reader, "fecha_contratacion"),
+					fecha_fin = ReadNullableDate(reader, "fecha_fin")
 				});
 			}
 
@@ -1082,6 +1097,9 @@ public sealed class MainWindow : Form
 			var fechaContratacion = root.TryGetProperty("fecha_contratacion", out var fechaProp) && fechaProp.ValueKind == JsonValueKind.String
 				? (fechaProp.GetString()?.Trim() ?? string.Empty)
 				: string.Empty;
+			var fechaFin = root.TryGetProperty("fecha_fin", out var fechaFinProp) && fechaFinProp.ValueKind == JsonValueKind.String
+				? (fechaFinProp.GetString()?.Trim() ?? string.Empty)
+				: string.Empty;
 			var idObrero = TryReadPositiveInt(root, "id_obrero");
 
 			if (nombre.Length > 150)
@@ -1099,6 +1117,14 @@ public sealed class MainWindow : Form
 				if (!DateTime.TryParseExact(fechaContratacion, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
 					throw new InvalidOperationException("Formato de fecha inválido.");
 				fechaDb = fechaContratacion;
+			}
+
+			string? fechaFinDb = null;
+			if (!string.IsNullOrWhiteSpace(fechaFin))
+			{
+				if (!DateTime.TryParseExact(fechaFin, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
+					throw new InvalidOperationException("Formato de fecha de fin inválido.");
+				fechaFinDb = fechaFin;
 			}
 
 			await using var conn = new MySqlConnection(BuildConnectionString());
@@ -1131,12 +1157,13 @@ public sealed class MainWindow : Form
 				await using var updateCmd = conn.CreateCommand();
 				updateCmd.Transaction = tx;
 				updateCmd.CommandText =
-					"UPDATE obreros SET nombre = @nombre, apellido = @apellido, documento = @documento, telefono = @telefono, fecha_contratacion = @fecha WHERE id_obrero = @idObrero";
+					"UPDATE obreros SET nombre = @nombre, apellido = @apellido, documento = @documento, telefono = @telefono, fecha_contratacion = @fecha, fecha_fin = @fechaFin WHERE id_obrero = @idObrero";
 				updateCmd.Parameters.AddWithValue("@nombre", nombre);
 				updateCmd.Parameters.AddWithValue("@apellido", string.IsNullOrWhiteSpace(apellido) ? DBNull.Value : apellido);
 				updateCmd.Parameters.AddWithValue("@documento", documento);
 				updateCmd.Parameters.AddWithValue("@telefono", string.IsNullOrWhiteSpace(telefono) ? DBNull.Value : telefono);
 				updateCmd.Parameters.AddWithValue("@fecha", fechaDb is null ? DBNull.Value : fechaDb);
+				updateCmd.Parameters.AddWithValue("@fechaFin", fechaFinDb is null ? DBNull.Value : fechaFinDb);
 				updateCmd.Parameters.AddWithValue("@idObrero", idObrero.Value);
 				await updateCmd.ExecuteNonQueryAsync();
 
@@ -1165,12 +1192,13 @@ public sealed class MainWindow : Form
 			await using var insertCmd = conn.CreateCommand();
 			insertCmd.Transaction = tx;
 			insertCmd.CommandText =
-				"INSERT INTO obreros (nombre, apellido, documento, telefono, fecha_contratacion, activo) VALUES (@nombre, @apellido, @documento, @telefono, @fecha, 1)";
+				"INSERT INTO obreros (nombre, apellido, documento, telefono, fecha_contratacion, fecha_fin, activo) VALUES (@nombre, @apellido, @documento, @telefono, @fecha, @fechaFin, 1)";
 			insertCmd.Parameters.AddWithValue("@nombre", nombre);
 			insertCmd.Parameters.AddWithValue("@apellido", string.IsNullOrWhiteSpace(apellido) ? DBNull.Value : apellido);
 			insertCmd.Parameters.AddWithValue("@documento", documento);
 			insertCmd.Parameters.AddWithValue("@telefono", string.IsNullOrWhiteSpace(telefono) ? DBNull.Value : telefono);
 			insertCmd.Parameters.AddWithValue("@fecha", fechaDb is null ? DBNull.Value : fechaDb);
+			insertCmd.Parameters.AddWithValue("@fechaFin", fechaFinDb is null ? DBNull.Value : fechaFinDb);
 			await insertCmd.ExecuteNonQueryAsync();
 
 			await tx.CommitAsync();

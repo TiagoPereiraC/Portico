@@ -339,14 +339,18 @@ tbody tr:hover {
 }
 
 /* Alertas de vencimiento */
-.table-warning {
+tbody tr.table-warning,
+tbody tr.table-warning:nth-child(even),
+tbody tr.table-warning:hover {
     background-color: #fff3cd !important;
 }
 .table-warning td {
     color: #856404;
 }
 
-.table-danger {
+tbody tr.table-danger,
+tbody tr.table-danger:nth-child(even),
+tbody tr.table-danger:hover {
     background-color: #f8d7da !important;
 }
 .table-danger td {

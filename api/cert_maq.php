@@ -46,13 +46,11 @@ try {
             }
             validarCsrf();
 
-            // Multipart: archivo real desde el frontend web
             if (!empty($_FILES['certificado']) && $_FILES['certificado']['error'] === UPLOAD_ERR_OK) {
                 responderSubirMultipart($pdo);
                 break;
             }
 
-            // JSON: eliminar o subir con base64 (desktop)
             $body = leerJson();
             if (($body['accion'] ?? '') === 'eliminar') {
                 responderEliminacion($pdo, $body);
@@ -138,16 +136,7 @@ function responderSubirMultipart(PDO $pdo): void
     $archivoContenido = file_get_contents($_FILES['certificado']['tmp_name']);
     $nombreOriginal = $_FILES['certificado']['name'];
 
-    if (strlen($archivoContenido) > 10 * 1024 * 1024) {
-        throw new InvalidArgumentException('El certificado no puede superar los 10 MB.');
-    }
-
-    $stmt = $pdo->prepare('INSERT INTO certificado (archivo, nombre_archivo, id_maquinaria, fecha_vencimiento) VALUES (?, ?, ?, ?)');
-    $stmt->bindValue(1, $archivoContenido, PDO::PARAM_LOB);
-    $stmt->bindValue(2, $nombreOriginal);
-    $stmt->bindValue(3, $idMaquinaria, PDO::PARAM_INT);
-    $stmt->bindValue(4, $fechaVencimiento);
-    $stmt->execute();
+    insertarCertificado($pdo, $archivoContenido, $nombreOriginal, $idMaquinaria, $fechaVencimiento);
 
     echo json_encode([
         'success' => true,
@@ -174,21 +163,26 @@ function responderSubirBase64(PDO $pdo, array $body): void
         throw new InvalidArgumentException('El archivo seleccionado es inválido.');
     }
 
-    if (strlen($archivo) > 10 * 1024 * 1024) {
-        throw new InvalidArgumentException('El certificado no puede superar los 10 MB.');
-    }
-
-    $stmt = $pdo->prepare('INSERT INTO certificado (archivo, nombre_archivo, id_maquinaria, fecha_vencimiento) VALUES (?, ?, ?, ?)');
-    $stmt->bindValue(1, $archivo, PDO::PARAM_LOB);
-    $stmt->bindValue(2, $nombreArchivo);
-    $stmt->bindValue(3, $idMaquinaria, PDO::PARAM_INT);
-    $stmt->bindValue(4, $fechaVencimiento);
-    $stmt->execute();
+    insertarCertificado($pdo, $archivo, $nombreArchivo, $idMaquinaria, $fechaVencimiento);
 
     echo json_encode([
         'success' => true,
         'message' => 'Certificado subido correctamente.',
     ]);
+}
+
+function insertarCertificado(PDO $pdo, string $contenido, string $nombreArchivo, int $idMaquinaria, ?string $fechaVencimiento): void
+{
+    if (strlen($contenido) > 10 * 1024 * 1024) {
+        throw new InvalidArgumentException('El certificado no puede superar los 10 MB.');
+    }
+
+    $stmt = $pdo->prepare('INSERT INTO certificado (archivo, nombre_archivo, id_maquinaria, fecha_vencimiento) VALUES (?, ?, ?, ?)');
+    $stmt->bindValue(1, $contenido, PDO::PARAM_LOB);
+    $stmt->bindValue(2, $nombreArchivo);
+    $stmt->bindValue(3, $idMaquinaria, PDO::PARAM_INT);
+    $stmt->bindValue(4, $fechaVencimiento);
+    $stmt->execute();
 }
 
 function responderEliminacion(PDO $pdo, array $body): void

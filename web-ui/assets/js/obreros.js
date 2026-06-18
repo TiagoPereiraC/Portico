@@ -322,6 +322,7 @@ function buildPayload() {
     documento: leerCampo("documento"),
     telefono: leerCampo("telefono"),
     fecha_contratacion: leerCampo("fecha_contratacion") || null,
+    fecha_fin: leerCampo("fecha_fin") || null,
   };
 
   if (!payload.nombre || !payload.documento) {
@@ -543,9 +544,10 @@ function renderObreros() {
   obreros.forEach((obrero) => {
     const row = document.createElement("tr");
     let claseAlerta = "";
-    if (obrero.vencimiento) {
-      const fechaVenc = new Date(obrero.vencimiento);
-      const diffDays = Math.ceil((fechaVenc - hoy) / (1000 * 60 * 60 * 24));
+    const fechaVenc = obrero.vencimiento || obrero.fecha_fin;
+    if (fechaVenc) {
+      const fechaVencDate = new Date(fechaVenc);
+      const diffDays = Math.ceil((fechaVencDate - hoy) / (1000 * 60 * 60 * 24));
       if (diffDays <= 30 && diffDays > 0) {
         claseAlerta = "table-warning";
       } else if (diffDays <= 0) {
@@ -561,6 +563,7 @@ function renderObreros() {
       <td>${escapeHtml(obrero.documento)}</td>
       <td>${escapeHtml(obrero.telefono || "—")}</td>
       <td>${formatDate(obrero.fecha_contratacion)}</td>
+      <td>${formatDate(obrero.fecha_fin)}</td>
       <td>
         <div class="table-actions">
           <button type="button" class="action-btn edit" data-action="edit" data-id="${obrero.id_obrero}" title="Editar obrero">
@@ -605,6 +608,7 @@ function fillForm(obrero) {
   document.getElementById("documento").value = obrero.documento || "";
   document.getElementById("telefono").value = obrero.telefono || "";
   document.getElementById("fecha_contratacion").value = obrero.fecha_contratacion || "";
+  document.getElementById("fecha_fin").value = obrero.fecha_fin || "";
   formTitle.textContent = "Editar obrero";
   btnGuardar.textContent = "Guardar";
 }
@@ -736,9 +740,9 @@ async function subirContratoObrero(idObrero, file, fechaVencimiento) {
 
 function escapeHtml(value) {
   return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }

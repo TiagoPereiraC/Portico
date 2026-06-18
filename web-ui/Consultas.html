@@ -1,235 +1,206 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consultas</title>
+
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="assets/css/Consultas-style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/nav-sidebar.css">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
     <script src="assets/js/auth.js" data-role="Administrador"></script>
 </head>
+
 <body>
 
-<div class="nav-dropdown">
-  <button class="nav-menu-btn"><i class="fas fa-bars"></i> Menú</button>
-  <ul class="nav-dropdown-menu">
-    <li><a href="PanelInicio.html"><i class="fas fa-home"></i> Panel</a></li>
-                    <li>
-                        <a href="TablaUsuarios.html"
-                            ><i class="fas fa-user"></i> Usuarios</a
-                        >
-                    </li>
-    <li><a href="Obras.html"><i class="fas fa-building"></i> Obras</a></li>
-    <li><a href="RegistrarObrero.html"><i class="fas fa-helmet-safety"></i> Obreros</a></li>
-    <li><a href="Maquinaria.html"><i class="fas fa-truck-monster"></i> Maquinaria</a></li>
-    <li><a href="Asistencia.html"><i class="fas fa-clipboard-list"></i> Asistencia</a></li>
-    <li><a href="Consultas.html" class="active"><i class="fas fa-chart-column"></i> Consultas</a></li>
-                    <li>
-                        <a href="LogsAuditoria.html"
-                            ><i class="fas fa-clipboard-list"></i> Logs</a
-                        >
-                    </li>
-    <li><a href="Login.html"><i class="fas fa-right-from-bracket"></i> Salir</a></li>
-  </ul>
-</div>
+    <!-- MENÚ MÓVIL -->
+    <div class="nav-dropdown">
+        <button class="nav-menu-btn">
+            <i class="fas fa-bars"></i> Menú
+        </button>
 
-<nav>
-  <div class="logo-wrap">
-    <img src="assets/img/logo.png" alt="Pórtico Construcciones y Servicios">
-  </div>
-  <div class="user-pill">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-    </svg>
-    Admin
-  </div>
-</nav>
+        <ul class="nav-dropdown-menu">
+            <li>
+                <a href="PanelInicio.html">
+                    <i class="fas fa-home"></i> Panel
+                </a>
+            </li>
 
-  <main>
-    <div class="card">
+            <li>
+                <a href="TablaUsuarios.html">
+                    <i class="fas fa-user"></i> Usuarios
+                </a>
+            </li>
 
-  <!-- IZQUIERDA -->
-  <div class="form-section">
+            <li>
+                <a href="Obras.html">
+                    <i class="fas fa-building"></i> Obras
+                </a>
+            </li>
 
-     <h1>Consultas</h1>
+            <li>
+                <a href="RegistrarObrero.html">
+                    <i class="fas fa-helmet-safety"></i> Obreros
+                </a>
+            </li>
 
-    <select name="obra">
-      <option value="">Seleccionar obra</option>
-      <option value="1">Obra A</option>
-      <option value="2">Obra B</option>
-      <option value="3">Obra C</option>
-    </select>
+            <li>
+                <a href="Maquinaria.html">
+                    <i class="fas fa-truck-monster"></i> Maquinaria
+                </a>
+            </li>
 
-    <select name="obrero">
-      <option value="">Seleccionar obrero</option>
-      <option value="1">Obrero 1</option>
-      <option value="2">Obrero 2</option>
-      <option value="3">Obrero 3</option>
-    </select>
+            <li>
+                <a href="Asistencia.html">
+                    <i class="fas fa-clipboard-list"></i> Asistencia
+                </a>
+            </li>
 
-    <label>Periodo de Busqueda</label>
+            <li>
+                <a href="Consultas.html" class="active">
+                    <i class="fas fa-chart-column"></i> Consultas
+                </a>
+            </li>
 
-    <br>
+            <li>
+                <a href="LogsAuditoria.html">
+                    <i class="fas fa-clipboard-list"></i> Logs
+                </a>
+            </li>
 
-     <!-- FECHAS CON TEXTO -->
-    <div class="date-range">
-      <div class="date-group">
-        <span>Desde</span>
-        <input type="date">
-      </div>
-
-      <div class="date-group">
-        <span>Hasta</span>
-        <input type="date">
-      </div>
+            <li>
+                <a href="Login.html">
+                    <i class="fas fa-right-from-bracket"></i> Salir
+                </a>
+            </li>
+        </ul>
     </div>
 
-    <br>
+    <!-- NAVBAR -->
+    <nav>
 
-    <button class="btn-search">Buscar</button>
-    <a href="PanelInicio.html" class="btn-back">Volver</a>
+        <div class="logo-wrap">
+            <img src="assets/img/logo.png"
+                 alt="Pórtico Construcciones y Servicios">
+        </div>
 
-  </div>
+        <div class="user-pill">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 32 32"><path d="M16 4a5 5 0 1 1-5 5a5 5 0 0 1 5-5m0-2a7 7 0 1 0 7 7a7 7 0 0 0-7-7m10 28h-2v-5a5 5 0 0 0-5-5h-6a5 5 0 0 0-5 5v5H6v-5a7 7 0 0 1 7-7h6a7 7 0 0 1 7 7Z"/></svg>
 
-  <!-- DERECHA -->
-  <div class="table">
-    <table>
-      <thead>
-        <tr>
-          <th>Obra</th>
-          <th>Obreros</th>
-          <th>Fecha</th>
-          <th>Entrada</th>
-          <th>Salida</th>
-          <th>Horas Trabajadas</th>
-          <th>Materiales</th>
-          <th>Herramientas</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Obra A</td>
-          <td>Obrero 1</td>
-          <td>2024-06-01</td>
-          <td>08:00</td>
-          <td>17:00</td>
-          <td>9</td>
-          <td>
-            Cemento: 2 bolsas<br>
-            Arena: 1 m³
-          </td>
-          <td>
-            Martillo: 1<br>
-            Taladro: 1
-          </td>
-        </tr>
+            <span class="user-pill-name">Admin</span>
+        </div>
 
-        <tr>
-          <td>Obra A</td>
-          <td>Obrero 2</td>
-          <td>2024-06-01</td>
-          <td>10:00</td>
-          <td>18:00</td>
-          <td>8</td>
-          <td>
-            Ladrillos: 500<br>
-            Madera: 10 tablas
-          </td>
-          <td>
-            Sierra: 1<br>
-            Nivel: 1
-          </td>
-        </tr>
+    </nav>
 
-        <tr>
-          <td>Obra B</td>
-          <td>Obrero 3</td>
-          <td>2024-06-02</td>
-          <td>09:00</td>
-          <td>17:00</td>
-          <td>8</td>
-          <td>
-            Cemento: 1 bolsa
-          </td>
-          <td>
-            Taladro: 1
-          </td>
-        </tr>
+    <!-- CONTENIDO -->
+    <main>
 
-      <tr>
-        <td>Obra B</td>
-        <td>Obrero 4</td>
-        <td>2024-06-02</td>
-        <td>07:00</td>
-        <td>15:00</td>
-        <td>8</td>
-        <td>
-          Arena: 2 m³<br>
-          Piedra: 1 m³
-        </td>
-        <td>
-          Pala: 1<br>
-          Carretilla: 1
-        </td>
-      </tr>
+        <div class="card">
 
-      <tr>
-        <td>Obra C</td>
-        <td>Obrero 5</td>
-        <td>2024-06-03</td>
-        <td>08:30</td>
-        <td>16:30</td>
-        <td>8</td>
-        <td>
-          Pintura: 3 litros
-        </td>
-        <td>
-          Rodillo: 1<br>
-          Brocha: 2
-        </td>
-      </tr>
+            <!-- FEEDBACK -->
+            <div id="feedback"
+                 class="feedback-msg hidden"
+                 role="alert"
+                 aria-live="polite">
+            </div>
 
-      <tr>
-        <td>Obra C</td>
-        <td>Obrero 6</td>
-        <td>2024-06-03</td>
-        <td>11:00</td>
-        <td>17:00</td>
-        <td>6</td>
-        <td>
-          Yeso: 2 bolsas<br>
-          Agua: 20 L
-        </td>
-        <td>
-          Espátula: 1
-        </td>
-      </tr>
+            <!-- FILTROS -->
+            <div class="form-section">
 
-      <tr>
-        <td>Obra D</td>
-        <td>Obrero 7</td>
-        <td>2024-06-04</td>
-        <td>08:00</td>
-        <td>14:00</td>
-        <td>6</td>
-        <td>
-          Hierro: 50 kg<br>
-          Cemento: 2 bolsas
-        </td>
-        <td>
-          Soldadora: 1<br>
-          Martillo: 1
-        </td>
-      </tr>
-  </tr>
-      </tbody>
-    </table>
-  </div>
+                <h1>Consultas de Obreros</h1>
 
-</div>
-  </main>
+                <select id="obrero">
+                    <option value="">
+                        Seleccionar obrero
+                    </option>
+                </select>
+
+                <label>Período de búsqueda</label>
+
+                <div class="date-range">
+
+                    <div class="date-group">
+                        <span>Desde</span>
+
+                        <input
+                            type="date"
+                            id="fecha_desde">
+                    </div>
+
+                    <div class="date-group">
+                        <span>Hasta</span>
+
+                        <input
+                            type="date"
+                            id="fecha_hasta">
+                    </div>
+
+                </div>
+
+                <button
+                    id="btnBuscar"
+                    class="btn-search">
+                    Buscar
+                </button>
+
+                <a href="PanelInicio.html"
+                   class="btn-back">
+                    Volver
+                </a>
+
+            </div>
+
+            <!-- RESULTADOS -->
+            <div class="result-section">
+
+                <!-- RESUMEN -->
+                <div id="resumen-consultas"
+                     class="resumen-consultas">
+                </div>
+
+                <!-- TABLA -->
+                <div class="table">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Obra</th>
+                                <th>Entrada</th>
+                                <th>Salida</th>
+                                <th>Horas</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="tabla-registros">
+
+                            <tr>
+                                <td colspan="5"
+                                    class="no-data">
+                                    Seleccione un obrero y un período para realizar la búsqueda.
+                                </td>
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <script src="assets/js/consultas.js"></script>
 
 </body>
 </html>

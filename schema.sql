@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS obreros (
     documento VARCHAR(30) NOT NULL UNIQUE,
     telefono VARCHAR(30),
     fecha_contratacion DATE,
+    fecha_fin DATE,
     activo BOOLEAN DEFAULT 1
 );
 
@@ -56,7 +57,7 @@ CREATE TABLE IF NOT EXISTS registros (
 
     id_obrero INT NOT NULL,
     id_obra INT NOT NULL,
-    id_usuario INT NOT NULL,
+    id_usuario INT NULL,
 
     FOREIGN KEY (id_obrero) REFERENCES obreros(id_obrero)
         ON UPDATE CASCADE ON DELETE CASCADE,
@@ -65,7 +66,7 @@ CREATE TABLE IF NOT EXISTS registros (
         ON UPDATE CASCADE ON DELETE CASCADE,
 
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
-        ON UPDATE CASCADE ON DELETE RESTRICT
+        ON UPDATE CASCADE ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS contratos (

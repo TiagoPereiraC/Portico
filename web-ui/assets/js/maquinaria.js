@@ -245,6 +245,8 @@ document.addEventListener("click", async (event) => {
 
   const button = event.target.closest("button[data-action]");
   if (!button) {
+    return;
+  }
 
   const id = Number.parseInt(button.dataset.id, 10);
   if (!id) {
@@ -696,11 +698,11 @@ function obtenerMensajeSinResultados(busqueda) {
 
 function escapeHtml(value) {
   return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function abrirCertModal(item) {

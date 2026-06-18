@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
     loadLogs();
 
     async function loadLogs() {
-        tbody.innerHTML = '<tr><td colspan="8" class="table-status">Cargando logs...</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="8" class="table-status">${escapeHtml('Cargando logs...')}</td></tr>`;
         hideFeedback();
 
         try {
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function fillSelect(select, values) {
         const currentValue = select.value;
-        select.innerHTML = '<option value="">Todas</option>';
+        select.innerHTML = `<option value="">${escapeHtml('Todas')}</option>`;
         values.forEach(function (value) {
             const option = document.createElement('option');
             option.value = value;
@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function renderLogs(logs) {
         if (!Array.isArray(logs) || logs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="table-status">No hay registros para los filtros seleccionados.</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="8" class="table-status">${escapeHtml('No hay registros para los filtros seleccionados.')}</td></tr>`;
             return;
         }
 

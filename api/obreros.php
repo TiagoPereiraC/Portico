@@ -105,13 +105,13 @@ function responderListado(PDO $pdo): void
         $params = array_merge($params, [$searchLike, $searchLike, $searchLike, $searchLike]);
     }
 
-    // Filtro por estado del contrato
+    // Filtro por estado del contrato (usa fecha_fin del obrero)
     if ($filtroContrato === 'vencido') {
-        $where[] = '(SELECT c.fecha_vencimiento FROM contrato_obrero c WHERE c.id_obrero = o.id_obrero ORDER BY c.fecha_vencimiento DESC LIMIT 1) < CURDATE()';
+        $where[] = 'o.fecha_fin IS NOT NULL AND o.fecha_fin < CURDATE()';
     } elseif ($filtroContrato === 'por_vencer') {
-        $where[] = '(SELECT c.fecha_vencimiento FROM contrato_obrero c WHERE c.id_obrero = o.id_obrero ORDER BY c.fecha_vencimiento DESC LIMIT 1) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)';
+        $where[] = 'o.fecha_fin IS NOT NULL AND o.fecha_fin BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)';
     } elseif ($filtroContrato === 'vigente') {
-        $where[] = '(SELECT c.fecha_vencimiento FROM contrato_obrero c WHERE c.id_obrero = o.id_obrero ORDER BY c.fecha_vencimiento DESC LIMIT 1) > DATE_ADD(CURDATE(), INTERVAL 30 DAY)';
+        $where[] = '(o.fecha_fin IS NULL OR o.fecha_fin > DATE_ADD(CURDATE(), INTERVAL 30 DAY))';
     }
     // 'todos' no agrega condición extra
 
@@ -130,7 +130,7 @@ function responderListado(PDO $pdo): void
     $offset = ($page - 1) * $limit;
 
     $stmt = $pdo->prepare(
-        'SELECT o.id_obrero, o.nombre, o.apellido, o.documento, o.telefono, o.fecha_contratacion,
+        'SELECT o.id_obrero, o.nombre, o.apellido, o.documento, o.telefono, o.fecha_contratacion, o.fecha_fin,
                 (SELECT c.fecha_vencimiento FROM contrato_obrero c WHERE c.id_obrero = o.id_obrero ORDER BY c.fecha_vencimiento DESC LIMIT 1) as vencimiento
          FROM obreros o'
         . $whereSql
@@ -167,6 +167,7 @@ function responderGuardado(PDO $pdo, array $body): void
     $documento = limpiarTexto($body['documento'] ?? '', 30, true);
     $telefono = limpiarTexto($body['telefono'] ?? '', 30, false);
     $fechaContratacion = normalizarFecha($body['fecha_contratacion'] ?? null);
+    $fechaFin = normalizarFecha($body['fecha_fin'] ?? null);
     $idObrero = isset($body['id_obrero']) && $body['id_obrero'] !== '' ? (int) $body['id_obrero'] : null;
 
     if ($nombre === '' || $documento === '') {
@@ -185,9 +186,9 @@ function responderGuardado(PDO $pdo, array $body): void
             }
 
             $stmt = $pdo->prepare(
-                'UPDATE obreros SET nombre = ?, apellido = ?, documento = ?, telefono = ?, fecha_contratacion = ? WHERE id_obrero = ?'
+                'UPDATE obreros SET nombre = ?, apellido = ?, documento = ?, telefono = ?, fecha_contratacion = ?, fecha_fin = ? WHERE id_obrero = ?'
             );
-            $stmt->execute([$nombre, $apellido, $documento, $telefono, $fechaContratacion, $idObrero]);
+            $stmt->execute([$nombre, $apellido, $documento, $telefono, $fechaContratacion, $fechaFin, $idObrero]);
 
             $pdo->commit();
 
@@ -201,9 +202,9 @@ function responderGuardado(PDO $pdo, array $body): void
         }
 
         $stmt = $pdo->prepare(
-            'INSERT INTO obreros (nombre, apellido, documento, telefono, fecha_contratacion, activo) VALUES (?, ?, ?, ?, ?, 1)'
+            'INSERT INTO obreros (nombre, apellido, documento, telefono, fecha_contratacion, fecha_fin, activo) VALUES (?, ?, ?, ?, ?, ?, 1)'
         );
-        $stmt->execute([$nombre, $apellido, $documento, $telefono, $fechaContratacion]);
+        $stmt->execute([$nombre, $apellido, $documento, $telefono, $fechaContratacion, $fechaFin]);
 
         $idObrero = (int) $pdo->lastInsertId();
 
@@ -236,7 +237,7 @@ function responderEliminacion(PDO $pdo, array $body): void
         throw new RuntimeException('El obrero indicado no existe.');
     }
 
-    $pdo->prepare('DELETE FROM obreros WHERE id_obrero = ?')->execute([$idObrero]);
+    $pdo->prepare('UPDATE obreros SET activo = 0 WHERE id_obrero = ?')->execute([$idObrero]);
 
     echo json_encode([
         'success' => true,
@@ -335,7 +336,7 @@ function normalizarFecha(mixed $value): ?string
 function obtenerObrero(PDO $pdo, int $idObrero): array
 {
     $stmt = $pdo->prepare(
-        'SELECT id_obrero, nombre, apellido, documento, telefono, fecha_contratacion FROM obreros WHERE id_obrero = ? LIMIT 1'
+        'SELECT id_obrero, nombre, apellido, documento, telefono, fecha_contratacion, fecha_fin FROM obreros WHERE id_obrero = ? LIMIT 1'
     );
     $stmt->execute([$idObrero]);
 

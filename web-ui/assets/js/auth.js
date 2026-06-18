@@ -85,9 +85,14 @@
     }
 
     const apiBase = resolveApiBase();
+    var timeoutId = window.setTimeout(function () {
+        window.location.replace('Login.html');
+    }, 10000);
+
     fetch(apiBase + '/session.php', { credentials: 'include' })
         .then(function (res) { return res.json(); })
         .then(function (data) {
+            window.clearTimeout(timeoutId);
             if (data && data.autenticado) {
                 sessionStorage.setItem('user_id', String(data.user_id));
                 sessionStorage.setItem('rol', data.rol);
@@ -101,6 +106,7 @@
             }
         })
         .catch(function () {
+            window.clearTimeout(timeoutId);
             window.location.replace('Login.html');
         });
 })();
