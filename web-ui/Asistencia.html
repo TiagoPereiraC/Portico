@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registrar Asistencia</title>
+
+<link rel="stylesheet" href="assets/css/Asistencias.css">
+<link rel="stylesheet" href="assets/css/nav-sidebar.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  .feedback-msg { padding: 14px 18px; border-radius: 10px; margin-bottom: 18px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; }
+  .feedback-msg.error   { background: #fde8e8; color: #b91c1c; border: 1px solid #f5c6c6; }
+  .feedback-msg.success { background: #e6f4ea; color: #137333; border: 1px solid #c3e6cc; }
+  .feedback-msg.warning { background: #fef3cd; color: #856404; border: 1px solid #ffeaa7; }
+  .feedback-msg i { font-size: 18px; }
+  .hidden { display: none !important; }
+  .alertas-vencimiento {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
+  }
+  .alertas-vencimiento.hidden { display: none !important; }
+  .alertas-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #b91c1c;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .alertas-header i { font-size: 16px; }
+  .alertas-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: #b91c1c;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .alertas-close:hover { background: #fecaca; }
+  #alertasListaAsist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  #alertasListaAsist li {
+    font-size: 13px;
+    color: #7f1d1d;
+    padding: 6px 8px;
+    border-top: 1px solid #fecaca;
+  }
+  #alertasListaAsist li:first-child { border-top: none; }
+  .badge-expirado { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 10px; background: #fecaca; color: #b91c1c; }
+  .badge-critico  { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 10px; background: #fee2e2; color: #b91c1c; }
+  .badge-adv      { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 10px; background: #fef3c7; color: #92400e; }
+</style>
+<script src="assets/js/auth.js"></script>
+</head>
+
+<body>
+
+<div class="nav-dropdown">
+  <button class="nav-menu-btn"><i class="fas fa-bars"></i> Menú</button>
+  <ul class="nav-dropdown-menu">
+    <li class="nav-admin"><a href="PanelInicio.html"><i class="fas fa-home"></i> Panel</a></li>
+    <li class="nav-admin"><a href="Obras.html"><i class="fas fa-building"></i> Obras</a></li>
+    <li class="nav-admin"><a href="RegistrarObrero.html"><i class="fas fa-helmet-safety"></i> Obreros</a></li>
+    <li class="nav-admin"><a href="Maquinaria.html"><i class="fas fa-truck-monster"></i> Maquinaria</a></li>
+    <li><a href="Asistencia.html" class="active"><i class="fas fa-clipboard-list"></i> Asistencia</a></li>
+    <li class="nav-admin"><a href="Consultas.html"><i class="fas fa-chart-column"></i> Consultas</a></li>
+    <li class="nav-admin"><a href="TablaUsuarios.html"><i class="fas fa-user"></i> Usuarios</a></li>
+    <li class="nav-admin"><a href="LogsAuditoria.html"><i class="fas fa-clipboard-list"></i> Logs</a></li>
+    <li><a href="Login.html"><i class="fas fa-right-from-bracket"></i> Salir</a></li>
+  </ul>
+</div>
+
+<script>
+  if (sessionStorage.getItem('rol') === 'Capataz') {
+    document.querySelectorAll('.nav-admin').forEach(el => el.style.display = 'none');
+  }
+</script>
+
+<nav>
+  <div class="logo-wrap">
+    <img src="assets/img/logo.png">
+  </div>
+  <div class="user-pill">
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 32 32"><path d="M16 4a5 5 0 1 1-5 5a5 5 0 0 1 5-5m0-2a7 7 0 1 0 7 7a7 7 0 0 0-7-7m10 28h-2v-5a5 5 0 0 0-5-5h-6a5 5 0 0 0-5 5v5H6v-5a7 7 0 0 1 7-7h6a7 7 0 0 1 7 7Z"/></svg>
+  <span class="user-pill-name">Admin</span>
+</div>
+</nav>
+
+<main>
+
+<form class="form" id="asistenciaForm">
+
+<h2>Registrar Asistencia</h2>
+
+<!-- FEEDBACK -->
+<div id="feedback" class="feedback-msg hidden"></div>
+
+<div id="alertasVencimiento" class="alertas-vencimiento hidden" role="alert" aria-live="polite">
+  <div class="alertas-header">
+    <i class="fas fa-triangle-exclamation"></i> Certificados por vencer
+    <button type="button" class="alertas-close" id="alertasCerrar" aria-label="Cerrar alerta">
+      <i class="fas fa-xmark"></i>
+    </button>
+  </div>
+  <ul id="alertasListaAsist"></ul>
+</div>
+
+<div class="grid">
+
+<!-- OBRA -->
+<div class="full">
+  <label class="label">Obra</label>
+
+  <div class="custom-select">
+    <div class="custom-select-box" id="selectBoxObra">Seleccionar obra</div>
+    <div class="custom-select-options" id="optionsObra"></div>
+  </div>
+
+  <input type="hidden" name="id_obra" id="inputObra">
+</div>
+
+<!-- FECHA -->
+<div>
+<label class="label">Fecha</label>
+<input type="date" name="fecha" required>
+</div>
+
+<!-- OBREROS -->
+<div class="full">
+  <label class="label">Obreros</label>
+
+  <div class="custom-select">
+    <div class="custom-select-box" id="selectBoxObrero">
+      Seleccionar obrero
+    </div>
+
+    <div class="custom-select-options" id="optionsObrero"></div>
+  </div>
+</div>
+
+<div class="full">
+  <label class="label">Obreros seleccionados</label>
+<div id="listaObreros"></div>
+</div>
+
+<div class="full">
+<label class="label">Horarios</label>
+<div id="contenedorHorarios"></div>
+</div>
+
+<!-- FINALIZA -->
+<div>
+<label class="label">¿Finaliza obra?</label>
+<select name="finaliza">
+<option value="No">No</option>
+<option value="Sí">Sí</option>
+</select>
+</div>
+
+<!-- MATERIALES -->
+<div class="full">
+<h3>Materiales</h3>
+
+<div class="smart-box">
+  <div class="custom-select">
+    <div class="custom-select-box" id="selectBoxMaterial">Seleccionar material</div>
+    <div class="custom-select-options" id="optionsMaterial"></div>
+  </div>
+
+  <input type="text" id="nuevoMaterial" placeholder="Nuevo material">
+</div>
+
+<div class="smart-box">
+<input type="number" id="cantidadMaterial" placeholder="Cantidad">
+<input type="number" id="costoMaterial" placeholder="Costo">
+</div>
+
+<button class="btn" type="button" id="btnMaterial">Agregar</button>
+
+<div id="listaMateriales"></div>
+</div>
+
+<!-- HERRAMIENTAS -->
+<div class="full">
+<h3>Herramientas</h3>
+
+<div class="smart-box">
+  <div class="custom-select">
+    <div class="custom-select-box" id="selectBoxHerramienta">Seleccionar herramienta</div>
+    <div class="custom-select-options" id="optionsHerramienta"></div>
+  </div>
+
+  <input type="text" id="nuevaHerramienta" placeholder="Nueva herramienta">
+</div>
+
+<input type="number" id="cantidadHerramienta" placeholder="Cantidad">
+
+<button class="btn" type="button" id="btnHerramienta">Agregar</button>
+
+<div id="listaHerramientas"></div>
+</div>
+
+<!-- MAQUINARIA -->
+<div class="full">
+<h3>Maquinaria</h3>
+
+<div class="custom-select">
+  <div class="custom-select-box" id="selectBoxMaquinaria">Seleccionar maquinaria</div>
+  <div class="custom-select-options" id="optionsMaquinaria"></div>
+</div>
+
+<div id="listaMaquinaria"></div>
+</div>
+
+<!-- BOTÓN -->
+<div class="full">
+<button class="btn" type="submit">Guardar</button>
+<a href="PanelInicio.html" class="btn-back">Volver</a>
+
+</div>
+</form>
+
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  // ================= ELEMENTOS =================
+  const boxObra = document.getElementById("selectBoxObra");
+  const optObra = document.getElementById("optionsObra");
+  const inputObra = document.getElementById("inputObra");
+
+  const boxObrero = document.getElementById("selectBoxObrero");
+  const optObrero = document.getElementById("optionsObrero");
+
+  const boxMaterial = document.getElementById("selectBoxMaterial");
+  const optMaterial = document.getElementById("optionsMaterial");
+
+  const boxHerr = document.getElementById("selectBoxHerramienta");
+  const optHerr = document.getElementById("optionsHerramienta");
+
+  const boxMaquinaria = document.getElementById("selectBoxMaquinaria");
+  const optMaquinaria = document.getElementById("optionsMaquinaria");
+  const listaMaquinaria = document.getElementById("listaMaquinaria");
+
+  const lista = document.getElementById("listaObreros");
+  const horarios = document.getElementById("contenedorHorarios");
+
+  const form = document.getElementById("asistenciaForm");
+  const feedback = document.getElementById("feedback");
+  const btnGuardar = form.querySelector("button[type='submit']");
+
+  let obrerosSeleccionados = [];
+  let maquinariaSeleccionada = [];
+
+  // ================= FETCH =================
+  fetch("../api/datos_asistencia.php")
+    .then(res => res.json())
+    .then(data => {
+
+      // ===== OBRAS =====
+      data.obras.forEach(o => {
+        const div = document.createElement("div");
+        div.textContent = o.nombre;
+
+        div.onclick = () => {
+          boxObra.textContent = o.nombre;
+          inputObra.value = o.id_obra;
+          optObra.style.display = "none";
+        };
+
+        optObra.appendChild(div);
+      });
+
+      // ===== OBREROS =====
+      data.obreros.forEach(o => {
+        const div = document.createElement("div");
+        div.textContent = o.nombre + " " + o.apellido;
+
+        div.onclick = () => {
+
+          const id = o.id_obrero;
+          const nombre = o.nombre + " " + o.apellido;
+
+          if (obrerosSeleccionados.includes(id)) return;
+
+          obrerosSeleccionados.push(id);
+
+          boxObrero.textContent = nombre;
+          optObrero.style.display = "none";
+
+          const item = document.createElement("div");
+          item.classList.add("obrero-item");
+          item.id = "obrero-" + id;
+
+          item.innerHTML = `
+            <span class="obrero-name">${nombre}</span>
+            <div class="obrero-actions">
+              <button type="button" class="btn-delete" onclick="eliminarObrero('${id}')">X</button>
+            </div>
+            <input type="hidden" name="obreros[]" value="${id}">
+          `;
+
+          lista.appendChild(item);
+
+          const fila = document.createElement("div");
+          fila.classList.add("worker-row");
+          fila.id = "horario-" + id;
+
+          fila.innerHTML = `
+            <strong>${nombre}</strong>
+            <div><label>Entrada</label><input type="time" name="hora_entrada[${id}]" required></div>
+            <div><label>Salida</label><input type="time" name="hora_salida[${id}]" required></div>
+          `;
+
+          horarios.appendChild(fila);
+        };
+
+        optObrero.appendChild(div);
+      });
+
+      // ===== MATERIALES =====
+      data.materiales.forEach(m => {
+        const div = document.createElement("div");
+        div.textContent = m.nombre;
+
+        div.onclick = () => {
+          boxMaterial.textContent = m.nombre;
+          optMaterial.style.display = "none";
+        };
+
+        optMaterial.appendChild(div);
+      });
+
+      // ===== HERRAMIENTAS =====
+      data.herramientas.forEach(h => {
+        const div = document.createElement("div");
+        div.textContent = h.nombre;
+
+        div.onclick = () => {
+          boxHerr.textContent = h.nombre;
+          optHerr.style.display = "none";
+        };
+
+        optHerr.appendChild(div);
+      });
+
+      // ===== MAQUINARIA =====
+      data.maquinaria.forEach(m => {
+        const div = document.createElement("div");
+        div.textContent = m.nombre + (m.marca ? " (" + m.marca + ")" : "");
+
+        div.onclick = () => {
+          const id = m.id_maquinaria;
+          if (maquinariaSeleccionada.includes(id)) return;
+
+          maquinariaSeleccionada.push(id);
+          boxMaquinaria.textContent = m.nombre + (m.marca ? " (" + m.marca + ")" : "");
+          optMaquinaria.style.display = "none";
+
+          const item = document.createElement("div");
+          item.classList.add("obrero-item");
+          item.id = "maquinaria-" + id;
+          item.innerHTML = `
+            <span class="obrero-name">${m.nombre}${m.marca ? " (" + m.marca + ")" : ""}</span>
+            <div class="obrero-actions">
+              <button type="button" class="btn-delete" onclick="eliminarMaquinaria('${id}')">X</button>
+            </div>
+            <input type="hidden" name="maquinaria[]" value="${id}">
+          `;
+          listaMaquinaria.appendChild(item);
+        };
+
+        optMaquinaria.appendChild(div);
+      });
+
+    });
+
+  // ================= OPEN / CLOSE =================
+  function toggle(box, opt) {
+    box.addEventListener("click", () => {
+      opt.style.display = opt.style.display === "block" ? "none" : "block";
+    });
+  }
+
+  toggle(boxObra, optObra);
+  toggle(boxObrero, optObrero);
+  toggle(boxMaterial, optMaterial);
+  toggle(boxHerr, optHerr);
+  toggle(boxMaquinaria, optMaquinaria);
+
+  // cerrar afuera
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".custom-select")) {
+      document.querySelectorAll(".custom-select-options")
+        .forEach(o => o.style.display = "none");
+    }
+  });
+
+  // ================= ELIMINAR OBRERO =================
+  window.eliminarObrero = (id) => {
+    obrerosSeleccionados = obrerosSeleccionados.filter(o => o !== id);
+    document.getElementById("obrero-" + id)?.remove();
+    document.getElementById("horario-" + id)?.remove();
+  };
+
+  // ================= ELIMINAR MAQUINARIA =================
+  window.eliminarMaquinaria = (id) => {
+    maquinariaSeleccionada = maquinariaSeleccionada.filter(m => m !== Number(id));
+    document.getElementById("maquinaria-" + id)?.remove();
+  };
+
+  // ================= AGREGAR MATERIAL =================
+  document.getElementById("btnMaterial").addEventListener("click", () => {
+    const nombreSelect = boxMaterial.textContent.trim();
+    const nombreNuevo = document.getElementById("nuevoMaterial").value.trim();
+    const nombre = nombreNuevo || (nombreSelect !== "Seleccionar material" ? nombreSelect : "");
+    const cantidad = document.getElementById("cantidadMaterial").value;
+    const costo = document.getElementById("costoMaterial").value;
+
+    if (!nombre) { mostrarFeedback("Seleccioná o escribí un material.", "warning"); return; }
+    if (!cantidad || cantidad <= 0) { mostrarFeedback("Ingresá una cantidad válida.", "warning"); return; }
+
+    const item = document.createElement("div");
+    item.classList.add("obrero-item");
+    item.innerHTML = `<span class="obrero-name">${nombre} - Cant: ${cantidad} - Costo: ${costo || 0}</span><div class="obrero-actions"><button type="button" class="btn-delete">X</button></div><input type="hidden" name="material_nombre[]" value="${nombre}"><input type="hidden" name="material_cantidad[]" value="${cantidad}"><input type="hidden" name="material_costo[]" value="${costo || 0}">`;
+    item.querySelector(".btn-delete").addEventListener("click", () => item.remove());
+    document.getElementById("listaMateriales").appendChild(item);
+    document.getElementById("nuevoMaterial").value = "";
+    document.getElementById("cantidadMaterial").value = "";
+    document.getElementById("costoMaterial").value = "";
+    boxMaterial.textContent = "Seleccionar material";
+  });
+
+  // ================= AGREGAR HERRAMIENTA =================
+  document.getElementById("btnHerramienta").addEventListener("click", () => {
+    const nombreSelect = boxHerr.textContent.trim();
+    const nombreNuevo = document.getElementById("nuevaHerramienta").value.trim();
+    const nombre = nombreNuevo || (nombreSelect !== "Seleccionar herramienta" ? nombreSelect : "");
+    const cantidad = document.getElementById("cantidadHerramienta").value;
+
+    if (!nombre) { mostrarFeedback("Seleccioná o escribí una herramienta.", "warning"); return; }
+    if (!cantidad || cantidad <= 0) { mostrarFeedback("Ingresá una cantidad válida.", "warning"); return; }
+
+    const item = document.createElement("div");
+    item.classList.add("obrero-item");
+    item.innerHTML = `<span class="obrero-name">${nombre} - Cant: ${cantidad}</span><div class="obrero-actions"><button type="button" class="btn-delete">X</button></div><input type="hidden" name="herramienta_nombre[]" value="${nombre}"><input type="hidden" name="herramienta_cantidad[]" value="${cantidad}">`;
+    item.querySelector(".btn-delete").addEventListener("click", () => item.remove());
+    document.getElementById("listaHerramientas").appendChild(item);
+    document.getElementById("nuevaHerramienta").value = "";
+    document.getElementById("cantidadHerramienta").value = "";
+    boxHerr.textContent = "Seleccionar herramienta";
+  });
+
+  // ================= MOSTRAR FEEDBACK =================
+  function mostrarFeedback(mensaje, tipo) {
+    feedback.innerHTML = `<i class="fas ${tipo === "error" ? "fa-circle-exclamation" : tipo === "success" ? "fa-circle-check" : "fa-triangle-exclamation"}"></i><span>${mensaje}</span>`;
+    feedback.className = `feedback-msg ${tipo}`;
+  }
+
+  function ocultarFeedback() {
+    feedback.classList.add("hidden");
+  }
+
+  // ================= SUBMIT CON FETCH =================
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    ocultarFeedback();
+
+    const idObra = parseInt(inputObra.value, 10);
+    const fecha = form.querySelector("input[name='fecha']").value.trim();
+    const finaliza = form.querySelector("select[name='finaliza']").value;
+
+    if (!idObra) {
+      mostrarFeedback("Seleccioná una obra.", "error");
+      return;
+    }
+    if (!fecha) {
+      mostrarFeedback("Seleccioná una fecha.", "error");
+      return;
+    }
+    if (!obrerosSeleccionados.length) {
+      mostrarFeedback("Seleccioná al menos un obrero.", "error");
+      return;
+    }
+
+    btnGuardar.disabled = true;
+    btnGuardar.textContent = "Guardando...";
+
+    try {
+      const csrfResp = await fetch("../api/csrf.php", { credentials: "include" });
+      const csrfData = await csrfResp.json();
+      const csrfToken = csrfData.token || "";
+
+      const formData = new FormData();
+      formData.append("id_obra", String(idObra));
+      formData.append("fecha", fecha);
+      formData.append("finaliza", finaliza);
+
+      obrerosSeleccionados.forEach(id => {
+        formData.append("obreros[]", String(id));
+        const entrada = form.querySelector(`input[name="hora_entrada[${id}]"]`);
+        const salida = form.querySelector(`input[name="hora_salida[${id}]"]`);
+        formData.append(`hora_entrada[${id}]`, entrada ? entrada.value : "");
+        formData.append(`hora_salida[${id}]`, salida ? salida.value : "");
+      });
+
+      const listaEl = document.getElementById("listaMateriales");
+      listaEl.querySelectorAll("input[name='material_nombre[]']").forEach(inp => formData.append("material_nombre[]", inp.value));
+      listaEl.querySelectorAll("input[name='material_cantidad[]']").forEach(inp => formData.append("material_cantidad[]", inp.value));
+      listaEl.querySelectorAll("input[name='material_costo[]']").forEach(inp => formData.append("material_costo[]", inp.value));
+
+      const listaHerr = document.getElementById("listaHerramientas");
+      listaHerr.querySelectorAll("input[name='herramienta_nombre[]']").forEach(inp => formData.append("herramienta_nombre[]", inp.value));
+      listaHerr.querySelectorAll("input[name='herramienta_cantidad[]']").forEach(inp => formData.append("herramienta_cantidad[]", inp.value));
+
+      maquinariaSeleccionada.forEach(id => {
+        formData.append("maquinaria[]", String(id));
+      });
+
+      const response = await fetch("../api/guardar_asistencia.php", {
+        method: "POST",
+        headers: { "X-CSRF-Token": csrfToken },
+        credentials: "include",
+        body: formData,
+      });
+
+      const text = await response.text();
+      let result;
+      try { result = JSON.parse(text); } catch { result = { error: text }; }
+
+      if (!response.ok || !result.success) {
+        mostrarFeedback(result.error || "Error al guardar la asistencia.", "error");
+        return;
+      }
+
+      mostrarFeedback(result.message || "Asistencia guardada correctamente.", "success");
+    } catch (err) {
+      console.error(err);
+      mostrarFeedback(err.message || "No se pudo guardar la asistencia. Revisá los datos.", "error");
+    } finally {
+      btnGuardar.disabled = false;
+      btnGuardar.textContent = "Guardar";
+    }
+  });
+
+  // ================= ALERTAS DE VENCIMIENTO =================
+  function resolveApiBaseAlertas() {
+    const path = window.location.pathname;
+    const idx = path.lastIndexOf("/web-ui/");
+    if (idx !== -1) {
+      return window.location.origin + path.substring(0, idx) + "/api";
+    }
+    return window.location.origin + "/api";
+  }
+
+  function formatDateAlerta(value) {
+    if (!value) return "Sin fecha";
+    const parts = value.split("-");
+    return parts[2] + "/" + parts[1] + "/" + parts[0];
+  }
+
+  document.getElementById("alertasCerrar").addEventListener("click", () => {
+    document.getElementById("alertasVencimiento").classList.add("hidden");
+  });
+
+  (function cargarAlertasAsistencia() {
+    const apiAlerta = resolveApiBaseAlertas();
+    if (!apiAlerta) return;
+    fetch(apiAlerta + "/alertas_certificados.php?dias=30", { credentials: "include" })
+      .then(res => res.json())
+      .then(data => {
+        const alertas = data.alertas || [];
+        if (!alertas.length) return;
+        const panel = document.getElementById("alertasVencimiento");
+        const lista = document.getElementById("alertasListaAsist");
+        panel.classList.remove("hidden");
+        lista.innerHTML = alertas.map(a => {
+          const d = parseInt(a.dias_restantes, 10);
+          let cls = d < 0 ? "badge-expirado" : d <= 15 ? "badge-critico" : "badge-adv";
+          let txt = d < 0 ? `Expirado (${Math.abs(d)} d)` : `Vence en ${d} d`;
+          return `<li>
+            <span class="${cls}">${txt}</span>
+            <strong>${a.nombre_maquinaria}</strong>${a.marca ? " (" + a.marca + ")" : ""}
+            — ${a.nombre_archivo || "Certificado"}
+            <span style="float:right;color:#9ca3af;font-size:11px;">${formatDateAlerta(a.fecha_vencimiento)}</span>
+          </li>`;
+        }).join("");
+      })
+      .catch(() => {});
+  })();
+
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Pórtico - Maquinaria</title>
+        <link rel="icon" type="image/png" href="assets/img/logo.png" />
+        <link rel="stylesheet" href="assets/css/theme.css" />
+        <link rel="stylesheet" href="assets/css/RegObrero.css" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        />
+        <link rel="stylesheet" href="assets/css/nav-sidebar.css" />
+        <script src="assets/js/auth.js" data-role="Administrador"></script>
+        <style>
+            .alertas-vencimiento {
+                background: #fef2f2;
+                border: 1px solid #fca5a5;
+                border-radius: 12px;
+                padding: 16px 20px;
+                margin-bottom: 20px;
+                box-shadow: 0 2px 8px rgba(220, 38, 38, 0.10);
+            }
+            .alertas-vencimiento.hidden { display: none; }
+            .alertas-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: #b91c1c;
+                font-size: 15px;
+                margin-bottom: 10px;
+            }
+            .alertas-header i { font-size: 18px; }
+            .alertas-close {
+                margin-left: auto;
+                background: none;
+                border: none;
+                color: #b91c1c;
+                cursor: pointer;
+                font-size: 16px;
+                padding: 2px 6px;
+                border-radius: 4px;
+                transition: background 0.2s;
+            }
+            .alertas-close:hover { background: #fecaca; }
+            #alertasLista {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+            #alertasLista li {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 10px;
+                border-radius: 8px;
+                font-size: 13px;
+                color: #7f1d1d;
+            }
+            #alertasLista li + li { border-top: 1px solid #fecaca; }
+            .alerta-badge {
+                display: inline-block;
+                font-size: 11px;
+                font-weight: 600;
+                padding: 2px 8px;
+                border-radius: 20px;
+            }
+            .alerta-badge.expirado { background: #fecaca; color: #b91c1c; }
+            .alerta-badge.critico { background: #fee2e2; color: #b91c1c; }
+            .alerta-badge.advertencia { background: #fef3c7; color: #92400e; }
+            .cert-item.vencido { border-left: 4px solid #dc2626; background: #fef2f2; padding-left: 10px; }
+            .cert-item.critico { border-left: 4px solid #f97316; background: #fff7ed; padding-left: 10px; }
+            .cert-item.advertencia { border-left: 4px solid #facc15; background: #fefce8; padding-left: 10px; }
+            .cert-section {
+                background: #fafafa;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 16px;
+                margin-top: 16px;
+            }
+            .cert-section .btn-save {
+                display: inline-block;
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            .cert-section .obrero-item {
+                display: flex;
+                align-items: center;
+            }
+            /* Estilo para el filtro de certificados */
+            .filter-checkbox {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: #fff;
+                padding: 0 12px;
+                border-radius: 10px;
+                border: 1.5px solid var(--input-border);
+                height: 42px;
+                cursor: pointer;
+                font-size: 13px;
+                white-space: nowrap;
+            }
+            .filter-checkbox input {
+                margin: 0;
+                width: 16px;
+                height: 16px;
+                cursor: pointer;
+            }
+            .filter-checkbox span {
+                color: var(--text-dark);
+                user-select: none;
+            }
+            @media (max-width: 640px) {
+                .list-filters {
+                    flex-wrap: wrap;
+                }
+                .filter-checkbox {
+                    white-space: normal;
+                    flex: 1;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="nav-dropdown">
+            <button class="nav-menu-btn">
+                <i class="fas fa-bars"></i> Menú
+            </button>
+            <ul class="nav-dropdown-menu">
+                <li>
+                    <a href="PanelInicio.html"
+                        ><i class="fas fa-home"></i> Panel</a
+                    >
+                </li>
+                    <li>
+                        <a href="TablaUsuarios.html"
+                            ><i class="fas fa-user"></i> Usuarios</a
+                        >
+                    </li>
+                <li>
+                    <a href="Obras.html"
+                        ><i class="fas fa-building"></i> Obras</a
+                    >
+                </li>
+                <li>
+                    <a href="RegistrarObrero.html"
+                        ><i class="fas fa-helmet-safety"></i> Obreros</a
+                    >
+                </li>
+                <li>
+                    <a href="Maquinaria.html" class="active"
+                        ><i class="fas fa-truck-monster"></i> Maquinaria</a
+                    >
+                </li>
+                <li>
+                    <a href="Asistencia.html"
+                        ><i class="fas fa-clipboard-list"></i> Asistencia</a
+                    >
+                </li>
+                <li>
+                    <a href="Consultas.html"
+                        ><i class="fas fa-chart-column"></i> Consultas</a
+                    >
+                </li>
+                    <li>
+                        <a href="LogsAuditoria.html"
+                            ><i class="fas fa-clipboard-list"></i> Logs</a
+                        >
+                    </li>
+                <li>
+                    <a href="Login.html"
+                        ><i class="fas fa-right-from-bracket"></i> Salir</a
+                    >
+                </li>
+            </ul>
+        </div>
+
+        <nav>
+            <div class="logo-wrap">
+                <img
+                    src="assets/img/logo.png"
+                    alt="Pórtico Construcciones y Servicios"
+                />
+            </div>
+            <div class="user-pill">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 32 32"><path d="M16 4a5 5 0 1 1-5 5a5 5 0 0 1 5-5m0-2a7 7 0 1 0 7 7a7 7 0 0 0-7-7m10 28h-2v-5a5 5 0 0 0-5-5h-6a5 5 0 0 0-5 5v5H6v-5a7 7 0 0 1 7-7h6a7 7 0 0 1 7 7Z"/></svg>
+                <span class="user-pill-name">Admin</span>
+            </div>
+        </nav>
+
+        <main>
+            <div class="card">
+                <div
+                    id="feedbackPanel"
+                    class="feedback-panel hidden"
+                    role="alert"
+                    aria-live="polite"
+                >
+                    <div class="feedback-icon">
+                        <i class="fas fa-circle-info"></i>
+                    </div>
+                    <div>
+                        <strong id="feedbackTitle">Atención</strong>
+                        <p id="feedbackMessage"></p>
+                    </div>
+                    <button
+                        type="button"
+                        class="feedback-close"
+                        id="feedbackClose"
+                        aria-label="Cerrar mensaje"
+                    >
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div
+                    id="confirmModal"
+                    class="confirm-modal hidden"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="confirmTitle"
+                    aria-describedby="confirmMessage"
+                >
+                    <div class="confirm-box">
+                        <h3 id="confirmTitle">Confirmar acción</h3>
+                        <p id="confirmMessage"></p>
+                        <div class="confirm-actions">
+                            <button
+                                type="button"
+                                class="btn-secondary"
+                                id="confirmCancel"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                class="btn-save"
+                                id="confirmAccept"
+                            >
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    id="certModal"
+                    class="confirm-modal hidden"
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <div class="confirm-box" style="max-width: 640px; width: 90%;">
+                        <h3 id="certModalTitle">Certificados</h3>
+
+                        <div class="grupo" style="margin-top: 16px;">
+                            <div class="label">Subir certificado</div>
+                            <input type="file" id="certArchivo" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" />
+                        </div>
+
+                        <div class="grupo">
+                            <div class="label">Fecha de vencimiento</div>
+                            <input type="date" id="certVencimiento" class="input" />
+                        </div>
+
+                        <div class="confirm-actions" style="margin-top: 12px; justify-content: flex-start;">
+                            <button type="button" class="btn-save" id="certSubirBtn">Subir</button>
+                            <button type="button" class="btn-secondary" id="certCancelarBtn">Cerrar</button>
+                        </div>
+
+                        <div id="certListaWrap" style="margin-top: 20px;">
+                            <h4 style="font-size: 14px; color: #444; margin-bottom: 10px;">Certificados cargados</h4>
+                            <div id="certLista"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <section id="panelListado" class="panel-view active">
+                    <div
+                        id="alertasVencimiento"
+                        class="alertas-vencimiento hidden"
+                        role="alert"
+                        aria-live="polite"
+                    >
+                        <div class="alertas-header">
+                            <i class="fas fa-triangle-exclamation"></i>
+                            <strong>Certificados por vencer</strong>
+                            <button type="button" class="alertas-close" id="alertasCerrar" aria-label="Cerrar alerta">
+                                <i class="fas fa-xmark"></i>
+                            </button>
+                        </div>
+                        <ul id="alertasLista"></ul>
+                    </div>
+
+                    <div class="panel-head panel-head-spread">
+                        <h2>Maquinaria</h2>
+                        <span class="results-count" id="resultsCount">0 equipos</span>
+                    </div>
+
+                    <div class="list-filters">
+                        <label class="search-box" for="searchMaquinaria">
+                            <i
+                                class="fas fa-magnifying-glass"
+                                aria-hidden="true"
+                            ></i>
+                            <input
+                                type="search"
+                                id="searchMaquinaria"
+                                placeholder="Buscar por nombre o marca"
+                                autocomplete="off"
+                            />
+                        </label>
+                        <label class="filter-checkbox" id="filterCertLabel">
+                            <input type="checkbox" id="filtroCertificados" />
+                            <span>Certificados vencidos o por vencer</span>
+                        </label>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn-new"
+                        id="openFormPanel"
+                    >
+                        <i class="fas fa-plus"></i> Nueva maquinaria
+                    </button>
+
+                    <div
+                        class="loading-state"
+                        id="loadingState"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        <span class="loader" aria-hidden="true"></span>
+                        <p>Cargando maquinaria...</p>
+                    </div>
+
+                    <div class="table-container hidden" id="tableWrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Marca</th>
+                                    <th>Vencimiento</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="maquinariaTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination hidden" id="pagination">
+                        <span class="pagination-info" id="paginationInfo">Mostrando 0-0 de 0 equipos</span>
+                        <div class="pagination-actions">
+                            <button type="button" class="pagination-btn" id="paginationPrev">Anterior</button>
+                            <span class="pagination-page" id="paginationPage">Página 1 de 1</span>
+                            <button type="button" class="pagination-btn" id="paginationNext">Siguiente</button>
+                        </div>
+                    </div>
+
+                    <div class="empty-state hidden" id="emptyState">
+                        <i class="fas fa-truck-monster"></i>
+                        <p id="emptyStateMessage">No hay maquinaria registrada todavía.</p>
+                    </div>
+
+                    <a href="PanelInicio.html" class="btn-back">Volver</a>
+                </section>
+
+                <section id="panelFormulario" class="panel-view hidden">
+                    <div class="form-wrap">
+                        <h2 class="form-title" id="formTitle">
+                            Registrar maquinaria
+                        </h2>
+
+                        <form id="maquinariaForm" novalidate>
+                            <input
+                                type="hidden"
+                                id="id_maquinaria"
+                                name="id_maquinaria"
+                            />
+
+                            <div class="grupo">
+                                <div class="label">Nombre</div>
+                                <input
+                                    type="text"
+                                    id="nombre"
+                                    name="nombre"
+                                    class="input"
+                                    placeholder="Ej: Excavadora hidráulica"
+                                    required
+                                />
+                            </div>
+
+                            <div class="grupo">
+                                <div class="label">Marca</div>
+                                <input
+                                    type="text"
+                                    id="marca"
+                                    name="marca"
+                                    class="input"
+                                    placeholder="Ej: Caterpillar"
+                                />
+                            </div>
+
+                            <div id="certSection" class="cert-section hidden">
+                                <h4 class="form-title" style="margin-top:8px;">Certificados</h4>
+
+                                <div class="grupo">
+                                    <div class="label">Subir certificado</div>
+                                    <input type="file" id="certArchivoForm" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" />
+                                </div>
+
+                                <div class="grupo">
+                                    <div class="label">Fecha de vencimiento</div>
+                                    <input type="date" id="certVencimientoForm" class="input" />
+                                </div>
+
+                                <button type="button" class="btn-save" id="certSubirFormBtn" style="margin-bottom:12px;">Subir</button>
+
+                                <div id="certListaForm"></div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn" id="btnGuardar">
+                                    Guardar
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn-back"
+                                    id="cancelFormPanel"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <script src="assets/js/maquinaria.js"></script>
+    </body>
+</html>
