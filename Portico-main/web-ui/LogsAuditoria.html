@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Logs de Auditoria</title>
+
+        <link rel="stylesheet" href="assets/css/theme.css" />
+        <link rel="stylesheet" href="assets/css/nav-sidebar.css" />
+        <link rel="stylesheet" href="assets/css/LogsAuditoria.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+        <script src="assets/js/auth.js" data-role="Administrador"></script>
+        <script src="assets/js/auditoria.js"></script>
+    </head>
+    <body>
+        <div class="nav-dropdown">
+            <button class="nav-menu-btn"><i class="fas fa-bars"></i> Menú</button>
+            <ul class="nav-dropdown-menu">
+                <li><a href="PanelInicio.html"><i class="fas fa-home"></i> Panel</a></li>
+                <li><a href="TablaUsuarios.html"><i class="fas fa-user"></i> Usuarios</a></li>
+                <li><a href="Obras.html"><i class="fas fa-building"></i> Obras</a></li>
+                <li><a href="RegistrarObrero.html"><i class="fas fa-helmet-safety"></i> Obreros</a></li>
+                <li><a href="Maquinaria.html"><i class="fas fa-truck-monster"></i> Maquinaria</a></li>
+                <li><a href="Consultas.html"><i class="fas fa-chart-column"></i> Consultas</a></li>
+                <li><a href="LogsAuditoria.html" class="active"><i class="fas fa-clipboard-list"></i> Logs</a></li>
+                <li><a href="Login.html"><i class="fas fa-right-from-bracket"></i> Salir</a></li>
+            </ul>
+        </div>
+
+        <nav>
+            <div class="logo-wrap">
+                <img src="assets/img/logo.png" alt="Pórtico Construcciones y Servicios" />
+            </div>
+            <div class="user-pill">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 32 32"><path d="M16 4a5 5 0 1 1-5 5a5 5 0 0 1 5-5m0-2a7 7 0 1 0 7 7a7 7 0 0 0-7-7m10 28h-2v-5a5 5 0 0 0-5-5h-6a5 5 0 0 0-5 5v5H6v-5a7 7 0 0 1 7-7h6a7 7 0 0 1 7 7Z"/></svg>
+                <span class="user-pill-name">Admin</span>
+            </div>
+        </nav>
+
+        <main>
+            <div class="card">
+                <div class="header-row">
+                    <div>
+                        <h2>Logs de Auditoria</h2>
+                        <p>Seguimiento de acciones relevantes del sistema.</p>
+                    </div>
+                </div>
+
+                <div id="feedback" class="feedback" hidden></div>
+
+                <form id="filtersForm" class="filters-grid">
+                    <label>
+                        <span>Usuario</span>
+                        <input type="text" id="filterUsuario" placeholder="Buscar por usuario" />
+                    </label>
+                    <label>
+                        <span>Acción</span>
+                        <select id="filterAccion"><option value="">Todas</option></select>
+                    </label>
+                    <label>
+                        <span>Entidad</span>
+                        <select id="filterEntidad"><option value="">Todas</option></select>
+                    </label>
+                    <label>
+                        <span>Desde</span>
+                        <input type="date" id="filterFechaDesde" />
+                    </label>
+                    <label>
+                        <span>Hasta</span>
+                        <input type="date" id="filterFechaHasta" />
+                    </label>
+                    <div class="filters-actions">
+                        <button type="submit" class="btn-primary">Filtrar</button>
+                        <button type="button" id="btnReset" class="btn-secondary">Limpiar</button>
+                    </div>
+                </form>
+
+                <div class="summary-bar"><span id="summaryText">Cargando logs...</span></div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Usuario</th>
+                                <th>Rol</th>
+                                <th>Tipo</th>
+                                <th>Módulo</th>
+                                <th>ID</th>
+                                <th>Origen</th>
+                                <th>Resumen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsBody">
+                            <tr><td colspan="8" class="table-status">Cargando logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination">
+                    <button type="button" id="btnPrev" class="pager-btn">Anterior</button>
+                    <span id="pageInfo">Página 1 de 1</span>
+                    <button type="button" id="btnNext" class="pager-btn">Siguiente</button>
+                </div>
+
+                <a href="PanelInicio.html" class="btn-back">Volver</a>
+            </div>
+        </main>
+    </body>
+</html>

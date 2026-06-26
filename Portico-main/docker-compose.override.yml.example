@@ -1,0 +1,12 @@
+# Renombrá este archivo a docker-compose.override.yml
+# para desarrollo con live-reload de los cambios.
+# Docker Compose carga este archivo automáticamente
+# junto con docker-compose.yml
+
+version: "3.8"
+
+services:
+  app:
+    volumes:
+      - ./web-ui:/var/www/html/web-ui
+      - ./api:/var/www/html/api
