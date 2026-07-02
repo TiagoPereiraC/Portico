@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/config/session.php';
+require_once __DIR__ . '/config/auditoria.php';
 
 // CORS: misma origin
 $origin = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
@@ -61,6 +62,7 @@ $ip = filter_var($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0', FILTER_VALIDATE_IP)
     ?: '0.0.0.0';
 
 // Rate limiting 
+$valido = false;
 try {
     $pdo = conectar();
 
@@ -114,6 +116,7 @@ try {
 
 // Respuesta genérica en fallo (no filtrar si fue usuario o contraseña)
 if (!$valido) {
+    registrarAuditoria($pdo, 'login_fallido', 'auth', null, ['usuario' => $username, 'ip' => $ip]);
     http_response_code(401);
     exit(json_encode(['error' => 'Usuario o contraseña incorrectos']));
 }
@@ -130,6 +133,8 @@ $_SESSION['ip']      = $ip;
 
 // Invalidar el CSRF token usado; el cliente pedirá uno nuevo en la próxima solicitud
 unset($_SESSION['csrf_token']);
+
+registrarAuditoria($pdo, 'login', 'auth', (int) $user['id_usuario'], ['usuario' => $user['usuario']]);
 
 echo json_encode([
     'success' => true,

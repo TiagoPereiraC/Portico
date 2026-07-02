@@ -354,6 +354,69 @@ tbody tr:hover {
     }
 }
 
+.pagination {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: var(--input-shadow);
+}
+
+.pagination.hidden { display: none; }
+
+.pagination-info,
+.pagination-page {
+    color: var(--text-dark);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.pagination-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.pagination-btn {
+    border: none;
+    border-radius: 10px;
+    background: var(--btn-bg);
+    color: white;
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.pagination-btn:hover {
+    background: var(--btn-hover);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+@media (max-width: 1100px) {
+
+    .card {
+        grid-template-columns: 1fr;
+    }
+
+    #resumen-consultas {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 900px) {
 
     .card {
@@ -362,5 +425,10 @@ tbody tr:hover {
 
     .date-range {
         flex-direction: column;
+    }
+
+    .pagination,
+    .pagination-actions {
+        justify-content: center;
     }
 }

@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS obreros (
     telefono VARCHAR(30),
     fecha_contratacion DATE,
     fecha_fin DATE,
+    cargo ENUM('Albañil','Capataz','Electricista','Plomero','Pintor','Carpintero','Soldador','Operador de maquinaria','Peón','Otro') NOT NULL DEFAULT 'Peón',
     activo BOOLEAN DEFAULT 1
 );
 
@@ -135,6 +136,8 @@ CREATE TABLE IF NOT EXISTS asistencia_maquinaria (
     id_obra INT NOT NULL,
     id_maquinaria INT NOT NULL,
     fecha DATE NOT NULL,
+    hora_salida TIME NOT NULL,
+    hora_devolucion TIME NOT NULL,
 
     FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
         ON UPDATE CASCADE ON DELETE CASCADE,

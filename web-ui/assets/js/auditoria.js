@@ -127,9 +127,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const tbody = document.getElementById('logsBody');
     const feedbackEl = document.getElementById('feedback');
     const summaryEl = document.getElementById('summaryText');
-    const pageInfoEl = document.getElementById('pageInfo');
-    const prevBtn = document.getElementById('btnPrev');
-    const nextBtn = document.getElementById('btnNext');
+    const pageInfoEl = document.getElementById('paginationPage');
+    const prevBtn = document.getElementById('paginationPrev');
+    const nextBtn = document.getElementById('paginationNext');
+    const paginationEl = document.getElementById('pagination');
+    const paginationInfoEl = document.getElementById('paginationInfo');
 
     const state = { page: 1, totalPages: 1, filtersLoaded: false };
 
@@ -179,16 +181,11 @@ document.addEventListener('DOMContentLoaded', function () {
             state.totalPages = Number(data.total_pages || 1);
             renderFilters(data.filters || {});
             renderLogs(data.logs || []);
-            summaryEl.textContent = `Mostrando ${data.logs?.length || 0} de ${data.total || 0} registros`;
-            pageInfoEl.textContent = `Página ${data.page || 1} de ${data.total_pages || 1}`;
-            prevBtn.disabled = (data.page || 1) <= 1;
-            nextBtn.disabled = (data.page || 1) >= (data.total_pages || 1);
+            actualizarPaginacion(data.total || 0, data.page || 1, data.total_pages || 1);
         } catch (error) {
             tbody.innerHTML = `<tr><td colspan="8" class="table-status">${escapeHtml(error.message || 'No se pudieron cargar los logs.')}</td></tr>`;
             summaryEl.textContent = 'Sin datos disponibles';
-            pageInfoEl.textContent = 'Página 1 de 1';
-            prevBtn.disabled = true;
-            nextBtn.disabled = true;
+            actualizarPaginacion(0, 1, 1);
             showFeedback(error.message || 'No se pudieron cargar los logs.', 'error');
         }
     }
@@ -292,6 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (entity === 'certificados_maquinaria') {
             if (action === 'subir_certificado') return `Se subió el certificado ${detail.archivo || ''} para la maquinaria #${detail.id_maquinaria ?? entityId ?? '-'}.`.trim();
             if (action === 'eliminar_certificado') return `Se eliminó un certificado de maquinaria.`;
+            if (action === 'editar_certificado') return `Se actualizó la fecha de vencimiento del certificado a ${detail.fecha_vencimiento || 'sin fecha'}.`;
         }
 
         if (entity === 'asistencia' && action === 'guardar') {
@@ -300,7 +298,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (entity === 'auth') {
             if (action === 'login') return 'Inicio de sesión exitoso.';
+            if (action === 'login_fallido') return `Intento fallido de inicio de sesión con usuario ${detail.usuario || 'desconocido'}.`;
             if (action === 'logout') return 'Cierre de sesión.';
+        }
+
+        if (entity === 'obras' && action === 'finalizar_obra') {
+            return `Obra finalizada el ${detail.fecha_fin || ''}.`;
+        }
+
+        if (entity === 'asistencia' && action === 'guardar') {
+            return `Asistencia guardada: obra #${detail.id_obra ?? entityId ?? '-'} el ${detail.fecha || 'sin fecha'} — ${detail.obreros ?? 0} obreros, ${detail.materiales ?? 0} materiales, ${detail.herramientas ?? 0} herramientas, ${detail.maquinarias ?? 0} maquinarias${detail.obra_finalizada ? ' (obra finalizada)' : ''}.`;
         }
 
         return '';
@@ -319,6 +326,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function getActionLabel(action) {
         const labels = {
             login: 'Inicio de sesion',
+            login_fallido: 'Inicio fallido',
             logout: 'Cierre de sesion',
             crear: 'Alta',
             editar: 'Edicion',
@@ -327,7 +335,9 @@ document.addEventListener('DOMContentLoaded', function () {
             subir_contrato: 'Carga de contrato',
             subir_certificado: 'Carga de certificado',
             eliminar_certificado: 'Baja de certificado',
-            guardar: 'Guardado'
+            editar_certificado: 'Edicion de certificado',
+            guardar: 'Guardado',
+            finalizar_obra: 'Finalizacion de obra'
         };
 
         return labels[action] || humanizeToken(action);
@@ -426,6 +436,19 @@ document.addEventListener('DOMContentLoaded', function () {
         feedbackEl.hidden = true;
         feedbackEl.textContent = '';
         feedbackEl.className = 'feedback';
+    }
+
+    function actualizarPaginacion(total, page, totalPages) {
+        paginationEl.classList.toggle('hidden', total === 0 || totalPages === 1);
+
+        const desde = total === 0 ? 0 : (page - 1) * 20 + 1;
+        const hasta = Math.min(page * 20, total);
+
+        paginationInfoEl.textContent = `Mostrando ${desde}-${hasta} de ${total} ${total === 1 ? 'registro' : 'registros'}`;
+        pageInfoEl.textContent = `Página ${page} de ${totalPages}`;
+        prevBtn.disabled = page <= 1;
+        nextBtn.disabled = page >= totalPages;
+        summaryEl.textContent = `Mostrando ${total} registros`;
     }
 
     function escapeHtml(value) {

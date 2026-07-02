@@ -308,6 +308,10 @@ tbody tr:hover {
   background-color: #f1eaea;
 }
 
+tbody tr.selected {
+  background-color: #e8e3df !important;
+}
+
 .btn-edit,
 .btn-delete {
   border: none;
@@ -339,22 +343,30 @@ tbody tr:hover {
 }
 
 /* Alertas de vencimiento */
+
+/* Contrato próximo a vencer (amarillo) */
 tbody tr.table-warning,
 tbody tr.table-warning:nth-child(even),
 tbody tr.table-warning:hover {
     background-color: #fff3cd !important;
 }
-.table-warning td {
-    color: #856404;
+
+tbody tr.table-warning td {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
 }
 
+
+/* Contrato vencido (rojo) */
 tbody tr.table-danger,
 tbody tr.table-danger:nth-child(even),
 tbody tr.table-danger:hover {
     background-color: #f8d7da !important;
 }
-.table-danger td {
-    color: #721c24;
+
+tbody tr.table-danger td {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
 }
 
 /* File upload custom */

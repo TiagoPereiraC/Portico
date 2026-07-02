@@ -152,8 +152,11 @@
 
     global.userApi = {
         isDesktop,
-        listUsers: function () {
-            return isDesktop ? requestDesktop('users_list') : requestBrowser('GET');
+        listUsers: function (params) {
+            if (isDesktop) {
+                return requestDesktop('users_list', params);
+            }
+            return requestBrowser('GET', null, params);
         },
         getUser: function (idUsuario) {
             return isDesktop

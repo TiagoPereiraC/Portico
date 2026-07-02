@@ -33,19 +33,76 @@ try {
     $obras = $stmt->fetchAll();
 
     // ================= OBREROS =================
-    $stmt = $pdo->query("SELECT id_obrero, nombre, apellido FROM obreros WHERE activo = 1");
+    $searchObrero = trim((string) ($_GET['search_obrero'] ?? ''));
+    $obrerosSql = 'SELECT id_obrero, nombre, apellido FROM obreros WHERE activo = 1';
+    $obrerosParams = [];
+
+    if ($searchObrero !== '') {
+        $obrerosSql .= ' AND (nombre LIKE ? OR apellido LIKE ? OR documento LIKE ?)';
+        $searchLike = $searchObrero . '%';
+        $obrerosParams = [$searchLike, $searchLike, $searchLike];
+    }
+
+    $obrerosSql .= ' ORDER BY nombre';
+
+    $stmt = $pdo->prepare($obrerosSql);
+    foreach ($obrerosParams as $index => $value) {
+        $stmt->bindValue($index + 1, $value, PDO::PARAM_STR);
+    }
+    $stmt->execute();
     $obreros = $stmt->fetchAll();
 
     // ================= MATERIALES =================
-    $stmt = $pdo->query("SELECT DISTINCT nombre FROM recursos WHERE es_material = 1");
+    $searchMaterial = trim((string) ($_GET['search_material'] ?? ''));
+    $matSql = 'SELECT DISTINCT nombre FROM recursos WHERE es_material = 1';
+    $matParams = [];
+
+    if ($searchMaterial !== '') {
+        $matSql .= ' AND nombre LIKE ?';
+        $matParams = [$searchMaterial . '%'];
+    }
+
+    $stmt = $pdo->prepare($matSql);
+    foreach ($matParams as $index => $value) {
+        $stmt->bindValue($index + 1, $value, PDO::PARAM_STR);
+    }
+    $stmt->execute();
     $materiales = $stmt->fetchAll();
 
     // ================= HERRAMIENTAS =================
-    $stmt = $pdo->query("SELECT DISTINCT nombre FROM recursos WHERE es_material = 0");
+    $searchHerramienta = trim((string) ($_GET['search_herramienta'] ?? ''));
+    $herrSql = 'SELECT DISTINCT nombre FROM recursos WHERE es_material = 0';
+    $herrParams = [];
+
+    if ($searchHerramienta !== '') {
+        $herrSql .= ' AND nombre LIKE ?';
+        $herrParams = [$searchHerramienta . '%'];
+    }
+
+    $stmt = $pdo->prepare($herrSql);
+    foreach ($herrParams as $index => $value) {
+        $stmt->bindValue($index + 1, $value, PDO::PARAM_STR);
+    }
+    $stmt->execute();
     $herramientas = $stmt->fetchAll();
 
     // ================= MAQUINARIA =================
-    $stmt = $pdo->query("SELECT id_maquinaria, nombre, marca FROM maquinaria ORDER BY nombre ASC");
+    $searchMaq = trim((string) ($_GET['search_maquinaria'] ?? ''));
+    $maqSql = 'SELECT id_maquinaria, nombre, marca FROM maquinaria';
+    $maqParams = [];
+
+    if ($searchMaq !== '') {
+        $maqSql .= ' WHERE nombre LIKE ? OR marca LIKE ?';
+        $maqParams = [$searchMaq . '%', $searchMaq . '%'];
+    }
+
+    $maqSql .= ' ORDER BY nombre ASC';
+
+    $stmt = $pdo->prepare($maqSql);
+    foreach ($maqParams as $index => $value) {
+        $stmt->bindValue($index + 1, $value, PDO::PARAM_STR);
+    }
+    $stmt->execute();
     $maquinaria = $stmt->fetchAll();
 
     echo json_encode([

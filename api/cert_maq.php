@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/config/session.php';
+require_once __DIR__ . '/config/auditoria.php';
 
 $origin = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
     . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
@@ -9,6 +10,7 @@ header("Access-Control-Allow-Origin: {$origin}");
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
 header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
+header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -20,7 +22,7 @@ iniciarSesion();
 
 if (empty($_SESSION['user_id'])) {
     http_response_code(401);
-    echo json_encode(['error' => 'Sesión no válida. Iniciá sesión nuevamente.']);
+    echo json_encode(['error' => 'Sesión no válida.']);
     exit;
 }
 
@@ -30,6 +32,7 @@ try {
     $pdo = conectar();
 
     switch ($_SERVER['REQUEST_METHOD']) {
+
         case 'GET':
             if (isset($_GET['descargar'])) {
                 responderDescarga($pdo);
@@ -41,28 +44,40 @@ try {
         case 'POST':
             if (!$esAdmin) {
                 http_response_code(403);
-                echo json_encode(['error' => 'No tenés permisos para gestionar certificados.']);
+                echo json_encode(['error' => 'Sin permisos.']);
                 exit;
             }
+
             validarCsrf();
 
-            if (!empty($_FILES['certificado']) && $_FILES['certificado']['error'] === UPLOAD_ERR_OK) {
+            if (!empty($_FILES['certificado'])) {
                 responderSubirMultipart($pdo);
                 break;
             }
 
             $body = leerJson();
-            if (($body['accion'] ?? '') === 'eliminar') {
-                responderEliminacion($pdo, $body);
-                break;
+
+            switch ($body['accion'] ?? '') {
+
+                case 'eliminar':
+                    responderEliminacion($pdo, $body);
+                    break;
+
+                case 'editar_fecha':
+                    responderEditarFecha($pdo, $body);
+                    break;
+
+                default:
+                    responderSubirBase64($pdo, $body);
+                    break;
             }
-            responderSubirBase64($pdo, $body);
             break;
 
         default:
             http_response_code(405);
             echo json_encode(['error' => 'Método no permitido']);
     }
+
 } catch (InvalidArgumentException $e) {
     http_response_code(400);
     echo json_encode(['error' => $e->getMessage()]);
@@ -76,25 +91,22 @@ try {
 } catch (Throwable $e) {
     error_log('cert_maq.php error: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['error' => 'Error interno del servidor.']);
+    echo json_encode(['error' => 'Error interno del servidor']);
 }
 
 function responderListado(PDO $pdo): void
 {
-    $idMaquinaria = isset($_GET['id_maquinaria']) ? (int) $_GET['id_maquinaria'] : 0;
-    if ($idMaquinaria <= 0) {
-        throw new InvalidArgumentException('Debés indicar una maquinaria válida.');
+    $id = (int) ($_GET['id_maquinaria'] ?? 0);
+    if ($id <= 0) {
+        throw new InvalidArgumentException('Maquinaria inválida');
     }
 
-    $stmt = $pdo->prepare(
-        'SELECT id_certificado, nombre_archivo, fecha_vencimiento FROM certificado WHERE id_maquinaria = ? ORDER BY fecha_vencimiento ASC'
-    );
-    $stmt->execute([$idMaquinaria]);
-    $certificados = $stmt->fetchAll();
+    $stmt = $pdo->prepare('SELECT id_certificado, nombre_archivo, fecha_vencimiento FROM certificado WHERE id_maquinaria = ? ORDER BY fecha_vencimiento ASC');
+    $stmt->execute([$id]);
 
     echo json_encode([
         'success' => true,
-        'certificados' => $certificados,
+        'certificados' => $stmt->fetchAll()
     ]);
 }
 
@@ -119,90 +131,103 @@ function responderDescarga(PDO $pdo): void
     echo json_encode([
         'success' => true,
         'nombre_archivo' => $nombreArchivo,
-        'tipo_contenido' => GuessMimeType($nombreArchivo),
+        'tipo_contenido' => guessMimeType($nombreArchivo),
         'contenido_base64' => base64_encode($archivo),
-    ]);
-}
-
-function responderSubirMultipart(PDO $pdo): void
-{
-    $idMaquinaria = isset($_POST['id_maquinaria']) ? (int) $_POST['id_maquinaria'] : 0;
-    $fechaVencimiento = normalizarFecha($_POST['fecha_vencimiento'] ?? null);
-
-    if ($idMaquinaria <= 0) {
-        throw new InvalidArgumentException('Debés indicar una maquinaria válida.');
-    }
-
-    $archivoContenido = file_get_contents($_FILES['certificado']['tmp_name']);
-    $nombreOriginal = $_FILES['certificado']['name'];
-
-    insertarCertificado($pdo, $archivoContenido, $nombreOriginal, $idMaquinaria, $fechaVencimiento);
-
-    echo json_encode([
-        'success' => true,
-        'message' => 'Certificado subido correctamente.',
     ]);
 }
 
 function responderSubirBase64(PDO $pdo, array $body): void
 {
-    $idMaquinaria = isset($body['id_maquinaria']) ? (int) $body['id_maquinaria'] : 0;
-    $fechaVencimiento = normalizarFecha($body['fecha_vencimiento'] ?? null);
-    $nombreArchivo = limpiarTexto($body['nombre_archivo'] ?? '', 255, true);
-    $contenidoBase64 = $body['contenido_base64'] ?? '';
+    $id = (int) ($body['id_maquinaria'] ?? 0);
+    $nombre = trim($body['nombre_archivo'] ?? '');
+    $fecha = normalizarFecha($body['fecha_vencimiento'] ?? null);
+    $archivo = base64_decode($body['contenido_base64'] ?? '', true);
 
-    if ($idMaquinaria <= 0) {
-        throw new InvalidArgumentException('Debés indicar una maquinaria válida.');
-    }
-    if ($contenidoBase64 === '') {
-        throw new InvalidArgumentException('El archivo seleccionado es inválido.');
+    if ($id <= 0 || !$archivo) {
+        throw new InvalidArgumentException('Datos inválidos');
     }
 
-    $archivo = base64_decode($contenidoBase64, true);
-    if ($archivo === false) {
-        throw new InvalidArgumentException('El archivo seleccionado es inválido.');
-    }
+    insertarCertificado($pdo, $archivo, $nombre, $id, $fecha);
 
-    insertarCertificado($pdo, $archivo, $nombreArchivo, $idMaquinaria, $fechaVencimiento);
-
-    echo json_encode([
-        'success' => true,
-        'message' => 'Certificado subido correctamente.',
+    registrarAuditoria($pdo, 'subir_certificado', 'certificados_maquinaria', $id, [
+        'nombre_archivo' => $nombre,
+        'id_maquinaria' => $id,
     ]);
+
+    echo json_encode(['success' => true]);
 }
 
-function insertarCertificado(PDO $pdo, string $contenido, string $nombreArchivo, int $idMaquinaria, ?string $fechaVencimiento): void
+function responderSubirMultipart(PDO $pdo): void
 {
-    if (strlen($contenido) > 10 * 1024 * 1024) {
-        throw new InvalidArgumentException('El certificado no puede superar los 10 MB.');
-    }
+    $id = (int) ($_POST['id_maquinaria'] ?? 0);
+    $fecha = normalizarFecha($_POST['fecha_vencimiento'] ?? null);
+    $archivo = file_get_contents($_FILES['certificado']['tmp_name']);
+    $nombre = $_FILES['certificado']['name'];
 
+    insertarCertificado($pdo, $archivo, $nombre, $id, $fecha);
+
+    registrarAuditoria($pdo, 'subir_certificado', 'certificados_maquinaria', $id, [
+        'nombre_archivo' => $nombre,
+        'id_maquinaria' => $id,
+    ]);
+
+    echo json_encode(['success' => true]);
+}
+
+function insertarCertificado(PDO $pdo, string $archivo, string $nombre, int $id, ?string $fecha): void
+{
     $stmt = $pdo->prepare('INSERT INTO certificado (archivo, nombre_archivo, id_maquinaria, fecha_vencimiento) VALUES (?, ?, ?, ?)');
-    $stmt->bindValue(1, $contenido, PDO::PARAM_LOB);
-    $stmt->bindValue(2, $nombreArchivo);
-    $stmt->bindValue(3, $idMaquinaria, PDO::PARAM_INT);
-    $stmt->bindValue(4, $fechaVencimiento);
+    $stmt->bindValue(1, $archivo, PDO::PARAM_LOB);
+    $stmt->bindValue(2, $nombre);
+    $stmt->bindValue(3, $id, PDO::PARAM_INT);
+    $stmt->bindValue(4, $fecha);
     $stmt->execute();
 }
 
 function responderEliminacion(PDO $pdo, array $body): void
 {
-    $idCertificado = isset($body['id_certificado']) ? (int) $body['id_certificado'] : 0;
-    if ($idCertificado <= 0) {
-        throw new InvalidArgumentException('Debés indicar un certificado válido.');
-    }
+    $id = (int) ($body['id_certificado'] ?? 0);
 
-    $stmt = $pdo->prepare('DELETE FROM certificado WHERE id_certificado = ?');
-    $stmt->execute([$idCertificado]);
-
-    if ($stmt->rowCount() === 0) {
+    $stmt = $pdo->prepare('SELECT id_certificado, id_maquinaria, nombre_archivo FROM certificado WHERE id_certificado = ? LIMIT 1');
+    $stmt->execute([$id]);
+    $cert = $stmt->fetch();
+    if (!$cert) {
         throw new RuntimeException('El certificado indicado no existe.');
     }
 
-    echo json_encode([
-        'success' => true,
-        'message' => 'Certificado eliminado correctamente.',
+    $pdo->prepare('DELETE FROM certificado WHERE id_certificado = ?')->execute([$id]);
+
+    registrarAuditoria($pdo, 'eliminar_certificado', 'certificados_maquinaria', $cert['id_maquinaria'], [
+        'nombre_archivo' => $cert['nombre_archivo'],
+        'id_certificado' => $id,
     ]);
+
+    echo json_encode(['success' => true]);
+}
+
+function responderEditarFecha(PDO $pdo, array $body): void
+{
+    $id = (int) ($body['id_certificado'] ?? 0);
+    $fecha = normalizarFecha($body['fecha_vencimiento'] ?? null);
+
+    if ($id <= 0) {
+        throw new InvalidArgumentException('Debés indicar un certificado válido.');
+    }
+
+    $stmt = $pdo->prepare('SELECT id_certificado FROM certificado WHERE id_certificado = ? LIMIT 1');
+    $stmt->execute([$id]);
+    if (!$stmt->fetchColumn()) {
+        throw new RuntimeException('El certificado indicado no existe.');
+    }
+
+    $stmt = $pdo->prepare('UPDATE certificado SET fecha_vencimiento = ? WHERE id_certificado = ?');
+    $stmt->execute([$fecha, $id]);
+
+    registrarAuditoria($pdo, 'editar_certificado', 'certificados_maquinaria', $id, [
+        'fecha_vencimiento' => $fecha,
+    ]);
+
+    echo json_encode(['success' => true]);
 }
 
 function validarCsrf(): void
@@ -212,7 +237,7 @@ function validarCsrf(): void
 
     if ($csrfGuardado === '' || !hash_equals($csrfGuardado, $csrfRecibido)) {
         http_response_code(403);
-        echo json_encode(['error' => 'Token de seguridad inválido. Recargá la página.']);
+        echo json_encode(['error' => 'Token de seguridad inválido.']);
         exit;
     }
 }
@@ -226,46 +251,15 @@ function leerJson(): array
     return $body;
 }
 
-function normalizarFecha(mixed $value): ?string
+function normalizarFecha($v): ?string
 {
-    $text = trim((string) ($value ?? ''));
-    if ($text === '') {
-        return null;
-    }
-
-    $date = DateTime::createFromFormat('Y-m-d', $text);
-    $errors = DateTime::getLastErrors();
-
-    if (!$date || ($errors['warning_count'] ?? 0) > 0 || ($errors['error_count'] ?? 0) > 0) {
-        throw new InvalidArgumentException('Formato de fecha inválido.');
-    }
-
-    return $date->format('Y-m-d');
+    $v = trim((string) $v);
+    return $v === '' ? null : substr($v, 0, 10);
 }
 
-function limpiarTexto(mixed $value, int $maxLength, bool $required = true): string
+function guessMimeType(string $nombreArchivo): string
 {
-    $text = trim((string) $value);
-    if ($text === '') {
-        if ($required) {
-            throw new InvalidArgumentException('Uno de los campos obligatorios está vacío.');
-        }
-        return '';
-    }
-
-    $length = function_exists('mb_strlen') ? mb_strlen($text) : strlen($text);
-    if ($length > $maxLength) {
-        throw new InvalidArgumentException('Uno de los campos supera la longitud permitida.');
-    }
-
-    return $text;
-}
-
-function GuessMimeType(string $nombreArchivo): string
-{
-    $extension = pathinfo($nombreArchivo, PATHINFO_EXTENSION);
-    $extension = strtolower($extension);
-
+    $extension = strtolower(pathinfo($nombreArchivo, PATHINFO_EXTENSION));
     return match ($extension) {
         'pdf' => 'application/pdf',
         'doc' => 'application/msword',

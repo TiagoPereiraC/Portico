@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/config/session.php';
+require_once __DIR__ . '/config/auditoria.php';
 
 $origin = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
     . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
@@ -11,6 +12,7 @@ header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
 header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
 header('Content-Type: application/json');
+header('Cache-Control: no-store, no-cache, must-revalidate');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
@@ -216,11 +218,14 @@ function responderGuardado(PDO $pdo, array $body): void
         $stmt = $pdo->prepare('UPDATE maquinaria SET nombre = ?, marca = ? WHERE id_maquinaria = ?');
         $stmt->execute([$nombre, $marca, $idMaquinaria]);
 
+        $maq = obtenerMaquinaria($pdo, $idMaquinaria);
+        registrarAuditoria($pdo, 'editar', 'maquinaria', $idMaquinaria, ['nombre' => $maq['nombre']]);
+
         http_response_code(200);
         echo json_encode([
             'success' => true,
             'message' => 'Maquinaria actualizada correctamente.',
-            'maquinaria' => obtenerMaquinaria($pdo, $idMaquinaria),
+            'maquinaria' => $maq,
         ]);
         return;
     }
@@ -230,11 +235,14 @@ function responderGuardado(PDO $pdo, array $body): void
 
     $idMaquinaria = (int) $pdo->lastInsertId();
 
+    $maq = obtenerMaquinaria($pdo, $idMaquinaria);
+    registrarAuditoria($pdo, 'crear', 'maquinaria', $idMaquinaria, ['nombre' => $maq['nombre']]);
+
     http_response_code(201);
     echo json_encode([
         'success' => true,
         'message' => 'Maquinaria registrada correctamente.',
-        'maquinaria' => obtenerMaquinaria($pdo, $idMaquinaria),
+        'maquinaria' => $maq,
     ]);
 }
 
@@ -245,12 +253,16 @@ function responderEliminacion(PDO $pdo, array $body): void
         throw new InvalidArgumentException('Debés indicar una maquinaria válida.');
     }
 
-    $stmt = $pdo->prepare('DELETE FROM maquinaria WHERE id_maquinaria = ?');
+    $stmt = $pdo->prepare('SELECT id_maquinaria, nombre FROM maquinaria WHERE id_maquinaria = ?');
     $stmt->execute([$idMaquinaria]);
-
-    if ($stmt->rowCount() === 0) {
+    $maq = $stmt->fetch();
+    if (!$maq) {
         throw new RuntimeException('La maquinaria indicada no existe.');
     }
+
+    $pdo->prepare('DELETE FROM maquinaria WHERE id_maquinaria = ?')->execute([$idMaquinaria]);
+
+    registrarAuditoria($pdo, 'eliminar', 'maquinaria', $idMaquinaria, ['nombre' => $maq['nombre']]);
 
     echo json_encode([
         'success' => true,

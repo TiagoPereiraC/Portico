@@ -342,8 +342,15 @@ textarea {
 }
 
 #listaMateriales,
-#listaHerramientas {
+#listaHerramientas,
+#listaMaquinaria {
     margin-top: 15px;
+}
+
+#listaMateriales .item-box,
+#listaHerramientas .item-box,
+#listaMateriales .item-box{
+    margin-bottom: 8px;
 }
 
 .item-box {

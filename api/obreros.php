@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/config/session.php';
+require_once __DIR__ . '/config/auditoria.php';
 
 $origin = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
     . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
@@ -130,7 +131,7 @@ function responderListado(PDO $pdo): void
     $offset = ($page - 1) * $limit;
 
     $stmt = $pdo->prepare(
-        'SELECT o.id_obrero, o.nombre, o.apellido, o.documento, o.telefono, o.fecha_contratacion, o.fecha_fin,
+        'SELECT o.id_obrero, o.nombre, o.apellido, o.documento, o.telefono, o.fecha_contratacion, o.fecha_fin, o.cargo,
                 (SELECT c.fecha_vencimiento FROM contrato_obrero c WHERE c.id_obrero = o.id_obrero ORDER BY c.fecha_vencimiento DESC LIMIT 1) as vencimiento
          FROM obreros o'
         . $whereSql
@@ -168,6 +169,7 @@ function responderGuardado(PDO $pdo, array $body): void
     $telefono = limpiarTexto($body['telefono'] ?? '', 30, false);
     $fechaContratacion = normalizarFecha($body['fecha_contratacion'] ?? null);
     $fechaFin = normalizarFecha($body['fecha_fin'] ?? null);
+    $cargo = limpiarTexto($body['cargo'] ?? '', 50, false) ?: 'Peón';
     $idObrero = isset($body['id_obrero']) && $body['id_obrero'] !== '' ? (int) $body['id_obrero'] : null;
 
     if ($nombre === '' || $documento === '') {
@@ -186,35 +188,41 @@ function responderGuardado(PDO $pdo, array $body): void
             }
 
             $stmt = $pdo->prepare(
-                'UPDATE obreros SET nombre = ?, apellido = ?, documento = ?, telefono = ?, fecha_contratacion = ?, fecha_fin = ? WHERE id_obrero = ?'
+                'UPDATE obreros SET nombre = ?, apellido = ?, documento = ?, telefono = ?, fecha_contratacion = ?, fecha_fin = ?, cargo = ? WHERE id_obrero = ?'
             );
-            $stmt->execute([$nombre, $apellido, $documento, $telefono, $fechaContratacion, $fechaFin, $idObrero]);
+            $stmt->execute([$nombre, $apellido, $documento, $telefono, $fechaContratacion, $fechaFin, $cargo, $idObrero]);
 
             $pdo->commit();
+
+            $obreroRespuesta = obtenerObrero($pdo, $idObrero);
+            registrarAuditoria($pdo, 'editar', 'obreros', $idObrero, ['nombre' => $obreroRespuesta['nombre'], 'apellido' => $obreroRespuesta['apellido']]);
 
             http_response_code(200);
             echo json_encode([
                 'success' => true,
                 'message' => 'Obrero actualizado correctamente.',
-                'obrero' => obtenerObrero($pdo, $idObrero),
+                'obrero' => $obreroRespuesta,
             ]);
             return;
         }
 
         $stmt = $pdo->prepare(
-            'INSERT INTO obreros (nombre, apellido, documento, telefono, fecha_contratacion, fecha_fin, activo) VALUES (?, ?, ?, ?, ?, ?, 1)'
+            'INSERT INTO obreros (nombre, apellido, documento, telefono, fecha_contratacion, fecha_fin, cargo, activo) VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
         );
-        $stmt->execute([$nombre, $apellido, $documento, $telefono, $fechaContratacion, $fechaFin]);
+        $stmt->execute([$nombre, $apellido, $documento, $telefono, $fechaContratacion, $fechaFin, $cargo]);
 
         $idObrero = (int) $pdo->lastInsertId();
 
         $pdo->commit();
 
+        $obreroRespuesta = obtenerObrero($pdo, $idObrero);
+        registrarAuditoria($pdo, 'crear', 'obreros', $idObrero, ['nombre' => $obreroRespuesta['nombre'], 'apellido' => $obreroRespuesta['apellido']]);
+
         http_response_code(201);
         echo json_encode([
             'success' => true,
             'message' => 'Obrero registrado correctamente.',
-            'obrero' => obtenerObrero($pdo, $idObrero),
+            'obrero' => $obreroRespuesta,
         ]);
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
@@ -231,13 +239,16 @@ function responderEliminacion(PDO $pdo, array $body): void
         throw new InvalidArgumentException('Debés indicar un obrero válido.');
     }
 
-    $stmt = $pdo->prepare('SELECT id_obrero FROM obreros WHERE id_obrero = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id_obrero, nombre, apellido FROM obreros WHERE id_obrero = ? LIMIT 1');
     $stmt->execute([$idObrero]);
-    if (!$stmt->fetchColumn()) {
+    $obrero = $stmt->fetch();
+    if (!$obrero) {
         throw new RuntimeException('El obrero indicado no existe.');
     }
 
     $pdo->prepare('UPDATE obreros SET activo = 0 WHERE id_obrero = ?')->execute([$idObrero]);
+
+    registrarAuditoria($pdo, 'eliminar', 'obreros', $idObrero, ['nombre' => $obrero['nombre'], 'apellido' => $obrero['apellido']]);
 
     echo json_encode([
         'success' => true,
@@ -273,6 +284,8 @@ function responderSubirContrato(PDO $pdo): void
     $stmt->bindValue(3, $idObrero, PDO::PARAM_INT);
     $stmt->bindValue(4, $fechaVencimiento);
     $stmt->execute();
+
+    registrarAuditoria($pdo, 'subir_contrato', 'contrato_obrero', $idObrero, ['nombre_archivo' => $nombreOriginal, 'fecha_vencimiento' => $fechaVencimiento]);
 
     echo json_encode([
         'success' => true,
@@ -336,7 +349,7 @@ function normalizarFecha(mixed $value): ?string
 function obtenerObrero(PDO $pdo, int $idObrero): array
 {
     $stmt = $pdo->prepare(
-        'SELECT id_obrero, nombre, apellido, documento, telefono, fecha_contratacion, fecha_fin FROM obreros WHERE id_obrero = ? LIMIT 1'
+        'SELECT id_obrero, nombre, apellido, documento, telefono, fecha_contratacion, fecha_fin, cargo FROM obreros WHERE id_obrero = ? LIMIT 1'
     );
     $stmt->execute([$idObrero]);
 

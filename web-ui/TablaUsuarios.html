@@ -116,6 +116,15 @@
                     </table>
                 </div>
 
+                <div class="pagination hidden" id="pagination">
+                    <span class="pagination-info" id="paginationInfo">Mostrando 0-0 de 0 usuarios</span>
+                    <div class="pagination-actions">
+                        <button type="button" class="pagination-btn" id="paginationPrev">Anterior</button>
+                        <span class="pagination-page" id="paginationPage">Página 1 de 1</span>
+                        <button type="button" class="pagination-btn" id="paginationNext">Siguiente</button>
+                    </div>
+                </div>
+
                 <a href="PanelInicio.html" class="btn-back">Volver</a>
             </div>
         </main>
@@ -156,6 +165,17 @@
                 "btnConfirmarEliminar",
             );
 
+            const pagination = document.getElementById("pagination");
+            const paginationInfo = document.getElementById("paginationInfo");
+            const paginationPage = document.getElementById("paginationPage");
+            const paginationPrev = document.getElementById("paginationPrev");
+            const paginationNext = document.getElementById("paginationNext");
+
+            const USUARIOS_POR_PAGINA = 10;
+            let paginaActual = 1;
+            let totalPaginas = 1;
+            let totalUsuarios = 0;
+
             let pendingDelete = null;
 
             btnCancelar.addEventListener("click", closeModal);
@@ -164,6 +184,12 @@
                 if (event.target === modal) {
                     closeModal();
                 }
+            });
+            paginationPrev.addEventListener("click", function () {
+                cambiarPagina(-1);
+            });
+            paginationNext.addEventListener("click", function () {
+                cambiarPagina(1);
             });
 
             tbody.addEventListener("click", function (event) {
@@ -191,8 +217,18 @@
                     '<tr><td colspan="4" class="table-status">Cargando usuarios...</td></tr>';
 
                 try {
-                    const data = await window.userApi.listUsers();
+                    const data = await window.userApi.listUsers({
+                        page: paginaActual,
+                        limit: USUARIOS_POR_PAGINA,
+                    });
                     renderUsers(data.users || []);
+                    totalUsuarios = Number(data.total || 0);
+                    totalPaginas = Math.max(1, Number(data.total_pages || 1));
+                    paginaActual = Math.min(
+                        Math.max(1, Number(data.page || paginaActual)),
+                        totalPaginas,
+                    );
+                    actualizarPaginacion();
                 } catch (error) {
                     tbody.innerHTML = `<tr><td colspan="4" class="table-status">${escapeHtml(error.message || "No se pudieron cargar los usuarios.")}</td></tr>`;
                     showFeedback(
@@ -295,6 +331,46 @@
                 feedbackEl.hidden = false;
                 feedbackEl.textContent = message;
                 feedbackEl.className = `feedback feedback-${type}`;
+            }
+
+            function actualizarPaginacion() {
+                pagination.classList.toggle(
+                    "hidden",
+                    totalUsuarios === 0 || totalPaginas === 1,
+                );
+
+                const desde =
+                    totalUsuarios === 0
+                        ? 0
+                        : (paginaActual - 1) * USUARIOS_POR_PAGINA + 1;
+                const hasta = Math.min(
+                    paginaActual * USUARIOS_POR_PAGINA,
+                    totalUsuarios,
+                );
+
+                paginationInfo.textContent =
+                    "Mostrando " +
+                    desde +
+                    "-" +
+                    hasta +
+                    " de " +
+                    totalUsuarios +
+                    " " +
+                    (totalUsuarios === 1 ? "usuario" : "usuarios");
+                paginationPage.textContent =
+                    "Página " + paginaActual + " de " + totalPaginas;
+                paginationPrev.disabled = paginaActual === 1;
+                paginationNext.disabled = paginaActual === totalPaginas;
+            }
+
+            async function cambiarPagina(direccion) {
+                const nuevaPagina = paginaActual + direccion;
+                if (nuevaPagina < 1 || nuevaPagina > totalPaginas) {
+                    return;
+                }
+
+                paginaActual = nuevaPagina;
+                await loadUsers();
             }
 
             function escapeHtml(value) {

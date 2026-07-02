@@ -2,6 +2,7 @@
 require_once __DIR__ . "/config/db.php";
 require_once __DIR__ . "/config/session.php";
 require_once __DIR__ . "/config/utils.php";
+require_once __DIR__ . "/config/auditoria.php";
 
 $origin = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
     . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
@@ -55,6 +56,21 @@ try {
     guardarHerramientas($pdo, $fecha, $id_obra);
     guardarMaquinaria($pdo, $fecha, $id_obra);
     finalizarObra($pdo, $fecha, $id_obra);
+
+    $obraFinalizada = (isset($_POST['finaliza']) && in_array(strtolower(trim((string) $_POST['finaliza'])), ['si', 'sí'], true));
+    $totalObreros = count($_POST['obreros'] ?? []);
+    $totalMateriales = count($_POST['material_nombre'] ?? []);
+    $totalHerramientas = count($_POST['herramienta_nombre'] ?? []);
+    $totalMaquinaria = count($_POST['maquinaria'] ?? []);
+    registrarAuditoria($pdo, 'guardar', 'asistencia', $id_obra, [
+        'id_obra' => $id_obra,
+        'fecha' => $fecha,
+        'obreros' => $totalObreros,
+        'materiales' => $totalMateriales,
+        'herramientas' => $totalHerramientas,
+        'maquinarias' => $totalMaquinaria,
+        'obra_finalizada' => $obraFinalizada,
+    ]);
 
     $pdo->commit();
 
@@ -180,16 +196,59 @@ function guardarMaquinaria(PDO $pdo, string $fecha, int $id_obra): void
         return;
     }
 
-    $stmt = $pdo->prepare("
-        INSERT IGNORE INTO obra_maquinaria (id_obra, id_maquinaria, fecha_asignacion)
+    $stmtObra = $pdo->prepare("
+        INSERT IGNORE INTO obra_maquinaria
+        (id_obra, id_maquinaria, fecha_asignacion)
         VALUES (?, ?, ?)
     ");
 
+    $stmtAsistencia = $pdo->prepare("
+        INSERT INTO asistencia_maquinaria
+        (id_obra, id_maquinaria, fecha, hora_salida, hora_devolucion)
+        VALUES (?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            hora_salida = VALUES(hora_salida),
+            hora_devolucion = VALUES(hora_devolucion)
+    ");
+
     foreach ($_POST['maquinaria'] as $id_maquinaria) {
+
         $id_maquinaria = (int) $id_maquinaria;
-        if ($id_maquinaria > 0) {
-            $stmt->execute([$id_obra, $id_maquinaria, $fecha]);
+
+        if ($id_maquinaria <= 0) {
+            continue;
         }
+
+        $salida = isset($_POST['retiro_maquinaria'][$id_maquinaria])
+            ? trim((string) $_POST['retiro_maquinaria'][$id_maquinaria])
+            : null;
+
+        $retorno = isset($_POST['devolucion_maquinaria'][$id_maquinaria])
+            ? trim((string) $_POST['devolucion_maquinaria'][$id_maquinaria])
+            : null;
+
+        if (!$salida || !$retorno) {
+            throw new InvalidArgumentException(
+                "Faltan horarios de maquinaria ID {$id_maquinaria}."
+            );
+        }
+
+        if (!preg_match('/^\d{2}:\d{2}$/', $salida) ||
+            !preg_match('/^\d{2}:\d{2}$/', $retorno)) {
+            throw new InvalidArgumentException(
+                "Horarios inválidos en maquinaria ID {$id_maquinaria}."
+            );
+        }
+
+        if (strtotime($retorno) < strtotime($salida)) {
+            throw new InvalidArgumentException(
+                "La devolución no puede ser antes de la salida (maquinaria ID {$id_maquinaria})."
+            );
+        }
+
+        $stmtObra->execute([$id_obra, $id_maquinaria, $fecha]);
+
+        $stmtAsistencia->execute([$id_obra, $id_maquinaria, $fecha, $salida, $retorno]);
     }
 }
 
@@ -199,5 +258,6 @@ function finalizarObra(PDO $pdo, string $fecha, int $id_obra): void
     if (strtolower($finaliza) === 'si' || $finaliza === 'Sí') {
         $stmt = $pdo->prepare("UPDATE obras SET fecha_fin = ? WHERE id_obra = ?");
         $stmt->execute([$fecha, $id_obra]);
+        registrarAuditoria($pdo, 'finalizar_obra', 'obras', $id_obra, ['fecha_fin' => $fecha]);
     }
 }

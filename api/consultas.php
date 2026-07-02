@@ -39,6 +39,9 @@ try {
     $idObrero = (int)($_GET['id_obrero'] ?? 0);
     $fechaDesde = trim($_GET['fecha_desde'] ?? '');
     $fechaHasta = trim($_GET['fecha_hasta'] ?? '');
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    $limit = (int) ($_GET['limit'] ?? 10);
+    $limit = max(1, min($limit, 100));
 
     $where = [];
     $paramsResumen = [];
@@ -64,7 +67,6 @@ try {
 
     $whereSql = implode(' AND ', $where);
 
-    // Resumen usa solo registros (sin JOIN)
     $stmtResumen = $pdo->prepare("
         SELECT
             COUNT(DISTINCT id_obra) AS total_obras,
@@ -76,7 +78,19 @@ try {
     $stmtResumen->execute($paramsResumen);
     $resumen = $stmtResumen->fetch();
 
-    // Listado con JOIN a obras
+    $countStmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM registros r
+        INNER JOIN obras o ON o.id_obra = r.id_obra
+        WHERE {$whereSql}
+    ");
+    $countStmt->execute($paramsListado);
+    $total = (int) $countStmt->fetchColumn();
+
+    $totalPages = max(1, (int) ceil($total / $limit));
+    $page = min($page, $totalPages);
+    $offset = ($page - 1) * $limit;
+
     $sqlListado = "
         SELECT
             r.fecha,
@@ -89,16 +103,26 @@ try {
             ON o.id_obra = r.id_obra
         WHERE {$whereSql}
         ORDER BY r.fecha DESC
-        LIMIT 200
+        LIMIT ? OFFSET ?
     ";
 
     $stmt = $pdo->prepare($sqlListado);
-    $stmt->execute($paramsListado);
+    $bindIndex = 1;
+    foreach ($paramsListado as $value) {
+        $stmt->bindValue($bindIndex++, $value, PDO::PARAM_STR);
+    }
+    $stmt->bindValue($bindIndex++, $limit, PDO::PARAM_INT);
+    $stmt->bindValue($bindIndex, $offset, PDO::PARAM_INT);
+    $stmt->execute();
 
     echo json_encode([
         'success' => true,
         'resumen' => $resumen,
-        'registros' => $stmt->fetchAll()
+        'registros' => $stmt->fetchAll(),
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $limit,
+        'total_pages' => $totalPages,
     ]);
 
 } catch (InvalidArgumentException $e) {

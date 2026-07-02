@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/config/session.php';
+require_once __DIR__ . '/config/auditoria.php';
 
 $origin = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
     . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
@@ -175,6 +176,9 @@ function responderCambioEstado(PDO $pdo, array $body): void
         throw new RuntimeException('No se pudo actualizar la obra o ya tenía ese estado.');
     }
 
+    $obra = obtenerObra($pdo, $idObra);
+    registrarAuditoria($pdo, 'cambiar_estado', 'obras', $idObra, ['nombre' => $obra['nombre'], 'activo' => $activo]);
+
     echo json_encode([
         'success' => true,
         'message' => 'Estado de la obra actualizado correctamente.',
@@ -296,11 +300,14 @@ function responderGuardado(PDO $pdo, array $body): void
 
             $pdo->commit();
 
+            $obraRespuesta = obtenerObra($pdo, $idObra);
+            registrarAuditoria($pdo, 'editar', 'obras', $idObra, ['nombre' => $obraRespuesta['nombre'], 'contrato_reemplazado' => $contrato !== null]);
+
             http_response_code(200);
             echo json_encode([
                 'success' => true,
                 'message' => 'Obra actualizada correctamente.',
-                'obra' => obtenerObra($pdo, $idObra),
+                'obra' => $obraRespuesta,
             ]);
             return;
         }
@@ -329,11 +336,14 @@ function responderGuardado(PDO $pdo, array $body): void
 
         $pdo->commit();
 
+        $obraRespuesta = obtenerObra($pdo, $idObra);
+        registrarAuditoria($pdo, 'crear', 'obras', $idObra, ['nombre' => $obraRespuesta['nombre'], 'numero_contrata' => $obraRespuesta['numero_contrata']]);
+
         http_response_code(201);
         echo json_encode([
             'success' => true,
             'message' => 'Obra guardada correctamente.',
-            'obra' => obtenerObra($pdo, $idObra),
+            'obra' => $obraRespuesta,
         ]);
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
@@ -350,13 +360,16 @@ function responderEliminacion(PDO $pdo, array $body): void
         throw new InvalidArgumentException('Debés indicar una obra válida.');
     }
 
-    $stmt = $pdo->prepare('SELECT id_obra FROM obras WHERE id_obra = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id_obra, nombre FROM obras WHERE id_obra = ? LIMIT 1');
     $stmt->execute([$idObra]);
-    if (!$stmt->fetchColumn()) {
+    $obra = $stmt->fetch();
+    if (!$obra) {
         throw new RuntimeException('La obra indicada no existe.');
     }
 
     $pdo->prepare('DELETE FROM obras WHERE id_obra = ?')->execute([$idObra]);
+
+    registrarAuditoria($pdo, 'eliminar', 'obras', $idObra, ['nombre' => $obra['nombre']]);
 
     echo json_encode([
         'success' => true,

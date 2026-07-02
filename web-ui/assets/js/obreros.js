@@ -323,6 +323,7 @@ function buildPayload() {
     telefono: leerCampo("telefono"),
     fecha_contratacion: leerCampo("fecha_contratacion") || null,
     fecha_fin: leerCampo("fecha_fin") || null,
+    cargo: leerCampo("cargo") || "Peón",
   };
 
   if (!payload.nombre || !payload.documento) {
@@ -522,14 +523,17 @@ function renderObreros() {
 
   if (totalObreros === 0) {
     let mensaje = obtenerMensajeSinResultados(terminoBusqueda.trim());
+
     if (filtroContrato !== "todos") {
       const textosFiltro = {
         vencido: "contratos vencidos",
         por_vencer: "contratos por vencer (próximos 30 días)",
         vigente: "contratos vigentes"
       };
+
       mensaje = `No hay obreros con ${textosFiltro[filtroContrato] || filtroContrato}.`;
     }
+
     emptyStateMessage.textContent = mensaje;
     paginationInfo.textContent = "Mostrando 0-0 de 0 obreros";
     paginationPage.textContent = "Página 0 de 0";
@@ -538,55 +542,147 @@ function renderObreros() {
     return;
   }
 
+
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
+
   obreros.forEach((obrero) => {
+
     const row = document.createElement("tr");
+
     let claseAlerta = "";
-    const fechaVenc = obrero.vencimiento || obrero.fecha_fin;
-    if (fechaVenc) {
-      const fechaVencDate = new Date(fechaVenc);
+
+
+    // PRIORIZAR fecha_fin (fin de relación) sobre vencimiento (contrato)
+    const fechaVenc = obrero.fecha_fin || obrero.vencimiento;
+
+    if (fechaVenc && !String(fechaVenc).startsWith("0000")) {
+      let fechaVencDate;
+
+      if (fechaVenc.includes("/")) {
+        const partesFecha = fechaVenc.split("/");
+        fechaVencDate = new Date(
+          Number(partesFecha[2]),
+          Number(partesFecha[1]) - 1,
+          Number(partesFecha[0])
+        );
+      } else if (fechaVenc.includes("-")) {
+        const partesFecha = fechaVenc.split("-");
+        fechaVencDate = new Date(
+          Number(partesFecha[0]),
+          Number(partesFecha[1]) - 1,
+          Number(partesFecha[2])
+        );
+      } else {
+        fechaVencDate = new Date(fechaVenc);
+      }
+
+      fechaVencDate.setHours(0, 0, 0, 0);
       const diffDays = Math.ceil((fechaVencDate - hoy) / (1000 * 60 * 60 * 24));
-      if (diffDays <= 30 && diffDays > 0) {
-        claseAlerta = "table-warning";
-      } else if (diffDays <= 0) {
+
+      if (diffDays < 0) {
         claseAlerta = "table-danger";
+      } else if (diffDays <= 30) {
+        claseAlerta = "table-warning";
       }
     }
+
+
     if (claseAlerta) {
       row.classList.add(claseAlerta);
     }
 
+
+
     row.innerHTML = `
-      <td><strong>${escapeHtml(obrero.nombre)}</strong> ${escapeHtml(obrero.apellido || "")}</td>
+      <td>
+        <strong>${escapeHtml(obrero.nombre)}</strong>
+        ${escapeHtml(obrero.apellido || "")}
+      </td>
+
       <td>${escapeHtml(obrero.documento)}</td>
+
       <td>${escapeHtml(obrero.telefono || "—")}</td>
+
       <td>${formatDate(obrero.fecha_contratacion)}</td>
+
       <td>${formatDate(obrero.fecha_fin)}</td>
+
+      <td>${escapeHtml(obrero.cargo || "Peón")}</td>
+
       <td>
         <div class="table-actions">
-          <button type="button" class="action-btn edit" data-action="edit" data-id="${obrero.id_obrero}" title="Editar obrero">
+
+          <button 
+            type="button" 
+            class="action-btn edit" 
+            data-action="edit" 
+            data-id="${obrero.id_obrero}" 
+            title="Editar obrero">
             <i class="fas fa-pen"></i>
           </button>
-          <button type="button" class="action-btn delete" data-action="delete" data-id="${obrero.id_obrero}" title="Eliminar obrero">
+
+
+          <button 
+            type="button" 
+            class="action-btn delete" 
+            data-action="delete" 
+            data-id="${obrero.id_obrero}" 
+            title="Eliminar obrero">
             <i class="fas fa-trash"></i>
           </button>
-          <button type="button" class="action-btn" style="background:#d88f2d;color:#fff;" data-action="contrato" data-id="${obrero.id_obrero}" data-nombre="${escapeHtml(obrero.nombre + " " + (obrero.apellido || "")).trim()}" title="Subir contrato">
+
+
+          <button 
+            type="button" 
+            class="action-btn" 
+            style="background:#d88f2d;color:#fff;" 
+            data-action="contrato" 
+            data-id="${obrero.id_obrero}" 
+            data-nombre="${escapeHtml(
+              obrero.nombre + " " + (obrero.apellido || "")
+            ).trim()}" 
+            title="Subir contrato">
+
             <i class="fas fa-file-pdf"></i>
+
           </button>
+
         </div>
       </td>
     `;
+
+
     obreroTableBody.appendChild(row);
+
   });
 
+
+
   const desde =
-    totalObreros === 0 ? 0 : (paginaActual - 1) * OBREROS_POR_PAGINA + 1;
-  const hasta = Math.min(paginaActual * OBREROS_POR_PAGINA, totalObreros);
-  paginationInfo.textContent = `Mostrando ${desde}-${hasta} de ${totalObreros} ${totalObreros === 1 ? "obrero" : "obreros"}`;
-  paginationPage.textContent = `Página ${paginaActual} de ${totalPaginas}`;
+    (paginaActual - 1) * OBREROS_POR_PAGINA + 1;
+
+
+  const hasta =
+    Math.min(
+      paginaActual * OBREROS_POR_PAGINA,
+      totalObreros
+    );
+
+
+  paginationInfo.textContent =
+    `Mostrando ${desde}-${hasta} de ${totalObreros} ${
+      totalObreros === 1 ? "obrero" : "obreros"
+    }`;
+
+
+  paginationPage.textContent =
+    `Página ${paginaActual} de ${totalPaginas}`;
+
+
   paginationPrev.disabled = paginaActual === 1;
+
   paginationNext.disabled = paginaActual === totalPaginas;
 }
 
@@ -609,6 +705,7 @@ function fillForm(obrero) {
   document.getElementById("telefono").value = obrero.telefono || "";
   document.getElementById("fecha_contratacion").value = obrero.fecha_contratacion || "";
   document.getElementById("fecha_fin").value = obrero.fecha_fin || "";
+  document.getElementById("cargo").value = obrero.cargo || "Peón";
   formTitle.textContent = "Editar obrero";
   btnGuardar.textContent = "Guardar";
 }
@@ -671,8 +768,8 @@ function formatDate(value) {
   }
 
   const [year, month, day] = value.split("-");
-  if (!year || !month || !day) {
-    return value;
+  if (!year || !month || !day || year === "0000") {
+    return "Sin fecha";
   }
 
   return `${day}/${month}/${year}`;

@@ -15,51 +15,6 @@
   .feedback-msg.warning { background: #fef3cd; color: #856404; border: 1px solid #ffeaa7; }
   .feedback-msg i { font-size: 18px; }
   .hidden { display: none !important; }
-  .alertas-vencimiento {
-    background: #fef2f2;
-    border: 1px solid #fca5a5;
-    border-radius: 12px;
-    padding: 14px 18px;
-    margin-bottom: 18px;
-    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
-  }
-  .alertas-vencimiento.hidden { display: none !important; }
-  .alertas-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #b91c1c;
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-  .alertas-header i { font-size: 16px; }
-  .alertas-close {
-    margin-left: auto;
-    background: none;
-    border: none;
-    color: #b91c1c;
-    cursor: pointer;
-    font-size: 14px;
-    padding: 2px 6px;
-    border-radius: 4px;
-  }
-  .alertas-close:hover { background: #fecaca; }
-  #alertasListaAsist {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  #alertasListaAsist li {
-    font-size: 13px;
-    color: #7f1d1d;
-    padding: 6px 8px;
-    border-top: 1px solid #fecaca;
-  }
-  #alertasListaAsist li:first-child { border-top: none; }
-  .badge-expirado { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 10px; background: #fecaca; color: #b91c1c; }
-  .badge-critico  { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 10px; background: #fee2e2; color: #b91c1c; }
-  .badge-adv      { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 10px; background: #fef3c7; color: #92400e; }
 </style>
 <script src="assets/js/auth.js"></script>
 </head>
@@ -105,16 +60,6 @@
 
 <!-- FEEDBACK -->
 <div id="feedback" class="feedback-msg hidden"></div>
-
-<div id="alertasVencimiento" class="alertas-vencimiento hidden" role="alert" aria-live="polite">
-  <div class="alertas-header">
-    <i class="fas fa-triangle-exclamation"></i> Certificados por vencer
-    <button type="button" class="alertas-close" id="alertasCerrar" aria-label="Cerrar alerta">
-      <i class="fas fa-xmark"></i>
-    </button>
-  </div>
-  <ul id="alertasListaAsist"></ul>
-</div>
 
 <div class="grid">
 
@@ -357,34 +302,78 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       // ===== MAQUINARIA =====
-      data.maquinaria.forEach(m => {
-        const div = document.createElement("div");
-        div.textContent = m.nombre + (m.marca ? " (" + m.marca + ")" : "");
+data.maquinaria.forEach(m => {
+  const div = document.createElement("div");
+  div.textContent = m.nombre + (m.marca ? " (" + m.marca + ")" : "");
 
-        div.onclick = () => {
-          const id = m.id_maquinaria;
-          if (maquinariaSeleccionada.includes(id)) return;
+  div.onclick = () => {
 
-          maquinariaSeleccionada.push(id);
-          boxMaquinaria.textContent = m.nombre + (m.marca ? " (" + m.marca + ")" : "");
-          optMaquinaria.style.display = "none";
+    const id = m.id_maquinaria;
 
-          const item = document.createElement("div");
-          item.classList.add("obrero-item");
-          item.id = "maquinaria-" + id;
-          item.innerHTML = `
-            <span class="obrero-name">${m.nombre}${m.marca ? " (" + m.marca + ")" : ""}</span>
-            <div class="obrero-actions">
-              <button type="button" class="btn-delete" onclick="eliminarMaquinaria('${id}')">X</button>
-            </div>
-            <input type="hidden" name="maquinaria[]" value="${id}">
-          `;
-          listaMaquinaria.appendChild(item);
-        };
+    if (maquinariaSeleccionada.includes(id)) return;
 
-        optMaquinaria.appendChild(div);
-      });
+    maquinariaSeleccionada.push(id);
 
+    boxMaquinaria.textContent = m.nombre + (m.marca ? " (" + m.marca + ")" : "");
+    optMaquinaria.style.display = "none";
+
+    const item = document.createElement("div");
+    item.classList.add("item-box");
+    item.id = "maquinaria-" + id;
+
+    item.innerHTML = `
+<div class="item-box">
+
+    <span class="obrero-name">
+        ${m.nombre}${m.marca ? " (" + m.marca + ")" : ""}
+    </span>
+
+    <div class="smart-box" style="margin-top:10px">
+
+        <div>
+            <label>Hora de salida</label>
+            <input
+                type="time"
+                name="retiro_maquinaria[${id}]"
+                required>
+        </div>
+
+        <div>
+            <label>Hora de devolución</label>
+            <input
+                type="time"
+                name="devolucion_maquinaria[${id}]"
+                required>
+        </div>
+
+    </div>
+
+    <div class="item-actions">
+        <button
+            type="button"
+            class="btn-delete"
+            onclick="eliminarMaquinaria('${id}')">
+            X
+        </button>
+    </div>
+
+    <input
+        type="hidden"
+        name="maquinaria[]"
+        value="${id}">
+</div>
+`;
+
+    listaMaquinaria.appendChild(item);
+  };
+
+  optMaquinaria.appendChild(div);
+});
+
+    })
+    .catch(err => {
+      console.error("Error al cargar datos de asistencia:", err);
+      mostrarFeedback("No se pudieron cargar los datos iniciales. Revisá la conexión.", "error");
     });
 
   // ================= OPEN / CLOSE =================
@@ -473,6 +462,48 @@ document.addEventListener("DOMContentLoaded", () => {
     feedback.classList.add("hidden");
   }
 
+// ================= LIMPIAR FORMULARIO =================
+  function limpiarFormulario() {
+
+  // Limpiar campos normales
+  form.reset();
+
+  // Restablecer selects personalizados
+  boxObra.textContent = "Seleccionar obra";
+  inputObra.value = "";
+
+  boxObrero.textContent = "Seleccionar obrero";
+  boxMaterial.textContent = "Seleccionar material";
+  boxHerr.textContent = "Seleccionar herramienta";
+  boxMaquinaria.textContent = "Seleccionar maquinaria";
+
+  // Limpiar listas generadas
+  lista.innerHTML = "";
+  horarios.innerHTML = "";
+  document.getElementById("listaMateriales").innerHTML = "";
+  document.getElementById("listaHerramientas").innerHTML = "";
+  listaMaquinaria.innerHTML = "";
+
+  // Vaciar selecciones
+  obrerosSeleccionados = [];
+  maquinariaSeleccionada = [];
+
+  // Limpiar cajas auxiliares
+  document.getElementById("nuevoMaterial").value = "";
+  document.getElementById("cantidadMaterial").value = "";
+  document.getElementById("costoMaterial").value = "";
+
+  document.getElementById("nuevaHerramienta").value = "";
+  document.getElementById("cantidadHerramienta").value = "";
+
+  // Cerrar desplegables
+  optObra.style.display = "none";
+  optObrero.style.display = "none";
+  optMaterial.style.display = "none";
+  optHerr.style.display = "none";
+  optMaquinaria.style.display = "none";
+}
+
   // ================= SUBMIT CON FETCH =================
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -526,8 +557,27 @@ document.addEventListener("DOMContentLoaded", () => {
       listaHerr.querySelectorAll("input[name='herramienta_cantidad[]']").forEach(inp => formData.append("herramienta_cantidad[]", inp.value));
 
       maquinariaSeleccionada.forEach(id => {
-        formData.append("maquinaria[]", String(id));
-      });
+
+    formData.append("maquinaria[]", String(id));
+
+    const salida = form.querySelector(
+        `input[name="retiro_maquinaria[${id}]"]`
+    );
+
+    const devolucion = form.querySelector(
+        `input[name="devolucion_maquinaria[${id}]"]`
+    );
+
+    formData.append(
+        `retiro_maquinaria[${id}]`,
+        salida ? salida.value : ""
+    );
+
+    formData.append(
+        `devolucion_maquinaria[${id}]`,
+        devolucion ? devolucion.value : ""
+    );
+});
 
       const response = await fetch("../api/guardar_asistencia.php", {
         method: "POST",
@@ -546,6 +596,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       mostrarFeedback(result.message || "Asistencia guardada correctamente.", "success");
+
+      // Resetear formulario
+      limpiarFormulario();
+
     } catch (err) {
       console.error(err);
       mostrarFeedback(err.message || "No se pudo guardar la asistencia. Revisá los datos.", "error");
@@ -554,52 +608,6 @@ document.addEventListener("DOMContentLoaded", () => {
       btnGuardar.textContent = "Guardar";
     }
   });
-
-  // ================= ALERTAS DE VENCIMIENTO =================
-  function resolveApiBaseAlertas() {
-    const path = window.location.pathname;
-    const idx = path.lastIndexOf("/web-ui/");
-    if (idx !== -1) {
-      return window.location.origin + path.substring(0, idx) + "/api";
-    }
-    return window.location.origin + "/api";
-  }
-
-  function formatDateAlerta(value) {
-    if (!value) return "Sin fecha";
-    const parts = value.split("-");
-    return parts[2] + "/" + parts[1] + "/" + parts[0];
-  }
-
-  document.getElementById("alertasCerrar").addEventListener("click", () => {
-    document.getElementById("alertasVencimiento").classList.add("hidden");
-  });
-
-  (function cargarAlertasAsistencia() {
-    const apiAlerta = resolveApiBaseAlertas();
-    if (!apiAlerta) return;
-    fetch(apiAlerta + "/alertas_certificados.php?dias=30", { credentials: "include" })
-      .then(res => res.json())
-      .then(data => {
-        const alertas = data.alertas || [];
-        if (!alertas.length) return;
-        const panel = document.getElementById("alertasVencimiento");
-        const lista = document.getElementById("alertasListaAsist");
-        panel.classList.remove("hidden");
-        lista.innerHTML = alertas.map(a => {
-          const d = parseInt(a.dias_restantes, 10);
-          let cls = d < 0 ? "badge-expirado" : d <= 15 ? "badge-critico" : "badge-adv";
-          let txt = d < 0 ? `Expirado (${Math.abs(d)} d)` : `Vence en ${d} d`;
-          return `<li>
-            <span class="${cls}">${txt}</span>
-            <strong>${a.nombre_maquinaria}</strong>${a.marca ? " (" + a.marca + ")" : ""}
-            — ${a.nombre_archivo || "Certificado"}
-            <span style="float:right;color:#9ca3af;font-size:11px;">${formatDateAlerta(a.fecha_vencimiento)}</span>
-          </li>`;
-        }).join("");
-      })
-      .catch(() => {});
-  })();
 
 });
 </script>

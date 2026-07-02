@@ -36,15 +36,41 @@ try {
     $pdo = conectar();
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
-    $stmt = $pdo->query("
+    $search = trim((string) ($_GET['search'] ?? ''));
+    $limit = (int) ($_GET['limit'] ?? 0);
+    $limit = max(0, min($limit, 100));
+
+    $where = ['activo = 1'];
+    $params = [];
+
+    if ($search !== '') {
+        $where[] = '(nombre LIKE ? OR apellido LIKE ? OR documento LIKE ?)';
+        $searchLike = $search . '%';
+        $params = [$searchLike, $searchLike, $searchLike];
+    }
+
+    $whereSql = implode(' AND ', $where);
+
+    $sql = "
         SELECT
             id_obrero,
             nombre,
             apellido
         FROM obreros
-        WHERE activo = 1
+        WHERE {$whereSql}
         ORDER BY nombre
-    ");
+    ";
+
+    if ($limit > 0) {
+        $sql .= ' LIMIT ?';
+        $params[] = $limit;
+    }
+
+    $stmt = $pdo->prepare($sql);
+    foreach ($params as $index => $value) {
+        $stmt->bindValue($index + 1, $value, PDO::PARAM_STR);
+    }
+    $stmt->execute();
 
     echo json_encode([
         'success' => true,

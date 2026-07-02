@@ -8,6 +8,20 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 const feedback = document.getElementById('feedback');
+const pagination = document.getElementById('pagination');
+const paginationInfo = document.getElementById('paginationInfo');
+const paginationPage = document.getElementById('paginationPage');
+const paginationPrev = document.getElementById('paginationPrev');
+const paginationNext = document.getElementById('paginationNext');
+
+const ITEMS_POR_PAGINA = 10;
+let paginaActual = 1;
+let totalPaginas = 1;
+let totalRegistros = 0;
+let filtrosActivos = null;
+
+paginationPrev.addEventListener('click', () => cambiarPagina(-1));
+paginationNext.addEventListener('click', () => cambiarPagina(1));
 
 function mostrarFeedback(mensaje, tipo) {
     feedback.innerHTML = `<i class="fas ${tipo === 'error' ? 'fa-circle-exclamation' : tipo === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i><span>${escapeHtml(mensaje)}</span>`;
@@ -76,14 +90,32 @@ async function buscarConsultas() {
         return;
     }
 
+    filtrosActivos = { idObrero, fechaDesde, fechaHasta };
+    paginaActual = 1;
+    await cargarRegistros();
+}
+
+async function cargarRegistros() {
+    if (!filtrosActivos) {
+        mostrarFeedback('Realice una búsqueda primero.', 'warning');
+        return;
+    }
+
+    const { idObrero, fechaDesde, fechaHasta } = filtrosActivos;
+
     try {
 
         ocultarFeedback();
 
-        const response = await fetch(
-            `../api/consultas.php?id_obrero=${idObrero || 0}&fecha_desde=${fechaDesde}&fecha_hasta=${fechaHasta}`
-        );
+        const params = new URLSearchParams({
+            page: String(paginaActual),
+            limit: String(ITEMS_POR_PAGINA),
+            id_obrero: idObrero || '0',
+            fecha_desde: fechaDesde,
+            fecha_hasta: fechaHasta,
+        });
 
+        const response = await fetch(`../api/consultas.php?${params.toString()}`);
         const data = await response.json();
 
         if (!data.success) {
@@ -92,6 +124,12 @@ async function buscarConsultas() {
 
         mostrarResumen(data.resumen);
         mostrarRegistros(data.registros);
+
+        totalRegistros = Number(data.total || 0);
+        totalPaginas = Math.max(1, Number(data.total_pages || 1));
+        paginaActual = Math.min(Math.max(1, Number(data.page || paginaActual)), totalPaginas);
+
+        actualizarPaginacion();
 
     } catch (error) {
 
@@ -156,6 +194,28 @@ function mostrarRegistros(registros) {
 
         tbody.appendChild(fila);
     });
+}
+
+function actualizarPaginacion() {
+    pagination.classList.toggle('hidden', totalRegistros === 0 || totalPaginas === 1);
+
+    const desde = totalRegistros === 0 ? 0 : (paginaActual - 1) * ITEMS_POR_PAGINA + 1;
+    const hasta = Math.min(paginaActual * ITEMS_POR_PAGINA, totalRegistros);
+
+    paginationInfo.textContent = `Mostrando ${desde}-${hasta} de ${totalRegistros} ${totalRegistros === 1 ? 'registro' : 'registros'}`;
+    paginationPage.textContent = `Página ${paginaActual} de ${totalPaginas}`;
+    paginationPrev.disabled = paginaActual === 1;
+    paginationNext.disabled = paginaActual === totalPaginas;
+}
+
+async function cambiarPagina(direccion) {
+    const nuevaPagina = paginaActual + direccion;
+    if (nuevaPagina < 1 || nuevaPagina > totalPaginas) {
+        return;
+    }
+
+    paginaActual = nuevaPagina;
+    await cargarRegistros();
 }
 
 function escapeHtml(value) {

@@ -1103,8 +1103,8 @@ function formatDate(value) {
   }
 
   const [year, month, day] = value.split("-");
-  if (!year || !month || !day) {
-    return value;
+  if (!year || !month || !day || year === "0000") {
+    return "Sin fecha";
   }
 
   return `${day}/${month}/${year}`;

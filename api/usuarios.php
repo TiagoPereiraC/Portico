@@ -91,11 +91,47 @@ function manejarGet(PDO $pdo): void
         responder(200, ['success' => true, 'user' => $user]);
     }
 
-    $stmt = $pdo->query(
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    $limit = (int) ($_GET['limit'] ?? 10);
+    $limit = max(1, min($limit, 100));
+    $search = trim((string) ($_GET['search'] ?? ''));
+
+    $where = [];
+    $params = [];
+
+    if ($search !== '') {
+        $where[] = '(nombre LIKE ? OR usuario LIKE ?)';
+        $searchLike = $search . '%';
+        $params = [$searchLike, $searchLike];
+    }
+
+    $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+
+    $countStmt = $pdo->prepare('SELECT COUNT(*) FROM usuarios' . $whereSql);
+    foreach ($params as $index => $value) {
+        $countStmt->bindValue($index + 1, $value, PDO::PARAM_STR);
+    }
+    $countStmt->execute();
+    $total = (int) $countStmt->fetchColumn();
+
+    $totalPages = max(1, (int) ceil($total / $limit));
+    $page = min($page, $totalPages);
+    $offset = ($page - 1) * $limit;
+
+    $stmt = $pdo->prepare(
         'SELECT id_usuario, nombre, usuario, rol, activo
-         FROM usuarios
-         ORDER BY id_usuario ASC'
+         FROM usuarios'
+        . $whereSql
+        . ' ORDER BY id_usuario ASC LIMIT ? OFFSET ?'
     );
+
+    $bindIndex = 1;
+    foreach ($params as $value) {
+        $stmt->bindValue($bindIndex++, $value, PDO::PARAM_STR);
+    }
+    $stmt->bindValue($bindIndex++, $limit, PDO::PARAM_INT);
+    $stmt->bindValue($bindIndex, $offset, PDO::PARAM_INT);
+    $stmt->execute();
 
     $users = [];
     while ($row = $stmt->fetch()) {
@@ -108,7 +144,14 @@ function manejarGet(PDO $pdo): void
         ];
     }
 
-    responder(200, ['success' => true, 'users' => $users]);
+    responder(200, [
+        'success' => true,
+        'users' => $users,
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $limit,
+        'total_pages' => $totalPages,
+    ]);
 }
 
 function manejarPost(PDO $pdo): void
@@ -130,10 +173,13 @@ function manejarPost(PDO $pdo): void
     );
     $stmt->execute([$nombre, $usuario, $passwordHash, $rol]);
 
+    $idUsuario = (int) $pdo->lastInsertId();
+    registrarAuditoria($pdo, 'crear', 'usuarios', $idUsuario, ['usuario' => $usuario]);
+
     responder(201, [
         'success' => true,
         'message' => "Usuario '{$usuario}' creado correctamente.",
-        'user_id' => (int) $pdo->lastInsertId(),
+        'user_id' => $idUsuario,
     ]);
 }
 
@@ -190,6 +236,8 @@ function manejarPut(PDO $pdo): void
         );
         $stmt->execute([$nombre, $usuario, $rol, $id]);
     }
+
+    registrarAuditoria($pdo, 'editar', 'usuarios', $id, ['usuario' => $usuario, 'cambio_password' => $nuevaPassword !== '']);
 
     responder(200, ['success' => true, 'message' => 'Usuario actualizado correctamente.']);
 }
