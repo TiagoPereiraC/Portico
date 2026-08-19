@@ -7,14 +7,6 @@
 
 ---
 
-## Pantallas y asignaciones
-- **Irina:** Login y Consultas.
-- **Natasha:** Registrar obrero
-- **Angela:** Asistencia y Panel de inicio.
-- **Santiago:** Registrar obra.
-
----
-
 ## Build
 ### Pasos antes de compilar
 1. Renombrar el archivo `.env.example` a `.env`
@@ -125,7 +117,3 @@ git push -u origin nombre-de-tu-rama
 | `--btn-bg`        | `#b54747` | Botón primario             |
 | `--btn-hover`     | `#9e3c3c` | Hover botón primario       |
 | `--accent`        | `#b54747` | Color de acento / focus    |
-
-ToDo: 
-- Protección de sesiones en todas las paginas.
-- Sistema de logs visible únicamente para el Admin. 

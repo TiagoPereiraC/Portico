@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS obreros (
     telefono VARCHAR(30),
     fecha_contratacion DATE,
     fecha_fin DATE,
-    cargo ENUM('AlbaÃ±il','Capataz','Electricista','Plomero','Pintor','Carpintero','Soldador','Operador de maquinaria','PeÃ³n','Otro') NOT NULL DEFAULT 'PeÃ³n',
+    cargo ENUM('Albañil','Capataz','Electricista','Plomero','Pintor','Carpintero','Soldador','Operador de maquinaria','Peón','Otro') NOT NULL DEFAULT 'Peón',
     activo BOOLEAN DEFAULT 1
 );
 
@@ -180,7 +180,6 @@ USE portico;
 
 START TRANSACTION;
 
--- Archivo generado automaticamente con +100 registros de cada entidad.
 -- Asume que schema.sql ya fue ejecutado.
 
 -- ===== USUARIOS =====
@@ -199,7 +198,7 @@ SELECT * FROM (
     SELECT 'CTR-002' AS nc, 'Construccion Barrio Sur' AS n, 'Av. Cabred 12, Obera' AS d, 'Construccion de obra en Barrio Sur, Obera.' AS de, '2026-02-02' AS fi, 2026-08-17 AS ff, 'IPRODHA' AS c, '3764-501002' AS t, 1 AS a UNION ALL
     SELECT 'CTR-003' AS nc, 'Refaccion Villa Cabello' AS n, 'Av. Trincheras de San Jose 13, Eldorado' AS d, 'Refaccion de obra en Villa Cabello, Eldorado.' AS de, '2026-03-03' AS fi, 2027-09-18 AS ff, 'Vialidad Provincial' AS c, '3764-501003' AS t, 1 AS a UNION ALL
     SELECT 'CTR-004' AS nc, 'Ampliacion Itaembe Guazu' AS n, 'Av. Eva Peron 14, Garupa' AS d, 'Ampliacion de obra en Itaembe Guazu, Garupa.' AS de, '2026-04-04' AS fi, NULL AS ff, 'SAMSA' AS c, '3764-501004' AS t, 1 AS a UNION ALL
-    SELECT 'CTR-005' AS nc, 'Cordon Cuneta Miguel Lanus' AS n, 'Miguel Lanus, ApÃ³stoles, Misiones' AS d, 'Cordon Cuneta de obra en Miguel Lanus, ApÃ³stoles.' AS de, '2026-05-05' AS fi, 2027-11-20 AS ff, 'Consejo General de Educacion' AS c, '3764-501005' AS t, 1 AS a UNION ALL
+    SELECT 'CTR-005' AS nc, 'Cordon Cuneta Miguel Lanus' AS n, 'Miguel Lanus, Apóstoles, Misiones' AS d, 'Cordon Cuneta de obra en Miguel Lanus, Apóstoles.' AS de, '2026-05-05' AS fi, 2027-11-20 AS ff, 'Consejo General de Educacion' AS c, '3764-501005' AS t, 1 AS a UNION ALL
     SELECT 'CTR-006' AS nc, 'Veredas Santa Rita' AS n, 'Santa Rita, Puerto Iguazu, Misiones' AS d, 'Veredas de obra en Santa Rita, Puerto Iguazu.' AS de, '2026-06-06' AS fi, 2026-12-21 AS ff, 'Ministerio de Salud' AS c, '3764-501006' AS t, 1 AS a UNION ALL
     SELECT 'CTR-007' AS nc, 'Desagues Libertad' AS n, 'Libertad, Montecarlo, Misiones' AS d, 'Desagues de obra en Libertad, Montecarlo.' AS de, '2026-07-07' AS fi, 2027-01-22 AS ff, 'Poder Judicial' AS c, '3764-501007' AS t, 1 AS a UNION ALL
     SELECT 'CTR-008' AS nc, 'Iluminacion Fatima' AS n, 'Fatima, San Ignacio, Misiones' AS d, 'Iluminacion de obra en Fatima, San Ignacio.' AS de, '2026-08-08' AS fi, NULL AS ff, 'Ministerio de Gobierno' AS c, '3764-501008' AS t, 1 AS a UNION ALL
@@ -213,8 +212,8 @@ SELECT * FROM (
     SELECT 'CTR-016' AS nc, 'Pavimentacion Aeroclub' AS n, 'Aeroclub, Posadas, Misiones' AS d, 'Pavimentacion de obra en Aeroclub, Posadas.' AS de, '2026-04-16' AS fi, NULL AS ff, 'Gendarmeria Nacional' AS c, '3764-501016' AS t, 1 AS a UNION ALL
     SELECT 'CTR-017' AS nc, 'Construccion Prosol' AS n, 'Av. Bustamante 117, Obera' AS d, 'Construccion de obra en Prosol, Obera.' AS de, '2026-05-17' AS fi, 2027-11-04 AS ff, 'Policia de Misiones' AS c, '3764-501017' AS t, 1 AS a UNION ALL
     SELECT 'CTR-018' AS nc, 'Refaccion Itaembe Mini' AS n, 'Av. Marconi 118, Eldorado' AS d, 'Refaccion de obra en Itaembe Mini, Eldorado.' AS de, '2026-06-18' AS fi, 2026-12-05 AS ff, 'Bomberos Voluntarios' AS c, '3764-501018' AS t, 1 AS a UNION ALL
-    SELECT 'CTR-019' AS nc, 'Ampliacion Los Oleros' AS n, 'Av. LÃ³pez Torres 119, Garupa' AS d, 'Ampliacion de obra en Los Oleros, Garupa.' AS de, '2026-07-19' AS fi, 2027-01-06 AS ff, 'Hospital Escuela' AS c, '3764-501019' AS t, 1 AS a UNION ALL
-    SELECT 'CTR-020' AS nc, 'Cordon Cuneta Santa Helena' AS n, 'Santa Helena, ApÃ³stoles, Misiones' AS d, 'Cordon Cuneta de obra en Santa Helena, ApÃ³stoles.' AS de, '2026-08-20' AS fi, NULL AS ff, 'Ente Regulador' AS c, '3764-501020' AS t, 1 AS a UNION ALL
+    SELECT 'CTR-019' AS nc, 'Ampliacion Los Oleros' AS n, 'Av. López Torres 119, Garupa' AS d, 'Ampliacion de obra en Los Oleros, Garupa.' AS de, '2026-07-19' AS fi, 2027-01-06 AS ff, 'Hospital Escuela' AS c, '3764-501019' AS t, 1 AS a UNION ALL
+    SELECT 'CTR-020' AS nc, 'Cordon Cuneta Santa Helena' AS n, 'Santa Helena, Apóstoles, Misiones' AS d, 'Cordon Cuneta de obra en Santa Helena, Apóstoles.' AS de, '2026-08-20' AS fi, NULL AS ff, 'Ente Regulador' AS c, '3764-501020' AS t, 1 AS a UNION ALL
     SELECT 'CTR-021' AS nc, 'Veredas Las Rosas' AS n, 'Las Rosas, Puerto Iguazu, Misiones' AS d, 'Veredas de obra en Las Rosas, Puerto Iguazu.' AS de, '2026-09-21' AS fi, 2027-03-08 AS ff, 'Archivo General' AS c, '3764-501021' AS t, 1 AS a UNION ALL
     SELECT 'CTR-022' AS nc, 'Desagues Kennedy' AS n, 'Kennedy, Montecarlo, Misiones' AS d, 'Desagues de obra en Kennedy, Montecarlo.' AS de, '2026-10-22' AS fi, 2026-04-09 AS ff, 'Ministerio de Educacion' AS c, '3764-501022' AS t, 1 AS a UNION ALL
     SELECT 'CTR-023' AS nc, 'Iluminacion 20 de Junio' AS n, '20 de Junio, San Ignacio, Misiones' AS d, 'Iluminacion de obra en 20 de Junio, San Ignacio.' AS de, '2026-11-23' AS fi, 2027-05-10 AS ff, 'Municipalidad de San Ignacio' AS c, '3764-501023' AS t, 1 AS a UNION ALL
@@ -224,12 +223,12 @@ SELECT * FROM (
     SELECT 'CTR-027' AS nc, 'Repavimentacion San Alberto' AS n, 'San Alberto, Cerro Azul, Misiones' AS d, 'Repavimentacion de obra en San Alberto, Cerro Azul.' AS de, '2026-03-27' AS fi, 2027-09-14 AS ff, 'Consejo General de Educacion' AS c, '3764-501027' AS t, 1 AS a UNION ALL
     SELECT 'CTR-028' AS nc, 'Defensas San Roque' AS n, 'San Roque, Campo Grande, Misiones' AS d, 'Defensas de obra en San Roque, Campo Grande.' AS de, '2026-04-28' AS fi, NULL AS ff, 'Ministerio de Salud' AS c, '3764-501028' AS t, 1 AS a UNION ALL
     SELECT 'CTR-029' AS nc, 'Puesta en valor Bicentenario' AS n, 'Bicentenario, San Vicente, Misiones' AS d, 'Puesta en valor de obra en Bicentenario, San Vicente.' AS de, '2026-05-01' AS fi, 2027-11-16 AS ff, 'Poder Judicial' AS c, '3764-501029' AS t, 1 AS a UNION ALL
-    SELECT 'CTR-030' AS nc, 'Remodelacion Nuestro SeÃ±ora' AS n, 'Nuestro SeÃ±ora, Puerto Rico, Misiones' AS d, 'Remodelacion de obra en Nuestro SeÃ±ora, Puerto Rico.' AS de, '2026-06-02' AS fi, 2026-12-17 AS ff, 'Ministerio de Gobierno' AS c, '3764-501030' AS t, 1 AS a UNION ALL
+    SELECT 'CTR-030' AS nc, 'Remodelacion Nuestro Señora' AS n, 'Nuestro Señora, Puerto Rico, Misiones' AS d, 'Remodelacion de obra en Nuestro Señora, Puerto Rico.' AS de, '2026-06-02' AS fi, 2026-12-17 AS ff, 'Ministerio de Gobierno' AS c, '3764-501030' AS t, 1 AS a UNION ALL
     SELECT 'CTR-031' AS nc, 'Pavimentacion El Porvenir' AS n, 'El Porvenir, Posadas, Misiones' AS d, 'Pavimentacion de obra en El Porvenir, Posadas.' AS de, '2026-07-03' AS fi, 2027-01-18 AS ff, 'Direccion de Catastro' AS c, '3764-501031' AS t, 1 AS a UNION ALL
     SELECT 'CTR-032' AS nc, 'Construccion 120 Viviendas' AS n, 'Av. Cabred 132, Obera' AS d, 'Construccion de obra en 120 Viviendas, Obera.' AS de, '2026-08-04' AS fi, NULL AS ff, 'EBY' AS c, '3764-501032' AS t, 1 AS a UNION ALL
     SELECT 'CTR-033' AS nc, 'Refaccion Santa Ana' AS n, 'Av. Trincheras de San Jose 133, Eldorado' AS d, 'Refaccion de obra en Santa Ana, Eldorado.' AS de, '2026-09-05' AS fi, 2027-03-20 AS ff, 'AFIP' AS c, '3764-501033' AS t, 1 AS a UNION ALL
     SELECT 'CTR-034' AS nc, 'Ampliacion Los Cedros' AS n, 'Av. Eva Peron 134, Garupa' AS d, 'Ampliacion de obra en Los Cedros, Garupa.' AS de, '2026-10-06' AS fi, 2026-04-21 AS ff, 'Ministerio de Cultura' AS c, '3764-501034' AS t, 1 AS a UNION ALL
-    SELECT 'CTR-035' AS nc, 'Cordon Cuneta Barrio Norte' AS n, 'Barrio Norte, ApÃ³stoles, Misiones' AS d, 'Cordon Cuneta de obra en Barrio Norte, ApÃ³stoles.' AS de, '2026-11-07' AS fi, 2027-05-22 AS ff, 'Ministerio de Desarrollo Social' AS c, '3764-501035' AS t, 1 AS a UNION ALL
+    SELECT 'CTR-035' AS nc, 'Cordon Cuneta Barrio Norte' AS n, 'Barrio Norte, Apóstoles, Misiones' AS d, 'Cordon Cuneta de obra en Barrio Norte, Apóstoles.' AS de, '2026-11-07' AS fi, 2027-05-22 AS ff, 'Ministerio de Desarrollo Social' AS c, '3764-501035' AS t, 1 AS a UNION ALL
     SELECT 'CTR-036' AS nc, 'Veredas Barrio Sur' AS n, 'Barrio Sur, Puerto Iguazu, Misiones' AS d, 'Veredas de obra en Barrio Sur, Puerto Iguazu.' AS de, '2026-12-08' AS fi, NULL AS ff, 'Parque del Conocimiento' AS c, '3764-501036' AS t, 1 AS a UNION ALL
     SELECT 'CTR-037' AS nc, 'Desagues Villa Cabello' AS n, 'Villa Cabello, Montecarlo, Misiones' AS d, 'Desagues de obra en Villa Cabello, Montecarlo.' AS de, '2026-01-09' AS fi, 2027-07-24 AS ff, 'Correo Argentino' AS c, '3764-501037' AS t, 1 AS a UNION ALL
     SELECT 'CTR-038' AS nc, 'Iluminacion Itaembe Guazu' AS n, 'Itaembe Guazu, San Ignacio, Misiones' AS d, 'Iluminacion de obra en Itaembe Guazu, San Ignacio.' AS de, '2026-02-10' AS fi, 2026-08-25 AS ff, 'Gendarmeria Nacional' AS c, '3764-501038' AS t, 1 AS a UNION ALL
@@ -243,8 +242,8 @@ SELECT * FROM (
     SELECT 'CTR-046' AS nc, 'Pavimentacion Villa Urquiza' AS n, 'Villa Urquiza, Posadas, Misiones' AS d, 'Pavimentacion de obra en Villa Urquiza, Posadas.' AS de, '2026-10-18' AS fi, 2026-04-05 AS ff, 'IPRODHA' AS c, '3764-501046' AS t, 1 AS a UNION ALL
     SELECT 'CTR-047' AS nc, 'Construccion San Marcos' AS n, 'Av. Bustamante 147, Obera' AS d, 'Construccion de obra en San Marcos, Obera.' AS de, '2026-11-19' AS fi, 2027-05-06 AS ff, 'Vialidad Provincial' AS c, '3764-501047' AS t, 1 AS a UNION ALL
     SELECT 'CTR-048' AS nc, 'Refaccion 508' AS n, 'Av. Marconi 148, Eldorado' AS d, 'Refaccion de obra en 508, Eldorado.' AS de, '2026-12-20' AS fi, NULL AS ff, 'SAMSA' AS c, '3764-501048' AS t, 1 AS a UNION ALL
-    SELECT 'CTR-049' AS nc, 'Ampliacion Sesquicentenario' AS n, 'Av. LÃ³pez Torres 149, Garupa' AS d, 'Ampliacion de obra en Sesquicentenario, Garupa.' AS de, '2026-01-21' AS fi, 2027-07-08 AS ff, 'Consejo General de Educacion' AS c, '3764-501049' AS t, 1 AS a UNION ALL
-    SELECT 'CTR-050' AS nc, 'Cordon Cuneta Aeroclub' AS n, 'Aeroclub, ApÃ³stoles, Misiones' AS d, 'Cordon Cuneta de obra en Aeroclub, ApÃ³stoles.' AS de, '2026-02-22' AS fi, 2026-08-09 AS ff, 'Ministerio de Salud' AS c, '3764-501050' AS t, 1 AS a UNION ALL
+    SELECT 'CTR-049' AS nc, 'Ampliacion Sesquicentenario' AS n, 'Av. López Torres 149, Garupa' AS d, 'Ampliacion de obra en Sesquicentenario, Garupa.' AS de, '2026-01-21' AS fi, 2027-07-08 AS ff, 'Consejo General de Educacion' AS c, '3764-501049' AS t, 1 AS a UNION ALL
+    SELECT 'CTR-050' AS nc, 'Cordon Cuneta Aeroclub' AS n, 'Aeroclub, Apóstoles, Misiones' AS d, 'Cordon Cuneta de obra en Aeroclub, Apóstoles.' AS de, '2026-02-22' AS fi, 2026-08-09 AS ff, 'Ministerio de Salud' AS c, '3764-501050' AS t, 1 AS a UNION ALL
     SELECT 'CTR-051' AS nc, 'Veredas Prosol' AS n, 'Prosol, Puerto Iguazu, Misiones' AS d, 'Veredas de obra en Prosol, Puerto Iguazu.' AS de, '2026-03-23' AS fi, 2027-09-10 AS ff, 'Poder Judicial' AS c, '3764-501051' AS t, 1 AS a UNION ALL
     SELECT 'CTR-052' AS nc, 'Desagues Itaembe Mini' AS n, 'Itaembe Mini, Montecarlo, Misiones' AS d, 'Desagues de obra en Itaembe Mini, Montecarlo.' AS de, '2026-04-24' AS fi, NULL AS ff, 'Ministerio de Gobierno' AS c, '3764-501052' AS t, 1 AS a UNION ALL
     SELECT 'CTR-053' AS nc, 'Iluminacion Los Oleros' AS n, 'Los Oleros, San Ignacio, Misiones' AS d, 'Iluminacion de obra en Los Oleros, San Ignacio.' AS de, '2026-05-25' AS fi, 2027-11-12 AS ff, 'Direccion de Catastro' AS c, '3764-501053' AS t, 1 AS a UNION ALL
@@ -258,8 +257,8 @@ SELECT * FROM (
     SELECT 'CTR-061' AS nc, 'Pavimentacion San Alberto' AS n, 'San Alberto, Posadas, Misiones' AS d, 'Pavimentacion de obra en San Alberto, Posadas.' AS de, '2026-01-05' AS fi, 2027-07-20 AS ff, 'Policia de Misiones' AS c, '3764-501061' AS t, 1 AS a UNION ALL
     SELECT 'CTR-062' AS nc, 'Construccion San Roque' AS n, 'Av. Cabred 162, Obera' AS d, 'Construccion de obra en San Roque, Obera.' AS de, '2026-02-06' AS fi, 2026-08-21 AS ff, 'Bomberos Voluntarios' AS c, '3764-501062' AS t, 1 AS a UNION ALL
     SELECT 'CTR-063' AS nc, 'Refaccion Bicentenario' AS n, 'Av. Trincheras de San Jose 163, Eldorado' AS d, 'Refaccion de obra en Bicentenario, Eldorado.' AS de, '2026-03-07' AS fi, 2027-09-22 AS ff, 'Hospital Escuela' AS c, '3764-501063' AS t, 1 AS a UNION ALL
-    SELECT 'CTR-064' AS nc, 'Ampliacion Nuestro SeÃ±ora' AS n, 'Av. Eva Peron 164, Garupa' AS d, 'Ampliacion de obra en Nuestro SeÃ±ora, Garupa.' AS de, '2026-04-08' AS fi, NULL AS ff, 'Ente Regulador' AS c, '3764-501064' AS t, 1 AS a UNION ALL
-    SELECT 'CTR-065' AS nc, 'Cordon Cuneta El Porvenir' AS n, 'El Porvenir, ApÃ³stoles, Misiones' AS d, 'Cordon Cuneta de obra en El Porvenir, ApÃ³stoles.' AS de, '2026-05-09' AS fi, 2027-11-24 AS ff, 'Archivo General' AS c, '3764-501065' AS t, 1 AS a UNION ALL
+    SELECT 'CTR-064' AS nc, 'Ampliacion Nuestro Señora' AS n, 'Av. Eva Peron 164, Garupa' AS d, 'Ampliacion de obra en Nuestro Señora, Garupa.' AS de, '2026-04-08' AS fi, NULL AS ff, 'Ente Regulador' AS c, '3764-501064' AS t, 1 AS a UNION ALL
+    SELECT 'CTR-065' AS nc, 'Cordon Cuneta El Porvenir' AS n, 'El Porvenir, Apóstoles, Misiones' AS d, 'Cordon Cuneta de obra en El Porvenir, Apóstoles.' AS de, '2026-05-09' AS fi, 2027-11-24 AS ff, 'Archivo General' AS c, '3764-501065' AS t, 1 AS a UNION ALL
     SELECT 'CTR-066' AS nc, 'Veredas 120 Viviendas' AS n, '120 Viviendas, Puerto Iguazu, Misiones' AS d, 'Veredas de obra en 120 Viviendas, Puerto Iguazu.' AS de, '2026-06-10' AS fi, 2026-12-25 AS ff, 'Ministerio de Educacion' AS c, '3764-501066' AS t, 1 AS a UNION ALL
     SELECT 'CTR-067' AS nc, 'Desagues Santa Ana' AS n, 'Santa Ana, Montecarlo, Misiones' AS d, 'Desagues de obra en Santa Ana, Montecarlo.' AS de, '2026-07-11' AS fi, 2027-01-26 AS ff, 'Municipalidad de Montecarlo' AS c, '3764-501067' AS t, 1 AS a UNION ALL
     SELECT 'CTR-068' AS nc, 'Iluminacion Los Cedros' AS n, 'Los Cedros, San Ignacio, Misiones' AS d, 'Iluminacion de obra en Los Cedros, San Ignacio.' AS de, '2026-08-12' AS fi, NULL AS ff, 'IPRODHA' AS c, '3764-501068' AS t, 1 AS a UNION ALL
@@ -273,8 +272,8 @@ SELECT * FROM (
     SELECT 'CTR-076' AS nc, 'Pavimentacion Fatima' AS n, 'Fatima, Posadas, Misiones' AS d, 'Pavimentacion de obra en Fatima, Posadas.' AS de, '2026-04-20' AS fi, NULL AS ff, 'EBY' AS c, '3764-501076' AS t, 1 AS a UNION ALL
     SELECT 'CTR-077' AS nc, 'Construccion Los Lapachos' AS n, 'Av. Bustamante 177, Obera' AS d, 'Construccion de obra en Los Lapachos, Obera.' AS de, '2026-05-21' AS fi, 2027-11-08 AS ff, 'AFIP' AS c, '3764-501077' AS t, 1 AS a UNION ALL
     SELECT 'CTR-078' AS nc, 'Refaccion San Isidro' AS n, 'Av. Marconi 178, Eldorado' AS d, 'Refaccion de obra en San Isidro, Eldorado.' AS de, '2026-06-22' AS fi, 2026-12-09 AS ff, 'Ministerio de Cultura' AS c, '3764-501078' AS t, 1 AS a UNION ALL
-    SELECT 'CTR-079' AS nc, 'Ampliacion Las Dolores' AS n, 'Av. LÃ³pez Torres 179, Garupa' AS d, 'Ampliacion de obra en Las Dolores, Garupa.' AS de, '2026-07-23' AS fi, 2027-01-10 AS ff, 'Ministerio de Desarrollo Social' AS c, '3764-501079' AS t, 1 AS a UNION ALL
-    SELECT 'CTR-080' AS nc, 'Cordon Cuneta Villa Urquiza' AS n, 'Villa Urquiza, ApÃ³stoles, Misiones' AS d, 'Cordon Cuneta de obra en Villa Urquiza, ApÃ³stoles.' AS de, '2026-08-24' AS fi, NULL AS ff, 'Parque del Conocimiento' AS c, '3764-501080' AS t, 1 AS a UNION ALL
+    SELECT 'CTR-079' AS nc, 'Ampliacion Las Dolores' AS n, 'Av. López Torres 179, Garupa' AS d, 'Ampliacion de obra en Las Dolores, Garupa.' AS de, '2026-07-23' AS fi, 2027-01-10 AS ff, 'Ministerio de Desarrollo Social' AS c, '3764-501079' AS t, 1 AS a UNION ALL
+    SELECT 'CTR-080' AS nc, 'Cordon Cuneta Villa Urquiza' AS n, 'Villa Urquiza, Apóstoles, Misiones' AS d, 'Cordon Cuneta de obra en Villa Urquiza, Apóstoles.' AS de, '2026-08-24' AS fi, NULL AS ff, 'Parque del Conocimiento' AS c, '3764-501080' AS t, 1 AS a UNION ALL
     SELECT 'CTR-081' AS nc, 'Veredas San Marcos' AS n, 'San Marcos, Puerto Iguazu, Misiones' AS d, 'Veredas de obra en San Marcos, Puerto Iguazu.' AS de, '2026-09-25' AS fi, 2027-03-12 AS ff, 'Correo Argentino' AS c, '3764-501081' AS t, 1 AS a UNION ALL
     SELECT 'CTR-082' AS nc, 'Desagues 508' AS n, '508, Montecarlo, Misiones' AS d, 'Desagues de obra en 508, Montecarlo.' AS de, '2026-10-26' AS fi, 2026-04-13 AS ff, 'Gendarmeria Nacional' AS c, '3764-501082' AS t, 1 AS a UNION ALL
     SELECT 'CTR-083' AS nc, 'Iluminacion Sesquicentenario' AS n, 'Sesquicentenario, San Ignacio, Misiones' AS d, 'Iluminacion de obra en Sesquicentenario, San Ignacio.' AS de, '2026-11-27' AS fi, 2027-05-14 AS ff, 'Policia de Misiones' AS c, '3764-501083' AS t, 1 AS a UNION ALL
@@ -289,10 +288,10 @@ SELECT * FROM (
     SELECT 'CTR-092' AS nc, 'Construccion A4' AS n, 'Av. Cabred 192, Obera' AS d, 'Construccion de obra en A4, Obera.' AS de, '2026-08-08' AS fi, NULL AS ff, 'SAMSA' AS c, '3764-501092' AS t, 1 AS a UNION ALL
     SELECT 'CTR-093' AS nc, 'Refaccion Yacyreta' AS n, 'Av. Trincheras de San Jose 193, Eldorado' AS d, 'Refaccion de obra en Yacyreta, Eldorado.' AS de, '2026-09-09' AS fi, 2027-03-24 AS ff, 'Consejo General de Educacion' AS c, '3764-501093' AS t, 1 AS a UNION ALL
     SELECT 'CTR-094' AS nc, 'Ampliacion 25 de Mayo' AS n, 'Av. Eva Peron 194, Garupa' AS d, 'Ampliacion de obra en 25 de Mayo, Garupa.' AS de, '2026-10-10' AS fi, 2026-04-25 AS ff, 'Ministerio de Salud' AS c, '3764-501094' AS t, 1 AS a UNION ALL
-    SELECT 'CTR-095' AS nc, 'Cordon Cuneta San Alberto' AS n, 'San Alberto, ApÃ³stoles, Misiones' AS d, 'Cordon Cuneta de obra en San Alberto, ApÃ³stoles.' AS de, '2026-11-11' AS fi, 2027-05-26 AS ff, 'Poder Judicial' AS c, '3764-501095' AS t, 1 AS a UNION ALL
+    SELECT 'CTR-095' AS nc, 'Cordon Cuneta San Alberto' AS n, 'San Alberto, Apóstoles, Misiones' AS d, 'Cordon Cuneta de obra en San Alberto, Apóstoles.' AS de, '2026-11-11' AS fi, 2027-05-26 AS ff, 'Poder Judicial' AS c, '3764-501095' AS t, 1 AS a UNION ALL
     SELECT 'CTR-096' AS nc, 'Veredas San Roque' AS n, 'San Roque, Puerto Iguazu, Misiones' AS d, 'Veredas de obra en San Roque, Puerto Iguazu.' AS de, '2026-12-12' AS fi, NULL AS ff, 'Ministerio de Gobierno' AS c, '3764-501096' AS t, 1 AS a UNION ALL
     SELECT 'CTR-097' AS nc, 'Desagues Bicentenario' AS n, 'Bicentenario, Montecarlo, Misiones' AS d, 'Desagues de obra en Bicentenario, Montecarlo.' AS de, '2026-01-13' AS fi, 2027-07-28 AS ff, 'Direccion de Catastro' AS c, '3764-501097' AS t, 1 AS a UNION ALL
-    SELECT 'CTR-098' AS nc, 'Iluminacion Nuestro SeÃ±ora' AS n, 'Nuestro SeÃ±ora, San Ignacio, Misiones' AS d, 'Iluminacion de obra en Nuestro SeÃ±ora, San Ignacio.' AS de, '2026-02-14' AS fi, 2026-08-01 AS ff, 'EBY' AS c, '3764-501098' AS t, 1 AS a UNION ALL
+    SELECT 'CTR-098' AS nc, 'Iluminacion Nuestro Señora' AS n, 'Nuestro Señora, San Ignacio, Misiones' AS d, 'Iluminacion de obra en Nuestro Señora, San Ignacio.' AS de, '2026-02-14' AS fi, 2026-08-01 AS ff, 'EBY' AS c, '3764-501098' AS t, 1 AS a UNION ALL
     SELECT 'CTR-099' AS nc, 'Red de Agua El Porvenir' AS n, 'El Porvenir, Jardin America, Misiones' AS d, 'Red de Agua de obra en El Porvenir, Jardin America.' AS de, '2026-03-15' AS fi, 2027-09-02 AS ff, 'AFIP' AS c, '3764-501099' AS t, 1 AS a UNION ALL
     SELECT 'CTR-100' AS nc, 'Red Cloacal 120 Viviendas' AS n, '120 Viviendas, San Pedro, Misiones' AS d, 'Red Cloacal de obra en 120 Viviendas, San Pedro.' AS de, '2026-04-16' AS fi, NULL AS ff, 'Ministerio de Cultura' AS c, '3764-501100' AS t, 1 AS a UNION ALL
     SELECT 'CTR-101' AS nc, 'Bacheo Santa Ana' AS n, 'Santa Ana, Aristobulo del Valle, Misiones' AS d, 'Bacheo de obra en Santa Ana, Aristobulo del Valle.' AS de, '2026-05-17' AS fi, 2027-11-04 AS ff, 'Ministerio de Desarrollo Social' AS c, '3764-501101' AS t, 1 AS a UNION ALL
@@ -372,7 +371,7 @@ SELECT * FROM (
     SELECT 'Anibal' AS n, 'Leguizamon' AS a, '40611160' AS d, '3764-600155' AS t, '2026-10-22' AS fc, 2027-01-13 AS ff, 'Soldador' AS c, 1 AS ac UNION ALL
     SELECT 'Luciano' AS n, 'Figueredo' AS a, '40622272' AS d, '3764-600156' AS t, '2025-01-01' AS fc, NULL AS ff, 'Operador de maquinaria' AS c, 1 AS ac UNION ALL
     SELECT 'Gonzalo' AS n, 'Amarilla' AS a, '40633384' AS d, '3764-600157' AS t, '2026-04-08' AS fc, 2027-03-15 AS ff, 'Operador de maquinaria' AS c, 1 AS ac UNION ALL
-    SELECT 'Rodrigo' AS n, 'BenÃ­tez' AS a, '40644496' AS d, '3764-600158' AS t, '2025-07-15' AS fc, 2026-04-16 AS ff, 'Capataz' AS c, 1 AS ac UNION ALL
+    SELECT 'Rodrigo' AS n, 'Benítez' AS a, '40644496' AS d, '3764-600158' AS t, '2025-07-15' AS fc, 2026-04-16 AS ff, 'Capataz' AS c, 1 AS ac UNION ALL
     SELECT 'Leandro' AS n, 'Garcia' AS a, '40655608' AS d, '3764-600159' AS t, '2026-10-22' AS fc, 2027-05-17 AS ff, 'Capataz' AS c, 1 AS ac UNION ALL
     SELECT 'Franco' AS n, 'Perez' AS a, '40666720' AS d, '3764-600160' AS t, '2025-01-01' AS fc, 2026-06-18 AS ff, 'Peon' AS c, 1 AS ac UNION ALL
     SELECT 'Alan' AS n, 'Gutierrez' AS a, '40677832' AS d, '3764-600161' AS t, '2026-04-08' AS fc, 2027-07-19 AS ff, 'Peon' AS c, 1 AS ac UNION ALL
@@ -868,7 +867,7 @@ INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unit
 SELECT ob.id_obra, @r1, '2026-03-03', 'Vidrio templado 8mm', 20, 8500, 1
 FROM obras ob WHERE ob.numero_contrata = 'CTR-001' LIMIT 1;
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material)
-SELECT ob.id_obra, @r1, '2026-03-03', 'CaÃ±o estructural 50x30', 75, 5800, 1
+SELECT ob.id_obra, @r1, '2026-03-03', 'Caño estructural 50x30', 75, 5800, 1
 FROM obras ob WHERE ob.numero_contrata = 'CTR-001' LIMIT 1;
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material)
 SELECT ob.id_obra, @r1, '2026-03-03', 'Perfil C 80x40', 45, 9200, 1
@@ -886,7 +885,7 @@ INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unit
 SELECT ob.id_obra, @r1, '2026-03-03', 'Adhesivo para PVC', 8, 3500, 1
 FROM obras ob WHERE ob.numero_contrata = 'CTR-001' LIMIT 1;
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material)
-SELECT ob.id_obra, @r1, '2026-03-03', 'CaÃ±o de PVC 110mm', 60, 2400, 1
+SELECT ob.id_obra, @r1, '2026-03-03', 'Caño de PVC 110mm', 60, 2400, 1
 FROM obras ob WHERE ob.numero_contrata = 'CTR-001' LIMIT 1;
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material)
 SELECT ob.id_obra, @r1, '2026-03-03', 'Cable unipolar 2.5mm', 500, 780, 1
@@ -901,10 +900,10 @@ INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unit
 SELECT ob.id_obra, @r1, '2026-03-03', 'Tablero electrico 12 polos', 5, 8500, 1
 FROM obras ob WHERE ob.numero_contrata = 'CTR-001' LIMIT 1;
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material)
-SELECT ob.id_obra, @r1, '2026-03-03', 'CaÃ±o de polipropileno 20mm', 200, 450, 1
+SELECT ob.id_obra, @r1, '2026-03-03', 'Caño de polipropileno 20mm', 200, 450, 1
 FROM obras ob WHERE ob.numero_contrata = 'CTR-001' LIMIT 1;
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material)
-SELECT ob.id_obra, @r1, '2026-03-03', 'GriferÃ­a mezcladora', 10, 12000, 1
+SELECT ob.id_obra, @r1, '2026-03-03', 'Grifería mezcladora', 10, 12000, 1
 FROM obras ob WHERE ob.numero_contrata = 'CTR-001' LIMIT 1;
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material)
 SELECT ob.id_obra, @r1, '2026-03-03', 'Inodoro pedestal', 12, 18000, 1
@@ -1068,7 +1067,7 @@ SELECT ob.id_obra, @r1, '2026-03-03', 'Vidrio templado 8mm', 20, 8500, 1
 FROM obras ob WHERE ob.numero_contrata = 'CTR-001' LIMIT 1;
 
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material)
-SELECT ob.id_obra, @r1, '2026-03-03', 'CaÃ±o estructural 50x30', 75, 5800, 1
+SELECT ob.id_obra, @r1, '2026-03-03', 'Caño estructural 50x30', 75, 5800, 1
 FROM obras ob WHERE ob.numero_contrata = 'CTR-001' LIMIT 1;
 
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material)
@@ -1092,7 +1091,7 @@ SELECT ob.id_obra, @r1, '2026-03-03', 'Adhesivo para PVC', 8, 3500, 1
 FROM obras ob WHERE ob.numero_contrata = 'CTR-001' LIMIT 1;
 
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material)
-SELECT ob.id_obra, @r1, '2026-03-03', 'CaÃ±o de PVC 110mm', 60, 2400, 1
+SELECT ob.id_obra, @r1, '2026-03-03', 'Caño de PVC 110mm', 60, 2400, 1
 FROM obras ob WHERE ob.numero_contrata = 'CTR-001' LIMIT 1;
 
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material)
@@ -1112,11 +1111,11 @@ SELECT ob.id_obra, @r1, '2026-03-03', 'Tablero electrico 12 polos', 5, 8500, 1
 FROM obras ob WHERE ob.numero_contrata = 'CTR-001' LIMIT 1;
 
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material)
-SELECT ob.id_obra, @r1, '2026-03-03', 'CaÃ±o de polipropileno 20mm', 200, 450, 1
+SELECT ob.id_obra, @r1, '2026-03-03', 'Caño de polipropileno 20mm', 200, 450, 1
 FROM obras ob WHERE ob.numero_contrata = 'CTR-001' LIMIT 1;
 
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material)
-SELECT ob.id_obra, @r1, '2026-03-03', 'GriferÃ­a mezcladora', 10, 12000, 1
+SELECT ob.id_obra, @r1, '2026-03-03', 'Grifería mezcladora', 10, 12000, 1
 FROM obras ob WHERE ob.numero_contrata = 'CTR-001' LIMIT 1;
 
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material)
