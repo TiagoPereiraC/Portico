@@ -108,18 +108,23 @@ function responderDetalle(PDO $pdo): void
         throw new InvalidArgumentException('Debés indicar una obra válida.');
     }
 
+    // 1. Obtener datos principales de la obra (incluye contrato si existe)
     $obra = obtenerObra($pdo, $idObra);
 
+    // 2. Materiales (es_material = 1) con Total Gastado y Cantidad Acumulada
     $stmt = $pdo->prepare(
-        'SELECT nombre, SUM(cantidad) as cantidad_total, SUM(cantidad * COALESCE(precio_unitario, 0)) as costo_total
+        'SELECT nombre, 
+                SUM(cantidad) as cantidad_total, 
+                SUM(cantidad * COALESCE(precio_unitario, 0)) as costo_total
          FROM recursos
          WHERE id_obra = ? AND es_material = 1
          GROUP BY nombre
          ORDER BY nombre'
     );
     $stmt->execute([$idObra]);
-    $materiales = $stmt->fetchAll();
+    $materiales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // 3. Herramientas (es_material = 0)
     $stmt = $pdo->prepare(
         'SELECT nombre, SUM(cantidad) as cantidad_total
          FROM recursos
@@ -128,8 +133,9 @@ function responderDetalle(PDO $pdo): void
          ORDER BY nombre'
     );
     $stmt->execute([$idObra]);
-    $herramientas = $stmt->fetchAll();
+    $herramientas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // 4. Obreros asignados y total de horas trabajadas
     $stmt = $pdo->prepare(
         'SELECT obr.id_obrero, obr.nombre, obr.apellido, SUM(reg.horas_trabajadas) as horas_totales
          FROM registros reg
@@ -139,8 +145,9 @@ function responderDetalle(PDO $pdo): void
          ORDER BY obr.apellido, obr.nombre'
     );
     $stmt->execute([$idObra]);
-    $obreros = $stmt->fetchAll();
+    $obreros = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // 5. Maquinarias/Equipos asignados
     $stmt = $pdo->prepare(
         'SELECT m.nombre, m.marca, om.fecha_asignacion, om.fecha_retiro
          FROM obra_maquinaria om
@@ -149,8 +156,9 @@ function responderDetalle(PDO $pdo): void
          ORDER BY om.fecha_asignacion DESC, m.nombre'
     );
     $stmt->execute([$idObra]);
-    $maquinaria = $stmt->fetchAll();
+    $maquinaria = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // 6. Respuesta JSON unificada
     echo json_encode([
         'obra' => $obra,
         'materiales' => $materiales,

@@ -1261,3 +1261,16 @@ tbody tr:hover {
         display: none;
     }
 }
+/* Estilos para el resumen de total gastado en materiales */
+.detail-table tfoot td,
+.detail-table tfoot th {
+    background-color: #f3e6e2;
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    font-size: 14px;
+    border-top: 2px solid var(--accent);
+}
+
+.detail-table tfoot tr {
+    background-color: #f3e6e2 !important;
+}

@@ -53,6 +53,11 @@ const detailToggleStatusText = document.getElementById("detailToggleStatusText")
 const detailBtnMap = document.getElementById("detailBtnMap");
 const detailMapSection = document.getElementById("detailMapSection");
 const detailMapIframe = document.getElementById("detailMapIframe");
+// Reemplazar estas líneas en la sección de constantes/variables del DOM:
+const detailRecursosWrap = document.getElementById("detailRecursosWrap");
+const detailRecursosBody = document.getElementById("detailRecursosBody");
+const detailRecursosEmpty = document.getElementById("detailRecursosEmpty");
+const detailMaterialesTotal = document.getElementById("detailMaterialesTotal");
 const isDesktopWebView = Boolean(window.chrome?.webview);
 
 function resolveApiBase() {
@@ -861,6 +866,7 @@ function renderDetalle(data) {
   detailStatus.textContent = obra.activo === 1 || obra.activo === "1" ? "Activa" : "Inactiva";
   detailStatus.className = "detail-status" + (obra.activo === 1 || obra.activo === "1" ? "" : " inactive");
 
+  // Información General
   detailInfo.innerHTML = `
     <div class="detail-item">
       <span class="detail-label">Cliente</span>
@@ -892,37 +898,49 @@ function renderDetalle(data) {
     </div>
   `;
 
-  if (materiales.length) {
-    detailMaterialesWrap.classList.remove("hidden");
-    detailMaterialesEmpty.classList.add("hidden");
-    detailMaterialesBody.innerHTML = materiales.map((m) => `
-      <tr>
-        <td>${escapeHtml(m.nombre)}</td>
-        <td>${Number(m.cantidad_total).toLocaleString("es-UY")}</td>
-        <td>$ ${Number(m.costo_total || 0).toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-      </tr>
-    `).join("");
+  // Materiales y Herramientas Unificados
+  const recursos = [
+    ...materiales.map((m) => ({ ...m, es_material: true })),
+    ...herramientas.map((h) => ({ ...h, es_material: false }))
+  ];
+
+  if (recursos.length) {
+    detailRecursosWrap.classList.remove("hidden");
+    detailRecursosEmpty.classList.add("hidden");
+
+    let granTotalMateriales = 0;
+
+    detailRecursosBody.innerHTML = recursos.map((r) => {
+      const esMat = Boolean(r.es_material);
+      const cantidad = Number(r.cantidad_total || 0);
+      const costoTotal = esMat ? Number(r.costo_total || 0) : 0;
+      const precioUnitario = (esMat && cantidad > 0) ? costoTotal / cantidad : 0;
+
+      if (esMat) {
+        granTotalMateriales += costoTotal;
+      }
+
+      return `
+        <tr>
+          <td>${escapeHtml(r.nombre)}</td>
+          <td><span class="badge ${esMat ? 'badge-material' : 'badge-herramienta'}">${esMat ? 'Material' : 'Herramienta'}</span></td>
+          <td>${cantidad.toLocaleString("es-UY")}</td>
+          <td>${esMat ? `$ ${precioUnitario.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}</td>
+          <td>${esMat ? `$ ${costoTotal.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}</td>
+        </tr>
+      `;
+    }).join("");
+
+    if (detailMaterialesTotal) {
+      detailMaterialesTotal.textContent = `$ ${granTotalMateriales.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
   } else {
-    detailMaterialesWrap.classList.add("hidden");
-    detailMaterialesEmpty.classList.remove("hidden");
-    detailMaterialesBody.innerHTML = "";
+    detailRecursosWrap.classList.add("hidden");
+    detailRecursosEmpty.classList.remove("hidden");
+    detailRecursosBody.innerHTML = "";
   }
 
-  if (herramientas.length) {
-    detailHerramientasWrap.classList.remove("hidden");
-    detailHerramientasEmpty.classList.add("hidden");
-    detailHerramientasBody.innerHTML = herramientas.map((h) => `
-      <tr>
-        <td>${escapeHtml(h.nombre)}</td>
-        <td>${Number(h.cantidad_total).toLocaleString("es-UY")}</td>
-      </tr>
-    `).join("");
-  } else {
-    detailHerramientasWrap.classList.add("hidden");
-    detailHerramientasEmpty.classList.remove("hidden");
-    detailHerramientasBody.innerHTML = "";
-  }
-
+  // Obreros
   if (obreros.length) {
     detailObrerosWrap.classList.remove("hidden");
     detailObrerosEmpty.classList.add("hidden");
@@ -938,6 +956,7 @@ function renderDetalle(data) {
     detailObrerosBody.innerHTML = "";
   }
 
+  // Maquinaria
   if (maquinaria.length) {
     detailMaquinariaWrap.classList.remove("hidden");
     detailMaquinariaEmpty.classList.add("hidden");
@@ -955,6 +974,7 @@ function renderDetalle(data) {
     detailMaquinariaBody.innerHTML = "";
   }
 
+  // Eventos de Botones y Mapa
   detailBtnEdit.disabled = false;
   detailBtnDownload.disabled = !obra.contrato_nombre_archivo;
   detailBtnDelete.disabled = false;
@@ -994,7 +1014,7 @@ function renderDetalle(data) {
     cerrarDetalle();
     const nuevoEstado = esActiva ? 0 : 1;
     const accion = esActiva ? "finalizar" : "activar";
-    
+
     abrirConfirmacion({
       title: `Confirmar ${accion} de obra`,
       message: `¿Estás seguro de que querés ${accion} la obra "${obra.nombre}"?`,
@@ -1002,69 +1022,17 @@ function renderDetalle(data) {
       onAccept: async () => {
         try {
           await cambiarEstadoObra(obra.id_obra, nuevoEstado);
-          cerrarDetalle();
           await cargarObras();
-          setFeedback(`Obra ${accion}da correctamente.`, "success");
+          setFeedback(
+            `Obra "${obra.nombre}" ${nuevoEstado === 1 ? "activada" : "finalizada"} con éxito.`,
+            "success",
+          );
         } catch (error) {
           console.error(error);
-          setFeedback(error.message || "No se pudo cambiar el estado de la obra.", "error");
-        }
-      },
-    });
-  };
-
-  detailBtnEdit.onclick = (event) => {
-    event.stopPropagation();
-    cerrarDetalle();
-    const obraLocal = obras.find((item) => item.id_obra === obra.id_obra);
-    if (obraLocal) {
-      abrirConfirmacion({
-        title: "Confirmar edición",
-        message: `¿Querés cargar "${obraLocal.nombre}" en el formulario para editarla?`,
-        acceptLabel: "Editar",
-        onAccept: async () => {
-          fillForm(obraLocal);
-          setFeedback(`Editando ${obraLocal.nombre}.`, "info");
-        },
-      });
-    }
-  };
-
-  detailBtnDownload.onclick = async (event) => {
-    event.stopPropagation();
-    try {
-      await descargarContrato(obra.id_obra);
-    } catch (error) {
-      console.error(error);
-      setFeedback(error.message || "No se pudo descargar el contrato.", "error");
-    }
-  };
-
-  detailBtnDelete.onclick = (event) => {
-    event.stopPropagation();
-    cerrarDetalle();
-    const obraLocal = obras.find((item) => item.id_obra === obra.id_obra);
-    if (!obraLocal) {
-      return;
-    }
-    abrirConfirmacion({
-      title: "Confirmar eliminación",
-      message: `¿Eliminar la obra "${obraLocal.nombre}"? Esta acción no se puede deshacer.`,
-      acceptLabel: "Eliminar",
-      onAccept: async () => {
-        try {
-          if (apiBase && !csrfToken) {
-            csrfToken = await obtenerCsrf();
-          }
-          const data = await eliminarObra(obra.id_obra);
-          if (obraEnEdicion === obra.id_obra) {
-            resetForm();
-          }
-          await cargarObras();
-          setFeedback(data.message || "Obra eliminada correctamente.", "success");
-        } catch (error) {
-          console.error(error);
-          setFeedback(error.message || "No se pudo eliminar la obra.", "error");
+          setFeedback(
+            error.message || "No se pudo cambiar el estado de la obra.",
+            "error",
+          );
         }
       },
     });

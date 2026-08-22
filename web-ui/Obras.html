@@ -176,39 +176,6 @@
                             </div>
 
                             <div class="detail-section">
-                                <h3><i class="fas fa-boxes-stacked"></i> Materiales usados</h3>
-                                <div class="detail-table-wrap" id="detailMaterialesWrap">
-                                    <table class="detail-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Material</th>
-                                                <th>Cantidad total</th>
-                                                <th>Costo total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="detailMaterialesBody"></tbody>
-                                    </table>
-                                </div>
-                                <p class="detail-empty" id="detailMaterialesEmpty">Sin materiales registrados.</p>
-                            </div>
-
-                            <div class="detail-section">
-                                <h3><i class="fas fa-screwdriver-wrench"></i> Herramientas usadas</h3>
-                                <div class="detail-table-wrap" id="detailHerramientasWrap">
-                                    <table class="detail-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Herramienta</th>
-                                                <th>Cantidad total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="detailHerramientasBody"></tbody>
-                                    </table>
-                                </div>
-                                <p class="detail-empty" id="detailHerramientasEmpty">Sin herramientas registradas.</p>
-                            </div>
-
-                            <div class="detail-section">
                                 <h3><i class="fas fa-helmet-safety"></i> Obreros</h3>
                                 <div class="detail-table-wrap" id="detailObrerosWrap">
                                     <table class="detail-table">
@@ -240,6 +207,33 @@
                                     </table>
                                 </div>
                                 <p class="detail-empty" id="detailMaquinariaEmpty">Sin maquinaria asignada.</p>
+                            </div>
+
+                                                        <!-- SECCIÓN MATERIALES EN OBRAS.HTML -->
+                            <!-- SECCIÓN MATERIALES Y HERRAMIENTAS EN OBRAS.HTML -->
+                            <div class="detail-section">
+                                <h3><i class="fas fa-boxes-stacked"></i> Materiales y Herramientas</h3>
+                                <div class="detail-table-wrap" id="detailRecursosWrap">
+                                    <table class="detail-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Recurso</th>
+                                                <th>Tipo</th>
+                                                <th>Cantidad</th>
+                                                <th>Precio unitario</th>
+                                                <th>Precio total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="detailRecursosBody"></tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="4" style="text-align: right;">Total gastado en materiales:</th>
+                                                <th id="detailMaterialesTotal">$ 0,00</th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <p class="detail-empty" id="detailRecursosEmpty">Sin recursos registrados.</p>
                             </div>
 
                             <div class="detail-section hidden" id="detailMapSection" style="grid-column: 1 / -1;">
