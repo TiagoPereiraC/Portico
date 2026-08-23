@@ -57,7 +57,7 @@ const detailMapIframe = document.getElementById("detailMapIframe");
 const detailRecursosWrap = document.getElementById("detailRecursosWrap");
 const detailRecursosBody = document.getElementById("detailRecursosBody");
 const detailRecursosEmpty = document.getElementById("detailRecursosEmpty");
-const detailMaterialesTotal = document.getElementById("detailMaterialesTotal");
+
 const isDesktopWebView = Boolean(window.chrome?.webview);
 
 function resolveApiBase() {
@@ -898,35 +898,26 @@ function renderDetalle(data) {
     </div>
   `;
 
-  // Materiales y Herramientas Unificados
-  const recursos = [
-    ...materiales.map((m) => ({ ...m, es_material: true })),
-    ...herramientas.map((h) => ({ ...h, es_material: false }))
-  ];
-
-  if (recursos.length) {
-    detailRecursosWrap.classList.remove("hidden");
-    detailRecursosEmpty.classList.add("hidden");
+  // Materiales (Tabla independiente con precios y total)
+  if (materiales.length) {
+    detailMaterialesWrap.classList.remove("hidden");
+    detailMaterialesEmpty.classList.add("hidden");
 
     let granTotalMateriales = 0;
 
-    detailRecursosBody.innerHTML = recursos.map((r) => {
-      const esMat = Boolean(r.es_material);
-      const cantidad = Number(r.cantidad_total || 0);
-      const costoTotal = esMat ? Number(r.costo_total || 0) : 0;
-      const precioUnitario = (esMat && cantidad > 0) ? costoTotal / cantidad : 0;
+    detailMaterialesBody.innerHTML = materiales.map((m) => {
+      const cantidad = Number(m.cantidad_total || 0);
+      const costoTotal = Number(m.costo_total || 0);
+      const precioUnitario = cantidad > 0 ? costoTotal / cantidad : 0;
 
-      if (esMat) {
-        granTotalMateriales += costoTotal;
-      }
+      granTotalMateriales += costoTotal;
 
       return `
         <tr>
-          <td>${escapeHtml(r.nombre)}</td>
-          <td><span class="badge ${esMat ? 'badge-material' : 'badge-herramienta'}">${esMat ? 'Material' : 'Herramienta'}</span></td>
+          <td>${escapeHtml(m.nombre)}</td>
           <td>${cantidad.toLocaleString("es-UY")}</td>
-          <td>${esMat ? `$ ${precioUnitario.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}</td>
-          <td>${esMat ? `$ ${costoTotal.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}</td>
+          <td>$ ${precioUnitario.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td>$ ${costoTotal.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
         </tr>
       `;
     }).join("");
@@ -935,9 +926,32 @@ function renderDetalle(data) {
       detailMaterialesTotal.textContent = `$ ${granTotalMateriales.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
   } else {
-    detailRecursosWrap.classList.add("hidden");
-    detailRecursosEmpty.classList.remove("hidden");
-    detailRecursosBody.innerHTML = "";
+    detailMaterialesWrap.classList.add("hidden");
+    detailMaterialesEmpty.classList.remove("hidden");
+    detailMaterialesBody.innerHTML = "";
+    if (detailMaterialesTotal) {
+      detailMaterialesTotal.textContent = "$ 0,00";
+    }
+  }
+
+  // Herramientas (Tabla independiente, solo cantidades)
+  if (herramientas.length) {
+    detailHerramientasWrap.classList.remove("hidden");
+    detailHerramientasEmpty.classList.add("hidden");
+
+    detailHerramientasBody.innerHTML = herramientas.map((h) => {
+      const cantidad = Number(h.cantidad_total || 0);
+      return `
+        <tr>
+          <td>${escapeHtml(h.nombre)}</td>
+          <td>${cantidad.toLocaleString("es-UY")}</td>
+        </tr>
+      `;
+    }).join("");
+  } else {
+    detailHerramientasWrap.classList.add("hidden");
+    detailHerramientasEmpty.classList.remove("hidden");
+    detailHerramientasBody.innerHTML = "";
   }
 
   // Obreros
