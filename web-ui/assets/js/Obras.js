@@ -53,12 +53,49 @@ const detailToggleStatusText = document.getElementById("detailToggleStatusText")
 const detailBtnMap = document.getElementById("detailBtnMap");
 const detailMapSection = document.getElementById("detailMapSection");
 const detailMapIframe = document.getElementById("detailMapIframe");
-// Reemplazar estas líneas en la sección de constantes/variables del DOM:
-const detailRecursosWrap = document.getElementById("detailRecursosWrap");
-const detailRecursosBody = document.getElementById("detailRecursosBody");
-const detailRecursosEmpty = document.getElementById("detailRecursosEmpty");
-
 const isDesktopWebView = Boolean(window.chrome?.webview);
+const detailMaterialesTotal = document.getElementById("detailMaterialesTotal");
+const detailTareasWrap =document.getElementById("detailTareasWrap");
+
+const detailTareasBody =
+  document.getElementById("detailTareasBody");
+
+const detailTareasEmpty =
+  document.getElementById("detailTareasEmpty");
+
+const detailTareasTotal = document.getElementById("detailTareasTotal");
+const detailTareasCompletadas = document.getElementById("detailTareasCompletadas");
+const detailTareasPendientes = document.getElementById("detailTareasPendientes");
+const detailTareasGanado = document.getElementById("detailTareasGanado");
+
+const detailTareasCompletadasWrap =
+    document.getElementById("detailTareasCompletadasWrap");
+
+const detailTareasCompletadasBody =
+    document.getElementById("detailTareasCompletadasBody");
+
+const detailTareasCompletadasEmpty =
+    document.getElementById("detailTareasCompletadasEmpty");
+
+const detailTareasPendientesWrap =
+    document.getElementById("detailTareasPendientesWrap");
+
+const detailTareasPendientesBody =
+    document.getElementById("detailTareasPendientesBody");
+
+const detailTareasPendientesEmpty =
+    document.getElementById("detailTareasPendientesEmpty");
+
+// =========================================================
+// ACTIVIDADES DEL CONTRATO
+// =========================================================
+
+const btnAgregarTarea = document.getElementById("btnAgregarTarea");
+const contratoTareasBody = document.getElementById("contratoTareasBody");
+const tareasEmpty = document.getElementById("tareasEmpty");
+const totalContrato = document.getElementById("totalContrato");
+
+let tareasContrato = [];
 
 function resolveApiBase() {
   if (!window.location.protocol.startsWith("http")) {
@@ -99,6 +136,10 @@ btnBack.addEventListener("click", (event) => {
   resetForm();
   setFeedback("Edición cancelada.", "info");
 });
+
+if (btnAgregarTarea) {
+  btnAgregarTarea.addEventListener("click", agregarTarea);
+}
 confirmCancel.addEventListener("click", cerrarConfirmacion);
 confirmAccept.addEventListener("click", async () => {
   if (!confirmAction) {
@@ -206,20 +247,48 @@ document.addEventListener("click", async (event) => {
   }
 
   if (button.dataset.action === "edit") {
-    const obra = obras.find((item) => item.id_obra === idObra);
-    if (obra) {
-      abrirConfirmacion({
-        title: "Confirmar edición",
-        message: `¿Querés cargar "${obra.nombre}" en el formulario para editarla?`,
-        acceptLabel: "Editar",
-        onAccept: async () => {
-          fillForm(obra);
-          setFeedback(`Editando ${obra.nombre}.`, "info");
-        },
-      });
-    }
+  const obra = obras.find(
+    (item) => Number(item.id_obra) === idObra
+  );
+
+  if (!obra) {
     return;
   }
+
+  abrirConfirmacion({
+    title: "Confirmar edición",
+    message: `¿Querés cargar "${obra.nombre}" en el formulario para editarla?`,
+    acceptLabel: "Editar",
+
+    onAccept: async () => {
+      try {
+        const data = await obtenerDetalleObra(idObra);
+
+        const obraCompleta = {
+          ...data.obra,
+          tareas: data.tareas || [],
+        };
+
+        fillForm(obraCompleta);
+
+        setFeedback(
+          `Editando ${obra.nombre}.`,
+          "info"
+        );
+      } catch (error) {
+        console.error(error);
+
+        setFeedback(
+          error.message ||
+            "No se pudieron cargar las actividades de la obra.",
+          "error"
+        );
+      }
+    },
+  });
+
+  return;
+}
 
   if (button.dataset.action === "download") {
     try {
@@ -308,6 +377,14 @@ async function buildPayload() {
     nombre_cliente: leerCampo("nombre_cliente"),
     telefono_cliente: leerCampo("telefono_cliente"),
     activo: document.getElementById("activo").checked ? 1 : 0,
+    tareas: tareasContrato.map((tarea) => ({
+      id_tarea: tarea.id_tarea,
+      id_tarea_origen: tarea.id_tarea_origen || null,
+      descripcion: tarea.descripcion.trim(),
+      importe: Number(tarea.importe || 0),
+      estado: tarea.estado || "Pendiente",
+      fecha_completada: tarea.fecha_completada || null,
+    })),
   };
 
   if (!payload.numero_contrata || !payload.nombre || !payload.nombre_cliente) {
@@ -328,6 +405,25 @@ async function buildPayload() {
   }
 
   const contrato = await leerContratoSeleccionado();
+
+  for (const tarea of tareasContrato) {
+  if (!tarea.descripcion.trim()) {
+    setFeedback(
+      "Todas las actividades deben tener una descripción.",
+      "error"
+    );
+    return null;
+  }
+
+  if (Number(tarea.importe) < 0) {
+    setFeedback(
+      "El importe de una actividad no puede ser negativo.",
+      "error"
+    );
+    return null;
+  }
+}
+
   if (contrato === false) {
     return null;
   }
@@ -642,29 +738,82 @@ function setLoading(isLoading) {
 }
 
 function fillForm(obra) {
-  obraEnEdicion = obra.id_obra;
+  obraEnEdicion = Number(obra.id_obra);
+
   document.getElementById("id_obra").value = obra.id_obra;
-  document.getElementById("numero_contrata").value = obra.numero_contrata || "";
-  document.getElementById("nombre").value = obra.nombre || "";
-  document.getElementById("direccion").value = obra.direccion || "";
-  document.getElementById("descripcion").value = obra.descripcion || "";
-  document.getElementById("fecha_inicio").value = obra.fecha_inicio || "";
-  document.getElementById("nombre_cliente").value = obra.nombre_cliente || "";
+  document.getElementById("numero_contrata").value =
+    obra.numero_contrata || "";
+
+  document.getElementById("nombre").value =
+    obra.nombre || "";
+
+  document.getElementById("direccion").value =
+    obra.direccion || "";
+
+  document.getElementById("descripcion").value =
+    obra.descripcion || "";
+
+  document.getElementById("fecha_inicio").value =
+    obra.fecha_inicio || "";
+
+  document.getElementById("nombre_cliente").value =
+    obra.nombre_cliente || "";
+
   document.getElementById("telefono_cliente").value =
     obra.telefono_cliente || "";
-  document.getElementById("activo").checked = obra.activo === 1 || obra.activo === "1";
+
+  document.getElementById("activo").checked =
+    obra.activo === 1 || obra.activo === "1";
+
+  // No reemplazar el contrato existente
   contratoInput.value = "";
-  actualizarEstadoContratoActual(obra.contrato_nombre_archivo || "");
-  formTitle.textContent = "Editando: " + obra.nombre;
-  btnGuardar.textContent = "Guardar cambios";
-  btnBack.textContent = "Cancelar edición";
-  document.querySelector(".editor-panel").classList.add("editing");
-  document.querySelector(".layout-grid").classList.add("editing-list");
+
+  actualizarEstadoContratoActual(
+    obra.contrato_nombre_archivo || ""
+  );
+
+  // =========================================================
+  // CARGAR ACTIVIDADES DEL CONTRATO
+  // =========================================================
+
+  tareasContrato = Array.isArray(obra.tareas)
+    ? obra.tareas.map((tarea) => ({
+        id_tarea: Number(tarea.id_tarea),
+        id_tarea_origen: tarea.id_tarea_origen
+          ? Number(tarea.id_tarea_origen)
+          : null,
+        descripcion: tarea.descripcion || "",
+        importe: Number(tarea.importe || 0),
+        estado: tarea.estado || "Pendiente",
+        fecha_completada: tarea.fecha_completada || null,
+      }))
+    : [];
+
+  renderTareasContrato();
+
+  formTitle.textContent =
+    "Editando: " + obra.nombre;
+
+  btnGuardar.textContent =
+    "Guardar cambios";
+
+  btnBack.textContent =
+    "Cancelar edición";
+
+  document
+    .querySelector(".editor-panel")
+    .classList.add("editing");
+
+  document
+    .querySelector(".layout-grid")
+    .classList.add("editing-list");
 }
 
 function resetForm() {
   obraForm.reset();
   obraEnEdicion = null;
+  tareasContrato = [];
+  renderTareasContrato();
   document.getElementById("id_obra").value = "";
   contratoInput.value = "";
   actualizarEstadoContratoActual("");
@@ -860,197 +1009,840 @@ function renderDetalle(data) {
   const herramientas = data.herramientas || [];
   const obreros = data.obreros || [];
   const maquinaria = data.maquinaria || [];
-
+  const recursos = data.recursos || [];
+  const tareas = data.tareas || [];
   detailModalTitle.textContent = obra.nombre || "Detalle de obra";
   detailContrata.textContent = obra.numero_contrata || "";
-  detailStatus.textContent = obra.activo === 1 || obra.activo === "1" ? "Activa" : "Inactiva";
-  detailStatus.className = "detail-status" + (obra.activo === 1 || obra.activo === "1" ? "" : " inactive");
 
-  // Información General
+  const esActiva = obra.activo === 1 || obra.activo === "1";
+
+  detailStatus.textContent = esActiva ? "Activa" : "Inactiva";
+  detailStatus.className =
+    "detail-status" + (esActiva ? "" : " inactive");
+
+  // =========================================================
+  // INFORMACIÓN GENERAL
+  // =========================================================
+
   detailInfo.innerHTML = `
     <div class="detail-item">
       <span class="detail-label">Cliente</span>
-      <span class="detail-value">${escapeHtml(obra.nombre_cliente || "—")}</span>
+      <span class="detail-value">
+        ${escapeHtml(obra.nombre_cliente || "—")}
+      </span>
     </div>
+
     <div class="detail-item">
       <span class="detail-label">Teléfono</span>
-      <span class="detail-value">${escapeHtml(obra.telefono_cliente || "—")}</span>
+      <span class="detail-value">
+        ${escapeHtml(obra.telefono_cliente || "—")}
+      </span>
     </div>
+
     <div class="detail-item">
       <span class="detail-label">Dirección</span>
-      <span class="detail-value">${escapeHtml(obra.direccion || "—")}</span>
+      <span class="detail-value">
+        ${escapeHtml(obra.direccion || "—")}
+      </span>
     </div>
+
     <div class="detail-item">
       <span class="detail-label">Inicio</span>
-      <span class="detail-value">${formatDate(obra.fecha_inicio)}</span>
+      <span class="detail-value">
+        ${formatDate(obra.fecha_inicio)}
+      </span>
     </div>
+
     <div class="detail-item">
       <span class="detail-label">Fin</span>
-      <span class="detail-value">${formatDate(obra.fecha_fin)}</span>
+      <span class="detail-value">
+        ${formatDate(obra.fecha_fin)}
+      </span>
     </div>
+
     <div class="detail-item full">
       <span class="detail-label">Descripción</span>
-      <span class="detail-value">${escapeHtml(obra.descripcion || "—")}</span>
+      <span class="detail-value">
+        ${escapeHtml(obra.descripcion || "—")}
+      </span>
     </div>
+
     <div class="detail-item full">
       <span class="detail-label">Contrato</span>
-      <span class="detail-value">${escapeHtml(obra.contrato_nombre_archivo || "Sin contrato cargado")}</span>
+      <span class="detail-value">
+        ${escapeHtml(
+          obra.contrato_nombre_archivo || "Sin contrato cargado"
+        )}
+      </span>
     </div>
   `;
 
-  // Materiales (Tabla independiente con precios y total)
+  // =========================================================
+  // MATERIALES
+  // =========================================================
+
   if (materiales.length) {
     detailMaterialesWrap.classList.remove("hidden");
     detailMaterialesEmpty.classList.add("hidden");
 
     let granTotalMateriales = 0;
 
-    detailMaterialesBody.innerHTML = materiales.map((m) => {
-      const cantidad = Number(m.cantidad_total || 0);
-      const costoTotal = Number(m.costo_total || 0);
-      const precioUnitario = cantidad > 0 ? costoTotal / cantidad : 0;
+    detailMaterialesBody.innerHTML = materiales
+      .map((m) => {
+        const cantidad = Number(m.cantidad_total || 0);
+        const costoTotal = Number(m.costo_total || 0);
 
-      granTotalMateriales += costoTotal;
+        const precioUnitario =
+          cantidad > 0 ? costoTotal / cantidad : 0;
 
-      return `
-        <tr>
-          <td>${escapeHtml(m.nombre)}</td>
-          <td>${cantidad.toLocaleString("es-UY")}</td>
-          <td>$ ${precioUnitario.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-          <td>$ ${costoTotal.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        </tr>
-      `;
-    }).join("");
+        granTotalMateriales += costoTotal;
 
-    if (detailMaterialesTotal) {
-      detailMaterialesTotal.textContent = `$ ${granTotalMateriales.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return `
+          <tr>
+            <td>
+              ${escapeHtml(m.nombre || "—")}
+            </td>
+
+            <td>
+              ${cantidad.toLocaleString("es-UY")}
+            </td>
+
+            <td>
+              $ ${precioUnitario.toLocaleString("es-UY", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </td>
+
+            <td>
+              $ ${costoTotal.toLocaleString("es-UY", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    // Total general de materiales
+    if (typeof detailMaterialesTotal !== "undefined" && detailMaterialesTotal) {
+      detailMaterialesTotal.textContent =
+        `$ ${granTotalMateriales.toLocaleString("es-UY", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`;
     }
   } else {
     detailMaterialesWrap.classList.add("hidden");
     detailMaterialesEmpty.classList.remove("hidden");
     detailMaterialesBody.innerHTML = "";
-    if (detailMaterialesTotal) {
+
+    if (
+      typeof detailMaterialesTotal !== "undefined" &&
+      detailMaterialesTotal
+    ) {
       detailMaterialesTotal.textContent = "$ 0,00";
     }
   }
 
-  // Herramientas (Tabla independiente, solo cantidades)
+  // =========================================================
+  // HERRAMIENTAS
+  // =========================================================
+
   if (herramientas.length) {
     detailHerramientasWrap.classList.remove("hidden");
     detailHerramientasEmpty.classList.add("hidden");
 
-    detailHerramientasBody.innerHTML = herramientas.map((h) => {
-      const cantidad = Number(h.cantidad_total || 0);
-      return `
-        <tr>
-          <td>${escapeHtml(h.nombre)}</td>
-          <td>${cantidad.toLocaleString("es-UY")}</td>
-        </tr>
-      `;
-    }).join("");
+    detailHerramientasBody.innerHTML = herramientas
+      .map((h) => {
+        const cantidad = Number(h.cantidad_total || 0);
+
+        return `
+          <tr>
+            <td>
+              ${escapeHtml(h.nombre || "—")}
+            </td>
+
+            <td>
+              ${cantidad.toLocaleString("es-UY")}
+            </td>
+          </tr>
+        `;
+      })
+      .join("");
   } else {
     detailHerramientasWrap.classList.add("hidden");
     detailHerramientasEmpty.classList.remove("hidden");
     detailHerramientasBody.innerHTML = "";
   }
 
-  // Obreros
+  // =========================================================
+  // OBREROS
+  // =========================================================
+
   if (obreros.length) {
     detailObrerosWrap.classList.remove("hidden");
     detailObrerosEmpty.classList.add("hidden");
-    detailObrerosBody.innerHTML = obreros.map((o) => `
-      <tr>
-        <td>${escapeHtml(`${o.apellido || ""}, ${o.nombre || ""}`.trim())}</td>
-        <td>${Number(o.horas_totales || 0).toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-      </tr>
-    `).join("");
+
+    detailObrerosBody.innerHTML = obreros
+      .map((o) => {
+        const nombreCompleto =
+          `${o.apellido || ""}, ${o.nombre || ""}`.trim();
+
+        const horas = Number(o.horas_totales || 0);
+
+        return `
+          <tr>
+            <td>
+              ${escapeHtml(nombreCompleto || "—")}
+            </td>
+
+            <td>
+              ${horas.toLocaleString("es-UY", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </td>
+          </tr>
+        `;
+      })
+      .join("");
   } else {
     detailObrerosWrap.classList.add("hidden");
     detailObrerosEmpty.classList.remove("hidden");
     detailObrerosBody.innerHTML = "";
   }
 
-  // Maquinaria
+  // =========================================================
+  // MAQUINARIA
+  // =========================================================
+
   if (maquinaria.length) {
     detailMaquinariaWrap.classList.remove("hidden");
     detailMaquinariaEmpty.classList.add("hidden");
-    detailMaquinariaBody.innerHTML = maquinaria.map((m) => `
-      <tr>
-        <td>${escapeHtml(m.nombre)}</td>
-        <td>${escapeHtml(m.marca || "—")}</td>
-        <td>${formatDate(m.fecha_asignacion)}</td>
-        <td>${formatDate(m.fecha_retiro)}</td>
-      </tr>
-    `).join("");
+
+    detailMaquinariaBody.innerHTML = maquinaria
+      .map((m) => {
+        return `
+          <tr>
+            <td>
+              ${escapeHtml(m.nombre || "—")}
+            </td>
+
+            <td>
+              ${escapeHtml(m.marca || "—")}
+            </td>
+
+            <td>
+              ${formatDate(m.fecha_asignacion)}
+            </td>
+
+            <td>
+              ${formatDate(m.fecha_retiro)}
+            </td>
+          </tr>
+        `;
+      })
+      .join("");
   } else {
     detailMaquinariaWrap.classList.add("hidden");
     detailMaquinariaEmpty.classList.remove("hidden");
     detailMaquinariaBody.innerHTML = "";
   }
 
-  // Eventos de Botones y Mapa
+  // =========================================================
+// ACTIVIDADES DEL CONTRATO
+// =========================================================
+
+// =========================================================
+// ACTIVIDADES DEL CONTRATO
+// =========================================================
+
+if (
+  detailTareasWrap &&
+  detailTareasBody &&
+  detailTareasEmpty
+) {
+  // ---------------------------------------------------------
+  // CALCULAR ESTADÍSTICAS
+  // ---------------------------------------------------------
+
+  const totalTareas = tareas.length;
+
+  const tareasCompletadas = tareas.filter(
+    (tarea) => String(tarea.estado || "").toLowerCase() === "completada"
+  );
+
+  const tareasPendientes = tareas.filter(
+    (tarea) => String(tarea.estado || "").toLowerCase() !== "completada"
+  );
+
+  const totalCompletadas = tareasCompletadas.length;
+  const totalPendientes = tareasPendientes.length;
+
+  const ganadoHastaAhora = tareasCompletadas.reduce(
+    (total, tarea) => {
+      return total + Number(tarea.importe || 0);
+    },
+    0
+  );
+
+  // ---------------------------------------------------------
+  // ACTUALIZAR RESUMEN
+  // ---------------------------------------------------------
+
+  if (detailTareasTotal) {
+    detailTareasTotal.textContent = totalTareas;
+  }
+
+  if (detailTareasCompletadas) {
+    detailTareasCompletadas.textContent = totalCompletadas;
+  }
+
+  if (detailTareasPendientes) {
+    detailTareasPendientes.textContent = totalPendientes;
+  }
+
+  if (detailTareasGanado) {
+    detailTareasGanado.textContent =
+      `$ ${ganadoHastaAhora.toLocaleString("es-UY", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+  }
+
+  // ---------------------------------------------------------
+  // TABLA GENERAL DE ACTIVIDADES
+  // ---------------------------------------------------------
+
+  if (tareas.length) {
+    detailTareasWrap.classList.remove("hidden");
+    detailTareasEmpty.classList.add("hidden");
+
+    detailTareasBody.innerHTML = tareas
+      .map((tarea) => {
+        const importe = Number(tarea.importe || 0);
+
+        const estado = tarea.estado || "Pendiente";
+
+        const fecha = tarea.fecha_completada || "";
+
+        return `
+          <tr>
+            <td>
+              ${escapeHtml(tarea.descripcion || "—")}
+            </td>
+
+            <td>
+              $ ${importe.toLocaleString("es-UY", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </td>
+
+            <td>
+              ${escapeHtml(estado)}
+            </td>
+
+            <td>
+              ${
+                fecha
+                  ? formatDate(fecha)
+                  : "—"
+              }
+            </td>
+          </tr>
+        `;
+      })
+      .join("");
+  } else {
+    detailTareasWrap.classList.add("hidden");
+    detailTareasEmpty.classList.remove("hidden");
+    detailTareasBody.innerHTML = "";
+  }
+
+  // ---------------------------------------------------------
+  // ACTIVIDADES COMPLETADAS
+  // ---------------------------------------------------------
+
+  if (
+    detailTareasCompletadasWrap &&
+    detailTareasCompletadasBody &&
+    detailTareasCompletadasEmpty
+  ) {
+    if (tareasCompletadas.length) {
+      detailTareasCompletadasWrap.classList.remove("hidden");
+      detailTareasCompletadasEmpty.classList.add("hidden");
+
+      detailTareasCompletadasBody.innerHTML =
+        tareasCompletadas
+          .map((tarea) => {
+            const importe = Number(tarea.importe || 0);
+
+            return `
+              <tr>
+                <td>
+                  ${escapeHtml(tarea.descripcion || "—")}
+                </td>
+
+                <td>
+                  $ ${importe.toLocaleString("es-UY", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </td>
+
+                <td>
+                  ${tarea.fecha_completada
+                    ? formatDate(tarea.fecha_completada)
+                    : "—"}
+                </td>
+              </tr>
+            `;
+          })
+          .join("");
+    } else {
+      detailTareasCompletadasWrap.classList.add("hidden");
+      detailTareasCompletadasEmpty.classList.remove("hidden");
+      detailTareasCompletadasBody.innerHTML = "";
+    }
+  }
+
+  // ---------------------------------------------------------
+  // ACTIVIDADES PENDIENTES
+  // ---------------------------------------------------------
+
+  if (
+    detailTareasPendientesWrap &&
+    detailTareasPendientesBody &&
+    detailTareasPendientesEmpty
+  ) {
+    if (tareasPendientes.length) {
+      detailTareasPendientesWrap.classList.remove("hidden");
+      detailTareasPendientesEmpty.classList.add("hidden");
+
+      detailTareasPendientesBody.innerHTML =
+        tareasPendientes
+          .map((tarea) => {
+            const importe = Number(tarea.importe || 0);
+
+            return `
+              <tr>
+                <td>
+                  ${escapeHtml(tarea.descripcion || "—")}
+                </td>
+
+                <td>
+                  $ ${importe.toLocaleString("es-UY", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </td>
+
+                <td>
+                  ${escapeHtml(tarea.estado || "Pendiente")}
+                </td>
+              </tr>
+            `;
+          })
+          .join("");
+    } else {
+      detailTareasPendientesWrap.classList.add("hidden");
+      detailTareasPendientesEmpty.classList.remove("hidden");
+      detailTareasPendientesBody.innerHTML = "";
+    }
+  }
+}
+
+  // =========================================================
+  // RECURSOS
+  // =========================================================
+  // Este bloque se mantiene separado de:
+  // - Materiales
+  // - Herramientas
+  // - Obreros
+  // - Maquinaria
+  //
+  // Solo se utiliza si el HTML tiene:
+  // detailRecursosWrap
+  // detailRecursosBody
+  // detailRecursosEmpty
+
+  if (
+    typeof detailRecursosWrap !== "undefined" &&
+    detailRecursosWrap
+  ) {
+    if (recursos.length) {
+      detailRecursosWrap.classList.remove("hidden");
+
+      if (
+        typeof detailRecursosEmpty !== "undefined" &&
+        detailRecursosEmpty
+      ) {
+        detailRecursosEmpty.classList.add("hidden");
+      }
+
+      if (
+        typeof detailRecursosBody !== "undefined" &&
+        detailRecursosBody
+      ) {
+        detailRecursosBody.innerHTML = recursos
+          .map((r) => {
+            return `
+              <tr>
+                <td>
+                  ${escapeHtml(r.nombre || "—")}
+                </td>
+
+                <td>
+                  ${escapeHtml(r.tipo || "—")}
+                </td>
+
+                <td>
+                  ${Number(
+                    r.cantidad || r.cantidad_total || 0
+                  ).toLocaleString("es-UY")}
+                </td>
+              </tr>
+            `;
+          })
+          .join("");
+      }
+    } else {
+      detailRecursosWrap.classList.add("hidden");
+
+      if (
+        typeof detailRecursosEmpty !== "undefined" &&
+        detailRecursosEmpty
+      ) {
+        detailRecursosEmpty.classList.remove("hidden");
+      }
+
+      if (
+        typeof detailRecursosBody !== "undefined" &&
+        detailRecursosBody
+      ) {
+        detailRecursosBody.innerHTML = "";
+      }
+    }
+  }
+
+  // =========================================================
+  // CONFIGURACIÓN DE BOTONES
+  // =========================================================
+
   detailBtnEdit.disabled = false;
-  detailBtnDownload.disabled = !obra.contrato_nombre_archivo;
+
+  detailBtnDownload.disabled =
+    !obra.contrato_nombre_archivo;
+
   detailBtnDelete.disabled = false;
+
   detailBtnToggleStatus.disabled = false;
+
   detailBtnMap.disabled = !obra.direccion;
+
+  detailBtnEdit.onclick = (event) => {
+  event.stopPropagation();
+
+  cerrarDetalle();
+
+  abrirConfirmacion({
+    title: "Confirmar edición",
+
+    message:
+      `¿Querés cargar "${obra.nombre}" ` +
+      `en el formulario para editarla?`,
+
+    acceptLabel: "Editar",
+
+    onAccept: async () => {
+      try {
+        const data = await obtenerDetalleObra(
+          Number(obra.id_obra)
+        );
+
+        const obraCompleta = {
+          ...data.obra,
+          tareas: data.tareas || [],
+        };
+
+        fillForm(obraCompleta);
+
+        setFeedback(
+          `Editando ${obra.nombre}.`,
+          "info"
+        );
+      } catch (error) {
+        console.error(error);
+
+        setFeedback(
+          error.message ||
+            "No se pudieron cargar las actividades.",
+          "error"
+        );
+      }
+    },
+  });
+};
+
+  // =========================================================
+  // MAPA
+  // =========================================================
 
   detailBtnMap.onclick = async (event) => {
     event.stopPropagation();
-    if (!obra.direccion) return;
-    const visible = !detailMapSection.classList.contains("hidden");
+
+    if (!obra.direccion) {
+      return;
+    }
+
+    const visible =
+      !detailMapSection.classList.contains("hidden");
+
     if (visible) {
       detailMapSection.classList.add("hidden");
       return;
     }
+
     try {
       const geo = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(obra.direccion)}`
-      ).then(r => r.json());
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(
+          obra.direccion
+        )}`
+      ).then((response) => response.json());
+
       if (geo.length) {
         const { lat, lon } = geo[0];
-        detailMapIframe.src = `https://www.openstreetmap.org/export/embed.html?bbox=${lon},${lat},${lon},${lat}&layer=mapnik&marker=${lat},${lon}`;
+
+        /*
+         * Se agrega un pequeño margen al mapa para que
+         * el marcador no quede pegado al borde.
+         */
+        const latNumber = Number(lat);
+        const lonNumber = Number(lon);
+
+        const margenLat = 0.005;
+        const margenLon = 0.005;
+
+        const bbox = [
+          lonNumber - margenLon,
+          latNumber - margenLat,
+          lonNumber + margenLon,
+          latNumber + margenLat,
+        ].join(",");
+
+        detailMapIframe.src =
+          `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}` +
+          `&layer=mapnik&marker=${lat},${lon}`;
       } else {
-        detailMapIframe.src = "https://www.openstreetmap.org/export/embed.html?bbox=&layer=mapnik";
+        detailMapIframe.src =
+          "https://www.openstreetmap.org/export/embed.html?bbox=&layer=mapnik";
       }
-    } catch {
-      detailMapIframe.src = "https://www.openstreetmap.org/export/embed.html?bbox=&layer=mapnik";
+    } catch (error) {
+      console.error(
+        "No se pudo localizar la dirección:",
+        error
+      );
+
+      detailMapIframe.src =
+        "https://www.openstreetmap.org/export/embed.html?bbox=&layer=mapnik";
     }
+
     detailMapSection.classList.remove("hidden");
   };
 
-  const esActiva = obra.activo === 1 || obra.activo === "1";
-  detailToggleStatusText.textContent = esActiva ? "Finalizar Obra" : "Activar Obra";
-  detailBtnToggleStatus.className = esActiva ? "btn-save" : "btn-secondary";
+  // =========================================================
+  // CAMBIAR ESTADO DE LA OBRA
+  // =========================================================
+
+  detailToggleStatusText.textContent = esActiva
+    ? "Finalizar Obra"
+    : "Activar Obra";
+
+  detailBtnToggleStatus.className = esActiva
+    ? "btn-save"
+    : "btn-secondary";
 
   detailBtnToggleStatus.onclick = (event) => {
     event.stopPropagation();
+
     cerrarDetalle();
+
     const nuevoEstado = esActiva ? 0 : 1;
-    const accion = esActiva ? "finalizar" : "activar";
+    const accion = esActiva
+      ? "finalizar"
+      : "activar";
 
     abrirConfirmacion({
       title: `Confirmar ${accion} de obra`,
-      message: `¿Estás seguro de que querés ${accion} la obra "${obra.nombre}"?`,
-      acceptLabel: esActiva ? "Finalizar" : "Activar",
+
+      message:
+        `¿Estás seguro de que querés ${accion} ` +
+        `la obra "${obra.nombre}"?`,
+
+      acceptLabel: esActiva
+        ? "Finalizar"
+        : "Activar",
+
       onAccept: async () => {
         try {
-          await cambiarEstadoObra(obra.id_obra, nuevoEstado);
+          await cambiarEstadoObra(
+            obra.id_obra,
+            nuevoEstado
+          );
+
           await cargarObras();
+
           setFeedback(
-            `Obra "${obra.nombre}" ${nuevoEstado === 1 ? "activada" : "finalizada"} con éxito.`,
-            "success",
+            `Obra "${obra.nombre}" ${
+              nuevoEstado === 1
+                ? "activada"
+                : "finalizada"
+            } con éxito.`,
+            "success"
           );
         } catch (error) {
           console.error(error);
+
           setFeedback(
-            error.message || "No se pudo cambiar el estado de la obra.",
-            "error",
+            error.message ||
+              "No se pudo cambiar el estado de la obra.",
+            "error"
           );
         }
       },
     });
   };
+
+  // =========================================================
+  // BOTÓN DESCARGAR CONTRATO
+  // =========================================================
+
+  detailBtnDownload.onclick = async (event) => {
+    event.stopPropagation();
+
+    if (!obra.contrato_nombre_archivo) {
+      setFeedback(
+        "Esta obra no tiene un contrato cargado.",
+        "info"
+      );
+      return;
+    }
+
+    try {
+      await descargarContrato(obra.id_obra);
+    } catch (error) {
+      console.error(error);
+
+      setFeedback(
+        error.message ||
+          "No se pudo descargar el contrato.",
+        "error"
+      );
+    }
+  };
+
+  // =========================================================
+  // BOTÓN ELIMINAR
+  // =========================================================
+
+  detailBtnDelete.onclick = (event) => {
+    event.stopPropagation();
+
+    cerrarDetalle();
+
+    abrirConfirmacion({
+      title: "Confirmar eliminación",
+
+      message:
+        `¿Eliminar la obra "${obra.nombre}"? ` +
+        `Esta acción no se puede deshacer.`,
+
+      acceptLabel: "Eliminar",
+
+      onAccept: async () => {
+        try {
+          if (apiBase && !csrfToken) {
+            csrfToken = await obtenerCsrf();
+          }
+
+          const data =
+            await eliminarObra(obra.id_obra);
+
+          if (obraEnEdicion === obra.id_obra) {
+            resetForm();
+          }
+
+          await cargarObras();
+
+          setFeedback(
+            data.message ||
+              "Obra eliminada correctamente.",
+            "success"
+          );
+        } catch (error) {
+          console.error(error);
+
+          setFeedback(
+            error.message ||
+              "No se pudo eliminar la obra.",
+            "error"
+          );
+        }
+      },
+    });
+  };
+
+  // =========================================================
+// BOTÓN EDITAR
+// =========================================================
+
+detailBtnEdit.onclick = (event) => {
+  event.stopPropagation();
+
+  cerrarDetalle();
+
+  abrirConfirmacion({
+    title: "Confirmar edición",
+
+    message:
+      `¿Querés cargar "${obra.nombre}" ` +
+      `en el formulario para editarla?`,
+
+    acceptLabel: "Editar",
+
+    onAccept: async () => {
+      try {
+        const data = await obtenerDetalleObra(
+          Number(obra.id_obra)
+        );
+
+        const obraCompleta = {
+          ...data.obra,
+          tareas: data.tareas || [],
+        };
+
+        fillForm(obraCompleta);
+
+        setFeedback(
+          `Editando ${obra.nombre}.`,
+          "info"
+        );
+      } catch (error) {
+        console.error(error);
+
+        setFeedback(
+          error.message ||
+            "No se pudieron cargar las actividades.",
+          "error"
+        );
+      }
+    },
+  });
+};
+
 }
 
 async function cambiarEstadoObra(idObra, activo) {
@@ -1114,6 +1906,242 @@ function obtenerMensajeSinResultados(busqueda, estado) {
   }
 
   return "No hay obras registradas todavía.";
+}
+
+// =========================================================
+// FUNCIONES DE ACTIVIDADES DEL CONTRATO
+// =========================================================
+
+function agregarTarea() {
+  const nuevaTarea = {
+    id_tarea: Date.now(),
+    id_tarea_origen: null,
+    descripcion: "",
+    importe: 0,
+    estado: "Pendiente",
+    fecha_completada: null,
+  };
+
+  tareasContrato.push(nuevaTarea);
+
+  renderTareasContrato();
+
+  // Enfocar automáticamente el campo de descripción
+  window.setTimeout(() => {
+    const input = contratoTareasBody.querySelector(
+      `input[data-tarea-id="${nuevaTarea.id_tarea}"]`
+    );
+
+    if (input) {
+      input.focus();
+    }
+  }, 50);
+}
+
+
+function renderTareasContrato() {
+  if (!contratoTareasBody) {
+    return;
+  }
+
+  contratoTareasBody.innerHTML = "";
+
+  if (tareasContrato.length === 0) {
+    if (tareasEmpty) {
+      tareasEmpty.classList.remove("hidden");
+    }
+
+    actualizarTotalContrato();
+    return;
+  }
+
+  if (tareasEmpty) {
+    tareasEmpty.classList.add("hidden");
+  }
+
+  tareasContrato.forEach((tarea) => {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>
+        <input
+          type="text"
+          class="task-input"
+          data-tarea-id="${tarea.id_tarea}"
+          data-field="descripcion"
+          value="${escapeHtml(tarea.descripcion)}"
+          placeholder="Descripción de la actividad"
+        />
+      </td>
+
+      <td>
+        <input
+          type="number"
+          class="task-input task-importe"
+          data-tarea-id="${tarea.id_tarea}"
+          data-field="importe"
+          value="${Number(tarea.importe || 0).toFixed(2)}"
+          min="0"
+          step="0.01"
+          placeholder="0.00"
+        />
+      </td>
+
+      <td>
+        <select
+          class="task-input"
+          data-tarea-id="${tarea.id_tarea}"
+          data-field="estado"
+        >
+          <option value="Pendiente" ${
+            tarea.estado === "Pendiente" ? "selected" : ""
+          }>
+            Pendiente
+          </option>
+
+          <option value="Completada" ${
+            tarea.estado === "Completada" ? "selected" : ""
+          }>
+            Completada
+          </option>
+        </select>
+      </td>
+
+      <td>
+        <button
+          type="button"
+          class="action-btn delete-task"
+          data-task-action="delete"
+          data-tarea-id="${tarea.id_tarea}"
+          title="Eliminar actividad"
+        >
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    `;
+
+    contratoTareasBody.appendChild(row);
+  });
+
+  actualizarTotalContrato();
+}
+
+
+function actualizarTotalContrato() {
+  if (!totalContrato) {
+    return;
+  }
+
+  const total = tareasContrato.reduce((suma, tarea) => {
+    return suma + Number(tarea.importe || 0);
+  }, 0);
+
+  totalContrato.textContent = `$ ${total.toLocaleString("es-UY", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+
+// Cambios dentro de la tabla de tareas
+if (contratoTareasBody) {
+  contratoTareasBody.addEventListener("input", (event) => {
+    const input = event.target.closest("[data-tarea-id]");
+
+    if (!input) {
+      return;
+    }
+
+    const idTarea = Number(input.dataset.tareaId);
+    const campo = input.dataset.field;
+
+    const tarea = tareasContrato.find(
+      (item) => item.id_tarea === idTarea
+    );
+
+    if (!tarea) {
+      return;
+    }
+
+    if (campo === "descripcion") {
+      tarea.descripcion = input.value;
+    }
+
+    if (campo === "importe") {
+      tarea.importe = Number(input.value || 0);
+    }
+
+    actualizarTotalContrato();
+  });
+
+
+  contratoTareasBody.addEventListener("change", (event) => {
+    const input = event.target.closest("[data-tarea-id]");
+
+    if (!input) {
+      return;
+    }
+
+    const idTarea = Number(input.dataset.tareaId);
+    const campo = input.dataset.field;
+
+    const tarea = tareasContrato.find(
+      (item) => item.id_tarea === idTarea
+    );
+
+    if (!tarea) {
+      return;
+    }
+
+    if (campo === "estado") {
+      tarea.estado = input.value;
+
+      if (tarea.estado === "Completada") {
+        const hoy = new Date();
+
+        const year = hoy.getFullYear();
+        const month = String(hoy.getMonth() + 1).padStart(2, "0");
+        const day = String(hoy.getDate()).padStart(2, "0");
+
+        tarea.fecha_completada = `${year}-${month}-${day}`;
+      } else {
+        tarea.fecha_completada = null;
+      }
+    }
+  });
+
+
+  contratoTareasBody.addEventListener("click", (event) => {
+    const button = event.target.closest(
+      "button[data-task-action='delete']"
+    );
+
+    if (!button) {
+      return;
+    }
+
+    const idTarea = Number(button.dataset.tareaId);
+
+    tareasContrato = tareasContrato.filter(
+      (tarea) => tarea.id_tarea !== idTarea
+    );
+
+    renderTareasContrato();
+  });
+}
+
+async function obtenerDetalleObra(idObra) {
+  if (apiBase) {
+    return await fetchJson(
+      `${apiBase}/Obras.php?id_obra=${encodeURIComponent(idObra)}&detalle=1`
+    );
+  }
+
+  return await sendDesktopRequest(
+    "obras_detalle",
+    { id_obra: idObra },
+    "obras_detalle_response"
+  );
 }
 
 function escapeHtml(value) {
