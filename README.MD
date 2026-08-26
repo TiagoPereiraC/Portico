@@ -24,6 +24,15 @@ dotnet build .\desktop-csharp\PorticoDesktop.csproj -c Release
 
 El ejecutable quedará en `desktop-csharp/bin/Release/`.
 
+### Servidor Web Local (PHP)
+Para correr el backend y frontend en desarrollo con soporte para subida de archivos de hasta 25 MB:
+
+```bash
+.\serve.bat
+# O manualmente:
+php -d upload_max_filesize=25M -d post_max_size=25M -d memory_limit=256M -S localhost:8000
+```
+
 ---
 
 ## Flujo basico con Git

@@ -1,4 +1,3 @@
-console.log("MAQUINARIA JS CARGADO");
 const panelListado = document.getElementById("panelListado");
 const panelFormulario = document.getElementById("panelFormulario");
 const openFormPanel = document.getElementById("openFormPanel");
@@ -41,7 +40,6 @@ const alertasCerrar = document.getElementById("alertasCerrar");
 const certSection = document.getElementById("certSection");
 const certArchivoForm = document.getElementById("certArchivoForm");
 const certVencimientoForm = document.getElementById("certVencimientoForm");
-const certSubirFormBtn = document.getElementById("certSubirFormBtn");
 const certListaForm = document.getElementById("certListaForm");
 
 // Nuevo: filtro de certificados vencidos/por vencer
@@ -126,75 +124,6 @@ certCancelarBtn.addEventListener("click", cerrarCertModal);
 alertasCerrar.addEventListener("click", () => {
   alertasVencimiento.classList.add("hidden");
 });
-certSubirFormBtn.addEventListener("click", async () => {
-
-    const idMaquinaria =
-        itemEnEdicion ||
-        Number(document.getElementById("id_maquinaria").value);
-
-    if (!idMaquinaria) {
-        setFeedback(
-            "Primero guardá la maquinaria.",
-            "error"
-        );
-        return;
-    }
-
-    const file = certArchivoForm.files[0];
-
-    if (!file) {
-        setFeedback(
-            "Seleccioná un archivo primero.",
-            "error"
-        );
-        return;
-    }
-
-    try {
-        validarArchivoCertificado(file);
-    } catch (validationError) {
-        setFeedback(validationError.message, "error");
-        return;
-    }
-
-    certSubirFormBtn.disabled = true;
-
-    try {
-
-        await subirCertificado(
-            idMaquinaria,
-            file,
-            certVencimientoForm.value || null
-        );
-
-        certArchivoForm.value = "";
-        certVencimientoForm.value = "";
-
-        await cargarCertificadosForm(idMaquinaria);
-
-        await cargarMaquinaria();
-
-        setFeedback(
-            "Certificado subido correctamente.",
-            "success"
-        );
-
-    } catch (error) {
-
-        console.error(error);
-
-        setFeedback(
-            error.message || "No se pudo subir el certificado.",
-            "error"
-        );
-
-    } finally {
-
-        certSubirFormBtn.disabled = false;
-
-    }
-
-});
 
 certSubirBtn.addEventListener("click", async () => {
   if (!certModal.dataset.idMaquinaria) return;
@@ -258,9 +187,7 @@ maquinariaForm.addEventListener("submit", async (event) => {
     }
 
     btnGuardar.disabled = true;
-    btnGuardar.textContent = itemEnEdicion
-        ? "Actualizando..."
-        : "Guardando...";
+    btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (itemEnEdicion ? "Actualizando maquinaria..." : "Guardando maquinaria...");
 
     try {
 
@@ -295,18 +222,11 @@ maquinariaForm.addEventListener("submit", async (event) => {
 
         await cargarMaquinaria();
 
-        if (idMaquinaria > 0) {
+        const mensajeExito = archivo
+            ? "Maquinaria y certificado guardados correctamente."
+            : (data.message || "Maquinaria guardada correctamente.");
 
-            itemEnEdicion = idMaquinaria;
-
-            await cargarCertificadosForm(idMaquinaria);
-
-        }
-
-        setFeedback(
-            data.message || "Maquinaria guardada correctamente.",
-            "success"
-        );
+        setFeedback(mensajeExito, "success");
 
         resetForm();
 
@@ -324,8 +244,7 @@ maquinariaForm.addEventListener("submit", async (event) => {
     } finally {
 
         btnGuardar.disabled = false;
-
-        btnGuardar.textContent = "Guardar";
+        btnGuardar.innerHTML = '<i class="fas fa-floppy-disk"></i> ' + (itemEnEdicion ? "Guardar cambios" : "Guardar maquinaria");
 
     }
 
@@ -683,7 +602,6 @@ async function cambiarPagina(direccion) {
 }
 
 function fillForm(item) {
-
     itemEnEdicion = Number(item.id_maquinaria);
 
     document.getElementById("id_maquinaria").value = item.id_maquinaria;
@@ -691,7 +609,7 @@ function fillForm(item) {
     document.getElementById("marca").value = item.marca || "";
 
     formTitle.textContent = "Editar maquinaria";
-    btnGuardar.textContent = "Guardar";
+    btnGuardar.innerHTML = '<i class="fas fa-floppy-disk"></i> Guardar cambios';
 
     certSection.classList.remove("hidden");
 
@@ -709,11 +627,11 @@ function resetForm() {
   itemEnEdicion = null;
   document.getElementById("id_maquinaria").value = "";
   formTitle.textContent = "Registrar maquinaria";
-  btnGuardar.textContent = "Guardar";
+  btnGuardar.innerHTML = '<i class="fas fa-floppy-disk"></i> Guardar maquinaria';
   certSection.classList.remove("hidden");
   certArchivoForm.value = "";
   certVencimientoForm.value = "";
-  certListaForm.innerHTML = "";
+  certListaForm.innerHTML = "<p style='font-size:12.5px;color:#888;margin:4px 0;'>Los certificados adjuntados se registrarán al guardar.</p>";
 }
 
 function setLoading(isLoading) {
@@ -813,23 +731,42 @@ function claseVencimientoCert(fechaVencimiento) {
 
 function renderCertItem(cert) {
   const clase = claseVencimientoCert(cert.fecha_vencimiento);
+  let etiquetaBadge = 'Sin fecha';
+  let badgeClase = 'sin-fecha';
+  if (cert.fecha_vencimiento) {
+    if (clase === 'vencido') {
+      etiquetaBadge = 'Vencido: ' + formatDate(cert.fecha_vencimiento);
+      badgeClase = 'vencido';
+    } else if (clase === 'critico') {
+      etiquetaBadge = 'Vence pronto: ' + formatDate(cert.fecha_vencimiento);
+      badgeClase = 'critico';
+    } else if (clase === 'advertencia') {
+      etiquetaBadge = 'Vence: ' + formatDate(cert.fecha_vencimiento);
+      badgeClase = 'advertencia';
+    } else {
+      etiquetaBadge = 'Vigente: ' + formatDate(cert.fecha_vencimiento);
+      badgeClase = 'vigente';
+    }
+  }
+
   return `
-    <div class="obrero-item cert-item ${clase}" style="margin-bottom:6px;">
-      <span class="obrero-name">
+    <div class="obrero-item cert-item ${clase}" style="margin-bottom:8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 8px; background: #ffffff; border: 1px solid #e2e8f0;">
+      <span class="obrero-name" style="display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 13px; color: #1e293b;">
+        <i class="fas fa-file-pdf" style="color: #e11d48; font-size: 15px;"></i>
         ${escapeHtml(cert.nombre_archivo || "Certificado")}
-        <span style="font-size:11px;margin-left:8px;">
-          ${cert.fecha_vencimiento ? formatDate(cert.fecha_vencimiento) : "Sin fecha"}
+        <span class="alerta-badge ${badgeClase}" style="font-size: 11px; margin-left: 6px;">
+          ${etiquetaBadge}
         </span>
       </span>
-      <div class="obrero-actions">
-        <button type="button" class="btn-delete" data-descargar="${cert.id_certificado}" data-nombre="${escapeHtml(cert.nombre_archivo || "certificado")}" title="Descargar">
+      <div class="obrero-actions" style="display: flex; gap: 6px;">
+        <button type="button" class="btn-delete" data-descargar="${cert.id_certificado}" data-nombre="${escapeHtml(cert.nombre_archivo || "certificado")}" title="Descargar certificado" style="background: #f1f5f9; color: #334155; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer;">
           <i class="fas fa-download"></i>
         </button>
-        <button type="button" class="btn-delete" data-eliminar-cert="${cert.id_certificado}" title="Eliminar">
-          <i class="fas fa-trash"></i>
+        <button type="button" class="btn-edit" data-edit-cert="${cert.id_certificado}" data-vencimiento="${cert.fecha_vencimiento || ''}" title="Editar fecha de vencimiento" style="background: #f1f5f9; color: #334155; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer;">
+          <i class="fas fa-calendar-day"></i>
         </button>
-        <button type="button" class="btn-edit" data-edit-cert="${cert.id_certificado}" data-vencimiento="${cert.fecha_vencimiento || ''}" title="Editar vencimiento">
-          <i class="fas fa-pen"></i>
+        <button type="button" class="btn-delete" data-eliminar-cert="${cert.id_certificado}" title="Eliminar certificado" style="background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer;">
+          <i class="fas fa-trash"></i>
         </button>
       </div>
     </div>
