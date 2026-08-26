@@ -397,8 +397,20 @@ function validarCsrf(): void
     }
 }
 
+function verificarLimitePost(): void
+{
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST) && empty($_FILES)) {
+        $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        if ($contentLength > 0) {
+            $postMax = ini_get('post_max_size') ?: '8M';
+            throw new InvalidArgumentException("El tamaño del archivo o solicitud enviada supera el límite configurado en el servidor (límite post_max_size: {$postMax}).");
+        }
+    }
+}
+
 function leerJson(): array
 {
+    verificarLimitePost();
     $body = json_decode(file_get_contents('php://input'), true);
     if (!is_array($body)) {
         throw new InvalidArgumentException('Cuerpo de solicitud inválido.');

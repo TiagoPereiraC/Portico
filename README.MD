@@ -1,4 +1,4 @@
-# Aplicación Desktop ➔ Portico.
+# Portico.
 
 ## Tecnologias
 - **Frontend:** HTML, CSS, JS
@@ -11,7 +11,7 @@
 ### Pasos antes de compilar
 1. Renombrar el archivo `.env.example` a `.env`
 2. Colocar las credenciales de la MySQL (No hace falta comillas)
-3. Compilar el sistema
+3. Compilar el sistema (Instrucciones más abajo)
 
 ### Requisitos
 .NET 10.0 
@@ -117,3 +117,7 @@ git push -u origin nombre-de-tu-rama
 | `--btn-bg`        | `#b54747` | Botón primario             |
 | `--btn-hover`     | `#9e3c3c` | Hover botón primario       |
 | `--accent`        | `#b54747` | Color de acento / focus    |
+
+# To Do
+- Organizar directorios y archivos.
+- Revisar entrada de datos para evitar errores humanos

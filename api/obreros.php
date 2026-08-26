@@ -43,6 +43,7 @@ try {
                 exit;
             }
             validarCsrf();
+            verificarLimitePost();
             if (isset($_POST['accion']) && $_POST['accion'] === 'subir_contrato') {
                 responderSubirContrato($pdo);
                 break;
@@ -267,12 +268,32 @@ function responderSubirContrato(PDO $pdo): void
     if (empty($fechaVencimiento)) {
         throw new InvalidArgumentException('Debés indicar una fecha de vencimiento.');
     }
-    if (!isset($_FILES['contrato']) || $_FILES['contrato']['error'] !== UPLOAD_ERR_OK) {
-        throw new InvalidArgumentException('Error al subir el archivo.');
+    if (!isset($_FILES['contrato'])) {
+        throw new InvalidArgumentException('No se seleccionó ningún archivo de contrato.');
     }
 
-    $archivoContenido = file_get_contents($_FILES['contrato']['tmp_name']);
+    $fileError = $_FILES['contrato']['error'];
+    if ($fileError !== UPLOAD_ERR_OK) {
+        if ($fileError === UPLOAD_ERR_INI_SIZE || $fileError === UPLOAD_ERR_FORM_SIZE) {
+            throw new InvalidArgumentException('El contrato subido supera el tamaño máximo permitido por el servidor.');
+        }
+        if ($fileError === UPLOAD_ERR_NO_FILE) {
+            throw new InvalidArgumentException('No se seleccionó ningún archivo de contrato.');
+        }
+        throw new InvalidArgumentException('Error al subir el archivo (código ' . $fileError . ').');
+    }
+
+    if (($_FILES['contrato']['size'] ?? 0) > 10 * 1024 * 1024) {
+        throw new InvalidArgumentException('El contrato no puede superar los 10 MB.');
+    }
+
     $nombreOriginal = $_FILES['contrato']['name'];
+    validarExtensionContrato($nombreOriginal);
+
+    $archivoContenido = file_get_contents($_FILES['contrato']['tmp_name']);
+    if ($archivoContenido === false || strlen($archivoContenido) === 0) {
+        throw new InvalidArgumentException('No se pudo leer el archivo del contrato.');
+    }
 
     if (strlen($archivoContenido) > 10 * 1024 * 1024) {
         throw new InvalidArgumentException('El contrato no puede superar los 10 MB.');
@@ -359,5 +380,25 @@ function obtenerObrero(PDO $pdo, int $idObrero): array
     }
 
     return $obrero;
+}
+
+function validarExtensionContrato(string $nombreArchivo): void
+{
+    $extension = strtolower(pathinfo($nombreArchivo, PATHINFO_EXTENSION));
+    $permitidas = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+    if (!in_array($extension, $permitidas, true)) {
+        throw new InvalidArgumentException('Formato de archivo no permitido. Solo se aceptan PDF, DOC, DOCX, JPG o PNG.');
+    }
+}
+
+function verificarLimitePost(): void
+{
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST) && empty($_FILES)) {
+        $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        if ($contentLength > 0) {
+            $postMax = ini_get('post_max_size') ?: '8M';
+            throw new InvalidArgumentException("El archivo o solicitud enviada supera el tamaño máximo permitido por el servidor (límite post_max_size: {$postMax}).");
+        }
+    }
 }
 ?>

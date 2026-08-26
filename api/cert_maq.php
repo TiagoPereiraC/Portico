@@ -50,6 +50,8 @@ try {
 
             validarCsrf();
 
+            verificarLimitePost();
+
             if (!empty($_FILES['certificado'])) {
                 responderSubirMultipart($pdo);
                 break;
@@ -147,6 +149,12 @@ function responderSubirBase64(PDO $pdo, array $body): void
         throw new InvalidArgumentException('Datos inválidos');
     }
 
+    if (strlen($archivo) > 10 * 1024 * 1024) {
+        throw new InvalidArgumentException('El certificado no puede superar los 10 MB.');
+    }
+
+    validarExtensionArchivo($nombre);
+
     insertarCertificado($pdo, $archivo, $nombre, $id, $fecha);
 
     registrarAuditoria($pdo, 'subir_certificado', 'certificados_maquinaria', $id, [
@@ -161,8 +169,41 @@ function responderSubirMultipart(PDO $pdo): void
 {
     $id = (int) ($_POST['id_maquinaria'] ?? 0);
     $fecha = normalizarFecha($_POST['fecha_vencimiento'] ?? null);
-    $archivo = file_get_contents($_FILES['certificado']['tmp_name']);
+
+    if ($id <= 0) {
+        throw new InvalidArgumentException('Maquinaria inválida.');
+    }
+
+    if (!isset($_FILES['certificado'])) {
+        throw new InvalidArgumentException('No se seleccionó ningún archivo de certificado.');
+    }
+
+    $fileError = $_FILES['certificado']['error'];
+    if ($fileError !== UPLOAD_ERR_OK) {
+        if ($fileError === UPLOAD_ERR_INI_SIZE || $fileError === UPLOAD_ERR_FORM_SIZE) {
+            throw new InvalidArgumentException('El archivo subido supera el tamaño máximo permitido por el servidor.');
+        }
+        if ($fileError === UPLOAD_ERR_NO_FILE) {
+            throw new InvalidArgumentException('No se seleccionó ningún archivo de certificado.');
+        }
+        throw new InvalidArgumentException('Error al subir el archivo (código ' . $fileError . ').');
+    }
+
+    if (($_FILES['certificado']['size'] ?? 0) > 10 * 1024 * 1024) {
+        throw new InvalidArgumentException('El certificado no puede superar los 10 MB.');
+    }
+
     $nombre = $_FILES['certificado']['name'];
+    validarExtensionArchivo($nombre);
+
+    $archivo = file_get_contents($_FILES['certificado']['tmp_name']);
+    if ($archivo === false || strlen($archivo) === 0) {
+        throw new InvalidArgumentException('No se pudo leer el archivo del certificado.');
+    }
+
+    if (strlen($archivo) > 10 * 1024 * 1024) {
+        throw new InvalidArgumentException('El certificado no puede superar los 10 MB.');
+    }
 
     insertarCertificado($pdo, $archivo, $nombre, $id, $fecha);
 
@@ -268,4 +309,24 @@ function guessMimeType(string $nombreArchivo): string
         'png' => 'image/png',
         default => 'application/octet-stream',
     };
+}
+
+function validarExtensionArchivo(string $nombreArchivo): void
+{
+    $extension = strtolower(pathinfo($nombreArchivo, PATHINFO_EXTENSION));
+    $permitidas = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+    if (!in_array($extension, $permitidas, true)) {
+        throw new InvalidArgumentException('Formato de archivo no permitido. Solo se aceptan PDF, DOC, DOCX, JPG o PNG.');
+    }
+}
+
+function verificarLimitePost(): void
+{
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST) && empty($_FILES)) {
+        $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        if ($contentLength > 0) {
+            $postMax = ini_get('post_max_size') ?: '8M';
+            throw new InvalidArgumentException("El archivo o solicitud enviada supera el tamaño máximo permitido por el servidor (límite post_max_size: {$postMax}).");
+        }
+    }
 }

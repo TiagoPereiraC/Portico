@@ -48,6 +48,24 @@ const certListaForm = document.getElementById("certListaForm");
 const filtroCertCheckbox = document.getElementById("filtroCertificados");
 let filtroCertActivo = false;
 
+const MAX_CERTIFICADO_SIZE = 10 * 1024 * 1024; // 10 MB
+
+function validarArchivoCertificado(file) {
+  if (!file) {
+    throw new Error("Seleccioná un archivo primero.");
+  }
+  if (file.size > MAX_CERTIFICADO_SIZE) {
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+    throw new Error(`El certificado seleccionado (${sizeMb} MB) supera el tamaño máximo permitido (10 MB).`);
+  }
+  const ext = (file.name.split(".").pop() || "").toLowerCase();
+  const permitidas = ["pdf", "doc", "docx", "jpg", "jpeg", "png"];
+  if (!permitidas.includes(ext)) {
+    throw new Error("Formato de archivo no permitido. Solo se aceptan PDF, DOC, DOCX, JPG o PNG.");
+  }
+  return true;
+}
+
 const isDesktopWebView = Boolean(window.chrome?.webview);
 
 function resolveApiBase() {
@@ -132,6 +150,13 @@ certSubirFormBtn.addEventListener("click", async () => {
         return;
     }
 
+    try {
+        validarArchivoCertificado(file);
+    } catch (validationError) {
+        setFeedback(validationError.message, "error");
+        return;
+    }
+
     certSubirFormBtn.disabled = true;
 
     try {
@@ -178,6 +203,12 @@ certSubirBtn.addEventListener("click", async () => {
     setFeedback("Seleccioná un archivo primero.", "error");
     return;
   }
+  try {
+    validarArchivoCertificado(file);
+  } catch (validationError) {
+    setFeedback(validationError.message, "error");
+    return;
+  }
   certSubirBtn.disabled = true;
   try {
     await subirCertificado(Number(certModal.dataset.idMaquinaria), file, certVencimiento.value);
@@ -216,6 +247,16 @@ maquinariaForm.addEventListener("submit", async (event) => {
     const payload = buildPayload();
     if (!payload) return;
 
+    const archivo = certArchivoForm.files[0];
+    if (archivo) {
+        try {
+            validarArchivoCertificado(archivo);
+        } catch (validationError) {
+            setFeedback(validationError.message, "error");
+            return;
+        }
+    }
+
     btnGuardar.disabled = true;
     btnGuardar.textContent = itemEnEdicion
         ? "Actualizando..."
@@ -240,8 +281,6 @@ maquinariaForm.addEventListener("submit", async (event) => {
         // Si se seleccionó un certificado,
         // subirlo automáticamente
         // =============================
-        const archivo = certArchivoForm.files[0];
-
         if (archivo && idMaquinaria > 0) {
 
             await subirCertificado(
@@ -885,6 +924,7 @@ async function cargarCertificadosForm(idMaquinaria) {
 }
 
 async function subirCertificado(idMaquinaria, file, fechaVencimiento) {
+    validarArchivoCertificado(file);
 
     const fecha = (fechaVencimiento && fechaVencimiento.trim() !== "")
         ? fechaVencimiento.substring(0, 10)

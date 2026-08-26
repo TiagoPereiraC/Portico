@@ -38,6 +38,24 @@ const contratoFileName = document.getElementById("contratoFileName");
 const filtroButtons = document.querySelectorAll("[data-filtro-contrato]");
 let filtroContrato = "todos"; // valores: todos, vencido, por_vencer, vigente
 
+const MAX_CONTRATO_SIZE = 10 * 1024 * 1024; // 10 MB
+
+function validarArchivoContrato(file) {
+  if (!file) {
+    throw new Error("Debés seleccionar un archivo.");
+  }
+  if (file.size > MAX_CONTRATO_SIZE) {
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+    throw new Error(`El contrato no puede superar los 10 MB (el archivo seleccionado pesa ${sizeMb} MB).`);
+  }
+  const ext = (file.name.split(".").pop() || "").toLowerCase();
+  const permitidas = ["pdf", "doc", "docx", "jpg", "jpeg", "png"];
+  if (!permitidas.includes(ext)) {
+    throw new Error("Formato de archivo no permitido. Solo se aceptan PDF, DOC, DOCX, JPG o PNG.");
+  }
+  return true;
+}
+
 const isDesktopWebView = Boolean(window.chrome?.webview);
 
 function resolveApiBase() {
@@ -128,6 +146,12 @@ contratoAccept.addEventListener("click", async () => {
   const file = contratoFileInput.files?.[0];
   if (!file) {
     setFeedback("Debés seleccionar un archivo.", "error");
+    return;
+  }
+  try {
+    validarArchivoContrato(file);
+  } catch (validationError) {
+    setFeedback(validationError.message, "error");
     return;
   }
   const fechaVencimiento = document.getElementById("fecha_vencimiento").value;
@@ -793,6 +817,8 @@ function cerrarContratoModal() {
 }
 
 async function subirContratoObrero(idObrero, file, fechaVencimiento) {
+  validarArchivoContrato(file);
+
   if (apiBase) {
     const formData = new FormData();
     formData.append("accion", "subir_contrato");
