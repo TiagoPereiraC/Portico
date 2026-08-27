@@ -399,11 +399,14 @@ function validarCsrf(): void
 
 function verificarLimitePost(): void
 {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST) && empty($_FILES)) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
-        if ($contentLength > 0) {
-            $postMax = ini_get('post_max_size') ?: '8M';
-            throw new InvalidArgumentException("El tamaño del archivo o solicitud enviada supera el límite configurado en el servidor (límite post_max_size: {$postMax}).");
+        if ($contentLength > 0 && empty($_POST) && empty($_FILES)) {
+            $rawInput = file_get_contents('php://input');
+            if ($rawInput === false || strlen($rawInput) === 0) {
+                $postMax = ini_get('post_max_size') ?: '8M';
+                throw new InvalidArgumentException("El tamaño del archivo o solicitud enviada supera el límite configurado en el servidor (límite post_max_size: {$postMax}).");
+            }
         }
     }
 }

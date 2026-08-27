@@ -59,41 +59,49 @@ body {
   background-color: #954043;
 }
 
-nav {
+nav.main-top-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 24px;
-  height: 140px;
+  padding: 0 32px;
+  height: 80px;
+  min-height: 80px;
   background-color: #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,.12);
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
+  box-sizing: border-box;
+  position: relative;
+  z-index: 100;
 }
 
 .logo-wrap {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
 }
 
 .logo-wrap img {
-  width: 120px;
-  height: auto;
+  height: 60px;
+  width: auto;
+  max-width: 220px;
+  object-fit: contain;
 }
 
 .user-pill {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #666;
-  padding-top: 4px;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-dark, #2d3748);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 6px 14px;
+  border-radius: 20px;
 }
 
 .user-pill svg {
-  width: 20px;
-  height: 20px;
-  fill: #888;
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
 }
 
 main {
@@ -117,11 +125,11 @@ main {
 }
 
 .logo {
-  height: 200px;
-  width: 200px;
-  border-radius: 50%;
-  object-fit: cover; 
-  margin-bottom: 10px;
+  height: 70px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain; 
+  margin-bottom: 14px;
 }
 
 .card h2 {
@@ -264,9 +272,13 @@ main {
 }
 
 @media (max-width: 600px) {
-  nav {
-    padding: 10px 16px;
-    height: 120px;
+  nav.main-top-nav {
+    padding: 0 16px;
+    height: 72px;
+  }
+
+  nav.dashboard-nav-tabs {
+    top: 72px;
   }
 
   main {
@@ -279,8 +291,8 @@ main {
   }
 
   .logo {
-    width: 150px;
-    height: 150px;
+    max-width: 160px;
+    height: auto;
   }
 
   .toggle-password {

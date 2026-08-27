@@ -30,12 +30,11 @@ body {
 }
 
 .logo {
-  height: 200px;
-  width: 200px;
-  border-radius: 50%;
-  object-fit: cover; 
-  margin-bottom: 10px;
-
+  height: 75px;
+  width: auto;
+  max-width: 240px;
+  object-fit: contain; 
+  margin-bottom: 16px;
 }
 
 .card h2 {

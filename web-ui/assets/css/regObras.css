@@ -29,43 +29,50 @@ body {
     flex-direction: column;
 }
 
-nav {
+nav.main-top-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 24px 10px;
-    height: 140px;
+    padding: 0 32px;
+    height: 80px;
+    min-height: 80px;
     box-sizing: border-box;
     background-color: #fff;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    position: relative;
+    z-index: 100;
 }
 
 .logo-wrap {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     line-height: 1;
 }
 
 .logo-wrap img {
-    width: 120px;
-    height: auto;
+    height: 60px;
+    width: auto;
+    max-width: 220px;
+    object-fit: contain;
 }
 
 .user-pill {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 14px;
-    font-weight: 500;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
     color: var(--text-dark);
-    padding-top: 4px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 6px 14px;
+    border-radius: 20px;
 }
 
 .user-pill svg {
-    width: 20px;
-    height: 20px;
-    fill: var(--text-muted);
+    width: 18px;
+    height: 18px;
+    color: var(--accent);
 }
 
 main {
@@ -1231,8 +1238,12 @@ tbody tr:hover {
 }
 
 @media (max-width: 640px) {
-    nav {
+    nav.main-top-nav {
         padding-inline: 16px;
+        height: 72px;
+    }
+    nav.dashboard-nav-tabs {
+        top: 72px;
     }
 
     .date-row,

@@ -174,6 +174,9 @@ public sealed class MainWindow : Form
 			case "asistencia_guardar":
 				await HandleGuardarAsistenciaAsync(root);
 				break;
+			case "dashboard_metricas":
+				await HandleDashboardMetricasAsync(root);
+				break;
 			}
 		}
 		catch (Exception ex)
@@ -2606,6 +2609,175 @@ public sealed class MainWindow : Form
 			".ttf" => "font/ttf",
 			_ => "application/octet-stream"
 		};
+	}
+
+	private async Task HandleDashboardMetricasAsync(JsonElement root)
+	{
+		var requestId = ReadRequestId(root);
+		const string responseType = "dashboard_metricas_response";
+
+		if (!EnsureAutenticado(requestId, responseType))
+			return;
+
+		try
+		{
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			// 1. Obras
+			int totalObras = 0, obrasActivas = 0;
+			await using (var cmd = new MySqlCommand("SELECT COUNT(*), SUM(CASE WHEN activo = 1 THEN 1 ELSE 0 END) FROM obras", conn))
+			await using (var reader = await cmd.ExecuteReaderAsync())
+			{
+				if (await reader.ReadAsync())
+				{
+					totalObras = reader.IsDBNull(0) ? 0 : Convert.ToInt32(reader[0]);
+					obrasActivas = reader.IsDBNull(1) ? 0 : Convert.ToInt32(reader[1]);
+				}
+			}
+
+			// 2. Obreros
+			int totalObreros = 0, obrerosActivos = 0;
+			await using (var cmd = new MySqlCommand("SELECT COUNT(*), SUM(CASE WHEN activo = 1 THEN 1 ELSE 0 END) FROM obreros", conn))
+			await using (var reader = await cmd.ExecuteReaderAsync())
+			{
+				if (await reader.ReadAsync())
+				{
+					totalObreros = reader.IsDBNull(0) ? 0 : Convert.ToInt32(reader[0]);
+					obrerosActivos = reader.IsDBNull(1) ? 0 : Convert.ToInt32(reader[1]);
+				}
+			}
+
+			// 3. Maquinaria
+			int totalMaquinaria = 0, maquinariaAsignada = 0;
+			await using (var cmd = new MySqlCommand("SELECT COUNT(*), (SELECT COUNT(DISTINCT id_maquinaria) FROM obra_maquinaria WHERE fecha_retiro IS NULL) FROM maquinaria", conn))
+			await using (var reader = await cmd.ExecuteReaderAsync())
+			{
+				if (await reader.ReadAsync())
+				{
+					totalMaquinaria = reader.IsDBNull(0) ? 0 : Convert.ToInt32(reader[0]);
+					maquinariaAsignada = reader.IsDBNull(1) ? 0 : Convert.ToInt32(reader[1]);
+				}
+			}
+
+			// 4. Horas y registros
+			int totalRegistros = 0;
+			double totalHoras = 0;
+			await using (var cmd = new MySqlCommand("SELECT COUNT(*), COALESCE(SUM(horas_trabajadas), 0) FROM registros", conn))
+			await using (var reader = await cmd.ExecuteReaderAsync())
+			{
+				if (await reader.ReadAsync())
+				{
+					totalRegistros = reader.IsDBNull(0) ? 0 : Convert.ToInt32(reader[0]);
+					totalHoras = reader.IsDBNull(1) ? 0 : Convert.ToDouble(reader[1]);
+				}
+			}
+
+			// 5. Alertas certificados
+			int totalAlertasCert = 0, certVencidos = 0, certPorVencer = 0;
+			await using (var cmd = new MySqlCommand("SELECT COUNT(*), SUM(CASE WHEN fecha_vencimiento < CURDATE() THEN 1 ELSE 0 END), SUM(CASE WHEN fecha_vencimiento >= CURDATE() AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) FROM certificado WHERE fecha_vencimiento IS NOT NULL AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)", conn))
+			await using (var reader = await cmd.ExecuteReaderAsync())
+			{
+				if (await reader.ReadAsync())
+				{
+					totalAlertasCert = reader.IsDBNull(0) ? 0 : Convert.ToInt32(reader[0]);
+					certVencidos = reader.IsDBNull(1) ? 0 : Convert.ToInt32(reader[1]);
+					certPorVencer = reader.IsDBNull(2) ? 0 : Convert.ToInt32(reader[2]);
+				}
+			}
+
+			// 6. Alertas contratos
+			int totalAlertasContratos = 0;
+			await using (var cmd = new MySqlCommand("SELECT COUNT(*) FROM contrato_obrero WHERE fecha_vencimiento IS NOT NULL AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)", conn))
+			await using (var reader = await cmd.ExecuteReaderAsync())
+			{
+				if (await reader.ReadAsync())
+				{
+					totalAlertasContratos = reader.IsDBNull(0) ? 0 : Convert.ToInt32(reader[0]);
+				}
+			}
+
+			// 7. Distribución cargos
+			var distribucionCargos = new List<object>();
+			await using (var cmd = new MySqlCommand("SELECT cargo, COUNT(*) FROM obreros WHERE activo = 1 GROUP BY cargo ORDER BY COUNT(*) DESC", conn))
+			await using (var reader = await cmd.ExecuteReaderAsync())
+			{
+				while (await reader.ReadAsync())
+				{
+					distribucionCargos.Add(new
+					{
+						cargo = reader.GetString(0),
+						cantidad = reader.GetInt32(1)
+					});
+				}
+			}
+
+			// 8. Horas por obra
+			var horasPorObra = new List<object>();
+			await using (var cmd = new MySqlCommand("SELECT o.nombre, COALESCE(SUM(r.horas_trabajadas), 0) FROM obras o LEFT JOIN registros r ON o.id_obra = r.id_obra WHERE o.activo = 1 GROUP BY o.id_obra, o.nombre ORDER BY COALESCE(SUM(r.horas_trabajadas), 0) DESC LIMIT 5", conn))
+			await using (var reader = await cmd.ExecuteReaderAsync())
+			{
+				while (await reader.ReadAsync())
+				{
+					horasPorObra.Add(new
+					{
+						nombre = reader.GetString(0),
+						total_horas = reader.GetDouble(1)
+					});
+				}
+			}
+
+			// 9. Alertas recientes
+			var alertasRecientes = new List<object>();
+			await using (var cmd = new MySqlCommand("SELECT c.id_certificado, c.nombre_archivo, c.fecha_vencimiento, m.nombre, m.marca, DATEDIFF(c.fecha_vencimiento, CURDATE()) FROM certificado c JOIN maquinaria m ON c.id_maquinaria = m.id_maquinaria WHERE c.fecha_vencimiento IS NOT NULL AND c.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) ORDER BY c.fecha_vencimiento ASC LIMIT 5", conn))
+			await using (var reader = await cmd.ExecuteReaderAsync())
+			{
+				while (await reader.ReadAsync())
+				{
+					alertasRecientes.Add(new
+					{
+						id_certificado = reader.GetInt32(0),
+						nombre_archivo = reader.IsDBNull(1) ? "" : reader.GetString(1),
+						fecha_vencimiento = reader.GetDateTime(2).ToString("yyyy-MM-dd"),
+						nombre_maquinaria = reader.GetString(3),
+						marca = reader.IsDBNull(4) ? "" : reader.GetString(4),
+						dias_restantes = reader.GetInt32(5)
+					});
+				}
+			}
+
+			PostToJs(new
+			{
+				type = responseType,
+				requestId,
+				success = true,
+				data = new
+				{
+					kpis = new
+					{
+						obras = new { activas = obrasActivas, total = totalObras },
+						obreros = new { activos = obrerosActivos, total = totalObreros },
+						maquinaria = new { total = totalMaquinaria, asignada = maquinariaAsignada },
+						horas = new { total_horas = totalHoras, total_registros = totalRegistros },
+						alertas = new
+						{
+							certificados = totalAlertasCert,
+							cert_vencidos = certVencidos,
+							cert_por_vencer = certPorVencer,
+							contratos = totalAlertasContratos
+						}
+					},
+					distribucion_cargos = distribucionCargos,
+					horas_por_obra = horasPorObra,
+					alertas_recientes = alertasRecientes
+				}
+			});
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Dashboard error] {ex}");
+			PostToJs(new { type = responseType, requestId, success = false, error = "Error al obtener métricas del dashboard." });
+		}
 	}
 
 	private void ShowError(string message)
