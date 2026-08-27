@@ -618,27 +618,21 @@ data.maquinaria.forEach(m => {
       listaHerr.querySelectorAll("input[name='herramienta_cantidad[]']").forEach(inp => formData.append("herramienta_cantidad[]", inp.value));
 
       maquinariaSeleccionada.forEach(id => {
+        formData.append("maquinaria[]", String(id));
+        const salida = form.querySelector(`input[name="retiro_maquinaria[${id}]"]`);
+        const devolucion = form.querySelector(`input[name="devolucion_maquinaria[${id}]"]`);
+        const litros = form.querySelector(`input[name="litros[${id}]"]`);
+        const nombreComb = form.querySelector(`select[name="nombre_combustible[${id}]"]`);
+        const precioTot = form.querySelector(`input[name="precio_total[${id}]"]`);
 
-    formData.append("maquinaria[]", String(id));
-
-    const salida = form.querySelector(
-        `input[name="retiro_maquinaria[${id}]"]`
-    );
-
-    const devolucion = form.querySelector(
-        `input[name="devolucion_maquinaria[${id}]"]`
-    );
-
-    formData.append(
-        `retiro_maquinaria[${id}]`,
-        salida ? salida.value : ""
-    );
-
-    formData.append(
-        `devolucion_maquinaria[${id}]`,
-        devolucion ? devolucion.value : ""
-    );
-});
+        formData.append(`retiro_maquinaria[${id}]`, salida ? salida.value : "");
+        formData.append(`devolucion_maquinaria[${id}]`, devolucion ? devolucion.value : "");
+        if (litros && parseFloat(litros.value) > 0) {
+          formData.append(`litros[${id}]`, litros.value);
+          formData.append(`nombre_combustible[${id}]`, nombreComb ? nombreComb.value : "Diesel");
+          formData.append(`precio_total[${id}]`, precioTot ? precioTot.value : "0");
+        }
+      });
 
       const response = await fetch("../api/guardar_asistencia.php", {
         method: "POST",
