@@ -35,8 +35,7 @@ try {
     $pdo = conectar();
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
-    // 1. KPIs principales
-    // Obras
+    // 1. Obras
     $stmtObras = $pdo->query('
         SELECT 
             COUNT(*) AS total_obras,
@@ -45,7 +44,7 @@ try {
     ');
     $resObras = $stmtObras->fetch() ?: ['total_obras' => 0, 'obras_activas' => 0];
 
-    // Obreros
+    // 2. Obreros
     $stmtObreros = $pdo->query('
         SELECT 
             COUNT(*) AS total_obreros,
@@ -54,7 +53,7 @@ try {
     ');
     $resObreros = $stmtObreros->fetch() ?: ['total_obreros' => 0, 'obreros_activos' => 0];
 
-    // Maquinaria
+    // 3. Maquinaria
     $stmtMaq = $pdo->query('
         SELECT 
             COUNT(*) AS total_maquinaria,
@@ -63,7 +62,7 @@ try {
     ');
     $resMaq = $stmtMaq->fetch() ?: ['total_maquinaria' => 0, 'maquinaria_asignada' => 0];
 
-    // Horas y Asistencias
+    // 4. Horas y Asistencias
     $stmtHoras = $pdo->query('
         SELECT 
             COUNT(*) AS total_registros,
@@ -72,7 +71,90 @@ try {
     ');
     $resHoras = $stmtHoras->fetch() ?: ['total_registros' => 0, 'total_horas' => 0];
 
-    // Alertas de certificados (vencidos o por vencer en 30 días)
+    // 5. Combustible (Litros, Gasto, Distribución)
+    $resCombustible = [
+        'total_litros' => 0.0,
+        'total_gasto' => 0.0,
+        'diesel_litros' => 0.0,
+        'nafta_litros' => 0.0,
+        'por_tipo' => []
+    ];
+    try {
+        $stmtComb = $pdo->query("
+            SELECT 
+                COALESCE(SUM(litros), 0) AS total_litros,
+                COALESCE(SUM(precio_total), 0) AS total_gasto,
+                COALESCE(SUM(CASE WHEN LOWER(nombre_combustible) LIKE '%diesel%' THEN litros ELSE 0 END), 0) AS diesel_litros,
+                COALESCE(SUM(CASE WHEN LOWER(nombre_combustible) LIKE '%nafta%' THEN litros ELSE 0 END), 0) AS nafta_litros
+            FROM combustible
+        ");
+        $rowComb = $stmtComb->fetch();
+        if ($rowComb) {
+            $resCombustible['total_litros'] = (float) $rowComb['total_litros'];
+            $resCombustible['total_gasto'] = (float) $rowComb['total_gasto'];
+            $resCombustible['diesel_litros'] = (float) $rowComb['diesel_litros'];
+            $resCombustible['nafta_litros'] = (float) $rowComb['nafta_litros'];
+        }
+
+        $stmtCombTipo = $pdo->query("
+            SELECT nombre_combustible AS tipo, SUM(litros) AS litros, SUM(precio_total) AS gasto
+            FROM combustible
+            GROUP BY nombre_combustible
+        ");
+        $resCombustible['por_tipo'] = $stmtCombTipo->fetchAll() ?: [];
+    } catch (Throwable $e) {
+        // La tabla se creará con el primer registro de asistencia
+    }
+
+    // 6. Actividades / Tareas del Contrato
+    $resTareas = [
+        'total_tareas' => 0,
+        'tareas_completadas' => 0,
+        'tareas_pendientes' => 0,
+        'porcentaje_avance' => 0.0
+    ];
+    try {
+        $stmtTareas = $pdo->query("
+            SELECT 
+                COUNT(*) AS total_tareas,
+                SUM(CASE WHEN estado = 'Completada' THEN 1 ELSE 0 END) AS tareas_completadas,
+                SUM(CASE WHEN estado = 'Pendiente' THEN 1 ELSE 0 END) AS tareas_pendientes
+            FROM contrato_tareas
+        ");
+        $rowTareas = $stmtTareas->fetch();
+        if ($rowTareas && (int)$rowTareas['total_tareas'] > 0) {
+            $resTareas['total_tareas'] = (int) $rowTareas['total_tareas'];
+            $resTareas['tareas_completadas'] = (int) $rowTareas['tareas_completadas'];
+            $resTareas['tareas_pendientes'] = (int) $rowTareas['tareas_pendientes'];
+            $resTareas['porcentaje_avance'] = round(($resTareas['tareas_completadas'] / $resTareas['total_tareas']) * 100, 1);
+        }
+    } catch (Throwable $e) {
+    }
+
+    // 7. Recursos (Materiales y Herramientas)
+    $resRecursos = [
+        'total_recursos' => 0,
+        'total_materiales' => 0,
+        'total_herramientas' => 0
+    ];
+    try {
+        $stmtRecursos = $pdo->query("
+            SELECT 
+                COUNT(*) AS total_recursos,
+                SUM(CASE WHEN es_material = 1 THEN 1 ELSE 0 END) AS total_materiales,
+                SUM(CASE WHEN es_material = 0 THEN 1 ELSE 0 END) AS total_herramientas
+            FROM recursos
+        ");
+        $rowRec = $stmtRecursos->fetch();
+        if ($rowRec) {
+            $resRecursos['total_recursos'] = (int) $rowRec['total_recursos'];
+            $resRecursos['total_materiales'] = (int) $rowRec['total_materiales'];
+            $resRecursos['total_herramientas'] = (int) $rowRec['total_herramientas'];
+        }
+    } catch (Throwable $e) {
+    }
+
+    // 8. Alertas de certificados técnicos de maquinaria
     $stmtAlertasCert = $pdo->query('
         SELECT 
             COUNT(*) AS total_alertas_cert,
@@ -83,7 +165,7 @@ try {
     ');
     $resAlertasCert = $stmtAlertasCert->fetch() ?: ['total_alertas_cert' => 0, 'cert_vencidos' => 0, 'cert_por_vencer' => 0];
 
-    // Alertas de contratos de obreros
+    // 9. Alertas de contratos de obreros
     $stmtAlertasContratos = $pdo->query('
         SELECT 
             COUNT(*) AS total_alertas_contratos,
@@ -94,7 +176,7 @@ try {
     ');
     $resAlertasContratos = $stmtAlertasContratos->fetch() ?: ['total_alertas_contratos' => 0, 'contratos_vencidos' => 0, 'contratos_por_vencer' => 0];
 
-    // 2. Gráfico: Distribución de obreros por cargo
+    // 10. Gráfico: Distribución de obreros por cargo
     $stmtCargos = $pdo->query('
         SELECT cargo, COUNT(*) AS cantidad
         FROM obreros
@@ -104,7 +186,7 @@ try {
     ');
     $distribucionCargos = $stmtCargos->fetchAll();
 
-    // 3. Gráfico: Top 5 Obras con más horas trabajadas
+    // 11. Gráfico: Top Obras con más horas trabajadas
     $stmtHorasObras = $pdo->query('
         SELECT o.nombre, COALESCE(SUM(r.horas_trabajadas), 0) AS total_horas
         FROM obras o
@@ -116,11 +198,12 @@ try {
     ');
     $horasPorObra = $stmtHorasObras->fetchAll();
 
-    // 4. Próximos vencimientos de certificados de maquinaria (Top 5)
+    // 12. Próximos vencimientos de certificados de maquinaria (Top 5)
     $stmtVencimientos = $pdo->query('
         SELECT c.id_certificado, c.nombre_archivo, c.fecha_vencimiento,
                m.nombre AS nombre_maquinaria, m.marca,
-               DATEDIFF(c.fecha_vencimiento, CURDATE()) AS dias_restantes
+               DATEDIFF(c.fecha_vencimiento, CURDATE()) AS dias_restantes,
+               "maquinaria" AS tipo_alerta
         FROM certificado c
         JOIN maquinaria m ON c.id_maquinaria = m.id_maquinaria
         WHERE c.fecha_vencimiento IS NOT NULL
@@ -130,14 +213,20 @@ try {
     ');
     $alertasRecientes = $stmtVencimientos->fetchAll();
 
-    // 5. Últimos logs de auditoría (Top 5)
-    $stmtLogs = $pdo->query('
-        SELECT id_log, usuario, rol, accion, entidad, entidad_id, created_at
-        FROM auditoria_logs
-        ORDER BY created_at DESC
+    // 13. Próximos vencimientos de contratos de obreros (Top 5)
+    $stmtContratosVenc = $pdo->query('
+        SELECT co.id_contrato_obrero, co.fecha_vencimiento,
+               CONCAT(o.nombre, " ", o.apellido) AS nombre_obrero, o.documento,
+               DATEDIFF(co.fecha_vencimiento, CURDATE()) AS dias_restantes,
+               "obrero" AS tipo_alerta
+        FROM contrato_obrero co
+        JOIN obreros o ON co.id_obrero = o.id_obrero
+        WHERE co.fecha_vencimiento IS NOT NULL
+          AND co.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+        ORDER BY co.fecha_vencimiento ASC
         LIMIT 5
     ');
-    $ultimosLogs = $stmtLogs->fetchAll();
+    $alertasContratos = $stmtContratosVenc->fetchAll();
 
     echo json_encode([
         'success' => true,
@@ -159,17 +248,23 @@ try {
                     'total_horas'     => (float) $resHoras['total_horas'],
                     'total_registros' => (int) $resHoras['total_registros'],
                 ],
+                'combustible' => $resCombustible,
+                'actividades' => $resTareas,
+                'recursos'    => $resRecursos,
                 'alertas' => [
                     'certificados' => (int) $resAlertasCert['total_alertas_cert'],
                     'cert_vencidos' => (int) $resAlertasCert['cert_vencidos'],
                     'cert_por_vencer' => (int) $resAlertasCert['cert_por_vencer'],
                     'contratos' => (int) $resAlertasContratos['total_alertas_contratos'],
+                    'contratos_vencidos' => (int) $resAlertasContratos['contratos_vencidos'],
+                    'contratos_por_vencer' => (int) $resAlertasContratos['contratos_por_vencer'],
+                    'total_general' => (int)$resAlertasCert['total_alertas_cert'] + (int)$resAlertasContratos['total_alertas_contratos'],
                 ]
             ], 
             'distribucion_cargos' => $distribucionCargos,
             'horas_por_obra' => $horasPorObra,
             'alertas_recientes' => $alertasRecientes,
-            'ultimos_logs' => $ultimosLogs,
+            'alertas_contratos' => $alertasContratos,
         ]
     ]);
 

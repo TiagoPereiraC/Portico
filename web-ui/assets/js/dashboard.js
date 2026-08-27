@@ -19,6 +19,9 @@ const COLORES_PORTICO = [
 
 let chartCargosInstance = null;
 let chartHorasInstance = null;
+let alertasMaquinariaCache = [];
+let alertasContratosCache = [];
+let tabAlertaActual = "maquinaria";
 
 function inicializarFecha() {
     const el = document.getElementById("currentDateDisplay");
@@ -32,7 +35,6 @@ function inicializarFecha() {
         day: "numeric"
     };
     const fechaTexto = ahora.toLocaleDateString("es-AR", opciones);
-    // Capitalizar primera letra
     el.textContent = fechaTexto.charAt(0).toUpperCase() + fechaTexto.slice(1);
 }
 
@@ -52,24 +54,29 @@ async function cargarMetricasDashboard() {
         }
 
         if (datos && datos.data) {
+            alertasMaquinariaCache = datos.data.alertas_recientes || [];
+            alertasContratosCache = datos.data.alertas_contratos || [];
+
             renderizarKPIs(datos.data.kpis);
+            renderizarResumenOperativo(datos.data.kpis);
             renderizarGraficoCargos(datos.data.distribucion_cargos || []);
             renderizarGraficoHoras(datos.data.horas_por_obra || []);
-            renderizarAlertas(datos.data.alertas_recientes || []);
+            renderizarAlertas();
         }
     } catch (error) {
         console.error("Error cargando dashboard:", error);
     }
 }
 
-function animarNumero(elementoId, valorFinal, esDecimal = false) {
+function animarNumero(elementoId, valorFinal, esDecimal = false, prefijo = "", sufijo = "") {
     const el = document.getElementById(elementoId);
     if (!el) return;
 
+    const num = Number(valorFinal) || 0;
     const inicio = 0;
     const duracion = 800;
     const pasos = 25;
-    const incremento = valorFinal / pasos;
+    const incremento = num / pasos;
     let actual = inicio;
     let contador = 0;
 
@@ -78,9 +85,15 @@ function animarNumero(elementoId, valorFinal, esDecimal = false) {
         actual += incremento;
         if (contador >= pasos) {
             clearInterval(timer);
-            el.textContent = esDecimal ? valorFinal.toLocaleString("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : valorFinal.toLocaleString("es-AR");
+            const formatted = esDecimal
+                ? num.toLocaleString("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+                : num.toLocaleString("es-AR");
+            el.textContent = `${prefijo}${formatted}${sufijo}`;
         } else {
-            el.textContent = esDecimal ? actual.toLocaleString("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : Math.round(actual).toLocaleString("es-AR");
+            const formatted = esDecimal
+                ? actual.toLocaleString("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+                : Math.round(actual).toLocaleString("es-AR");
+            el.textContent = `${prefijo}${formatted}${sufijo}`;
         }
     }, duracion / pasos);
 }
@@ -95,9 +108,17 @@ function renderizarKPIs(kpis) {
     const elObrasTotal = document.getElementById("kpiObrasTotal");
     if (elObrasTotal) elObrasTotal.textContent = `${totalObras} en total`;
 
+    const avancePct = kpis.actividades?.porcentaje_avance ?? 0;
     const elObrasBar = document.getElementById("kpiObrasBar");
-    if (elObrasBar && totalObras > 0) {
-        elObrasBar.style.width = `${Math.round((activasObras / totalObras) * 100)}%`;
+    if (elObrasBar) {
+        const barraWidth = totalObras > 0 ? Math.round((activasObras / totalObras) * 100) : 0;
+        elObrasBar.style.width = `${barraWidth}%`;
+    }
+    const elObrasAvance = document.getElementById("kpiObrasAvance");
+    if (elObrasAvance) {
+        elObrasAvance.textContent = avancePct > 0 
+            ? `Avance actividades: ${avancePct}%`
+            : "Proyectos en ejecución";
     }
 
     // 2. Obreros
@@ -110,6 +131,14 @@ function renderizarKPIs(kpis) {
     const elObrerosBar = document.getElementById("kpiObrerosBar");
     if (elObrerosBar && totalObreros > 0) {
         elObrerosBar.style.width = `${Math.round((activosObreros / totalObreros) * 100)}%`;
+    }
+
+    const contratosPorVencer = kpis.alertas?.contratos ?? 0;
+    const elObrerosHint = document.getElementById("kpiObrerosAlertasHint");
+    if (elObrerosHint) {
+        elObrerosHint.textContent = contratosPorVencer > 0
+            ? `${contratosPorVencer} contrato${contratosPorVencer === 1 ? '' : 's'} por vencer`
+            : "Cuadrillas operativas al día";
     }
 
     // 3. Maquinaria
@@ -132,12 +161,71 @@ function renderizarKPIs(kpis) {
     const elMaqAsignada = document.getElementById("kpiMaqAsignada");
     if (elMaqAsignada) elMaqAsignada.textContent = `${asignadaMaq} equipos en obra actualmente`;
 
-    // 4. Horas
+    // 4. Combustible & Insumos
+    const litrosComb = kpis.combustible?.total_litros ?? 0;
+    const gastoComb = kpis.combustible?.total_gasto ?? 0;
+    const dieselLitros = kpis.combustible?.diesel_litros ?? 0;
+    const naftaLitros = kpis.combustible?.nafta_litros ?? 0;
+
+    animarNumero("kpiCombustibleLitros", litrosComb, litrosComb % 1 !== 0, "", " L");
+    const elCombGasto = document.getElementById("kpiCombustibleGasto");
+    if (elCombGasto) {
+        elCombGasto.textContent = gastoComb > 0 ? `$ ${gastoComb.toLocaleString("es-AR")}` : "$ 0";
+    }
+
+    const elCombDetalle = document.getElementById("kpiCombustibleDetalle");
+    if (elCombDetalle) {
+        elCombDetalle.textContent = `Diesel: ${Math.round(dieselLitros)}L | Nafta: ${Math.round(naftaLitros)}L`;
+    }
+}
+
+function renderizarResumenOperativo(kpis) {
+    if (!kpis) return;
+
+    // Horas acumuladas
     const totalHoras = kpis.horas?.total_horas ?? 0;
     const totalRegistros = kpis.horas?.total_registros ?? 0;
-    animarNumero("kpiTotalHoras", totalHoras, true);
-    const elTotalRegistros = document.getElementById("kpiTotalRegistros");
-    if (elTotalRegistros) elTotalRegistros.textContent = `${totalRegistros} asistencias`;
+    animarNumero("subKpiHoras", totalHoras, true, "", " hrs");
+    const elRegistros = document.getElementById("subKpiRegistros");
+    if (elRegistros) elRegistros.textContent = `${totalRegistros} registros de asistencia`;
+
+    // Avance de Contratos
+    const pctAvance = kpis.actividades?.porcentaje_avance ?? 0;
+    const tareasComp = kpis.actividades?.tareas_completadas ?? 0;
+    const totalTareas = kpis.actividades?.total_tareas ?? 0;
+    animarNumero("subKpiAvanceContratos", pctAvance, true, "", "%");
+    const elTareas = document.getElementById("subKpiTareas");
+    if (elTareas) {
+        elTareas.textContent = totalTareas > 0
+            ? `${tareasComp} de ${totalTareas} tareas completadas`
+            : "Sin actividades de contrato registradas";
+    }
+
+    // Recursos
+    const totalRecursos = kpis.recursos?.total_recursos ?? 0;
+    const totalMat = kpis.recursos?.total_materiales ?? 0;
+    const totalHerr = kpis.recursos?.total_herramientas ?? 0;
+    animarNumero("subKpiRecursos", totalRecursos, false, "", " items");
+    const elRecursosDetalle = document.getElementById("subKpiRecursosDetalle");
+    if (elRecursosDetalle) {
+        elRecursosDetalle.textContent = `${totalMat} materiales | ${totalHerr} herramientas`;
+    }
+}
+
+function cambiarTabAlertas(tipo) {
+    tabAlertaActual = tipo;
+    const btnMaq = document.getElementById("tabAlertasMaq");
+    const btnObr = document.getElementById("tabAlertasObr");
+
+    if (tipo === "maquinaria") {
+        if (btnMaq) btnMaq.className = "tab-btn active";
+        if (btnObr) btnObr.className = "tab-btn";
+    } else {
+        if (btnMaq) btnMaq.className = "tab-btn";
+        if (btnObr) btnObr.className = "tab-btn active";
+    }
+
+    renderizarAlertas();
 }
 
 function renderizarGraficoCargos(cargos) {
@@ -194,7 +282,6 @@ function renderizarGraficoCargos(cargos) {
             }
         });
     } else {
-        // Fallback visual si Chart.js no estuviera disponible
         renderizarFallbackCargos(canvas.parentElement, cargos);
     }
 }
@@ -263,21 +350,27 @@ function renderizarGraficoHoras(obras) {
     }
 }
 
-function renderizarAlertas(alertas) {
+function renderizarAlertas() {
     const container = document.getElementById("alertsList");
     if (!container) return;
 
-    if (!alertas.length) {
+    const lista = (tabAlertaActual === "maquinaria") ? alertasMaquinariaCache : alertasContratosCache;
+
+    if (!lista.length) {
+        const mensajeVacio = (tabAlertaActual === "maquinaria")
+            ? "Todos los certificados y documentación técnica de maquinaria se encuentran al día."
+            : "Todos los contratos de personal se encuentran vigentes y al día.";
+
         container.innerHTML = `
-            <div style="display:flex; align-items:center; gap:8px; padding:12px; background:#f0fdf4; border-radius:10px; color:#166534; font-size:13px; font-weight:500;">
+            <div style="display:flex; align-items:center; gap:8px; padding:14px 18px; background:#f0fdf4; border-radius:10px; color:#166534; font-size:13px; font-weight:500;">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                Todos los certificados y documentación técnica se encuentran al día.
+                ${mensajeVacio}
             </div>
         `;
         return;
     }
 
-    container.innerHTML = alertas.map(a => {
+    container.innerHTML = lista.map(a => {
         const dias = Number(a.dias_restantes);
         let badgeText, badgeClass;
 
@@ -292,13 +385,21 @@ function renderizarAlertas(alertas) {
             badgeClass = "por_vencer";
         }
 
+        const titulo = a.tipo_alerta === "obrero"
+            ? escapeHtml(a.nombre_obrero || "Obrero")
+            : `${escapeHtml(a.nombre_maquinaria || "Equipo")} ${a.marca ? `(${escapeHtml(a.marca)})` : ''}`;
+
+        const subtitulo = a.tipo_alerta === "obrero"
+            ? `DNI: ${escapeHtml(a.documento || "S/D")} · Vencimiento contrato: ${escapeHtml(a.fecha_vencimiento || "")}`
+            : `${escapeHtml(a.nombre_archivo || "Certificado técnico")} · Vencimiento: ${escapeHtml(a.fecha_vencimiento || "")}`;
+
         return `
             <div class="alert-row">
                 <div class="alert-left">
                     <svg class="alert-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     <div>
-                        <div style="font-weight: 600; color: #1e293b;">${escapeHtml(a.nombre_maquinaria || "Equipo")} ${a.marca ? `(${escapeHtml(a.marca)})` : ''}</div>
-                        <div style="font-size: 11.5px; color: #64748b;">${escapeHtml(a.nombre_archivo || "Certificado técnico")}</div>
+                        <div style="font-weight: 600; color: #1e293b;">${titulo}</div>
+                        <div style="font-size: 11.5px; color: #64748b;">${subtitulo}</div>
                     </div>
                 </div>
                 <span class="alert-badge-tag ${badgeClass}">${badgeText}</span>
