@@ -168,6 +168,9 @@ public sealed class MainWindow : Form
 			case "maquinaria_certificado_eliminar":
 				await HandleMaquinariaCertificadoEliminarAsync(root);
 				break;
+			case "maquinaria_certificado_editar_fecha":
+				await HandleMaquinariaCertificadoEditarFechaAsync(root);
+				break;
 			case "asistencia_catalogos":
 				await HandleAsistenciaCatalogosAsync(root);
 				break;
@@ -1714,6 +1717,60 @@ public sealed class MainWindow : Form
 		{
 			System.Diagnostics.Debug.WriteLine($"[Maquinaria certificado eliminar error] {ex}");
 			PostToJs(new { type = "maquinaria_certificado_eliminar_response", requestId, success = false, error = "No se pudo eliminar el certificado." });
+		}
+	}
+
+	private async Task HandleMaquinariaCertificadoEditarFechaAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAdministrador(requestId, "maquinaria_certificado_editar_fecha_response"))
+			return;
+
+		try
+		{
+			var idCertificado = ReadPositiveInt(root, "id_certificado");
+			string? fechaVencimiento = null;
+			if (root.TryGetProperty("fecha_vencimiento", out var fechaProp) && fechaProp.ValueKind == JsonValueKind.String)
+			{
+				var val = fechaProp.GetString()?.Trim();
+				if (!string.IsNullOrEmpty(val))
+				{
+					fechaVencimiento = val.Length > 10 ? val.Substring(0, 10) : val;
+				}
+			}
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+			await using var cmd = conn.CreateCommand();
+			cmd.CommandText = "UPDATE certificado SET fecha_vencimiento = @fechaVencimiento WHERE id_certificado = @idCertificado";
+			cmd.Parameters.AddWithValue("@idCertificado", idCertificado);
+			cmd.Parameters.AddWithValue("@fechaVencimiento", (object?)fechaVencimiento ?? DBNull.Value);
+
+			var affected = await cmd.ExecuteNonQueryAsync();
+			if (affected == 0)
+			{
+				throw new InvalidOperationException("El certificado indicado no existe.");
+			}
+
+			PostToJs(new
+			{
+				type = "maquinaria_certificado_editar_fecha_response",
+				requestId,
+				success = true,
+				message = "Fecha de vencimiento actualizada correctamente."
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "maquinaria_certificado_editar_fecha_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Maquinaria certificado editar fecha error] {ex}");
+			PostToJs(new { type = "maquinaria_certificado_editar_fecha_response", requestId, success = false, error = "No se pudo actualizar la fecha del certificado." });
 		}
 	}
 

@@ -202,7 +202,10 @@ maquinariaForm.addEventListener("submit", async (event) => {
 
         const idMaquinaria =
             Number(data.maquinaria?.id_maquinaria) ||
-            Number(payload.id_maquinaria);
+            Number(payload.id_maquinaria) ||
+            Number(itemEnEdicion);
+
+        const fechaForm = certVencimientoForm.value ? certVencimientoForm.value.substring(0, 10) : "";
 
         // =============================
         // Si se seleccionó un certificado,
@@ -213,9 +216,16 @@ maquinariaForm.addEventListener("submit", async (event) => {
             await subirCertificado(
                 idMaquinaria,
                 archivo,
-                certVencimientoForm.value
+                fechaForm
             );
 
+        } else if (idMaquinaria > 0 && certVencimientoForm.dataset.ultimoCertId) {
+            // No se subió un nuevo archivo pero se cambió la fecha de vencimiento de un certificado existente
+            const idCertExistente = Number(certVencimientoForm.dataset.ultimoCertId);
+            const fechaOriginal = certVencimientoForm.dataset.fechaOriginal || "";
+            if (idCertExistente > 0 && fechaForm !== fechaOriginal) {
+                await editarFechaCertificado(idCertExistente, fechaForm || null);
+            }
         }
 
         paginaActual = 1;
@@ -818,24 +828,30 @@ async function cargarCertificados(idMaquinaria) {
 }
 
 async function cargarCertificadosForm(idMaquinaria) {
-
-    if (!apiBase) return;
+    if (!idMaquinaria) return;
 
     try {
+        let data;
+        if (apiBase) {
+            data = await fetchJson(
+                `${apiBase}/cert_maq.php?id_maquinaria=${encodeURIComponent(idMaquinaria)}`
+            );
+        } else {
+            data = await sendDesktopRequest(
+                "maquinaria_certificados_listar",
+                { id_maquinaria: idMaquinaria },
+                "maquinaria_certificados_listar_response"
+            );
+        }
 
-        const data = await fetchJson(
-            `${apiBase}/cert_maq.php?id_maquinaria=${encodeURIComponent(idMaquinaria)}`
-        );
-
-        const certificados = data.certificados || [];
+        const certificados = data?.certificados || [];
 
         if (!certificados.length) {
-
             certListaForm.innerHTML =
                 "<p style='font-size:13px;color:#888;'>No hay certificados cargados.</p>";
-
             certVencimientoForm.value = "";
-
+            certVencimientoForm.dataset.ultimoCertId = "";
+            certVencimientoForm.dataset.fechaOriginal = "";
             return;
         }
 
@@ -843,24 +859,25 @@ async function cargarCertificadosForm(idMaquinaria) {
             .map(renderCertItem)
             .join("");
 
-        // ✔ Tomar el certificado con vencimiento más reciente (más lógico)
+        // ✔ Tomar el certificado con vencimiento más reciente (o el primero de la lista)
         const ultimoCert = certificados.length
-    ? certificados.reduce((a, b) => {
-        if (!a.fecha_vencimiento) return b;
-        if (!b.fecha_vencimiento) return a;
-        return new Date(a.fecha_vencimiento) > new Date(b.fecha_vencimiento) ? a : b;
-    })
-    : null;
+            ? certificados.reduce((a, b) => {
+                if (!a.fecha_vencimiento) return b;
+                if (!b.fecha_vencimiento) return a;
+                return new Date(a.fecha_vencimiento) > new Date(b.fecha_vencimiento) ? a : b;
+            })
+            : null;
 
-        // ✔ asegurar formato correcto YYYY-MM-DD
-        certVencimientoForm.value = ultimoCert?.fecha_vencimiento
+        const fechaStr = ultimoCert?.fecha_vencimiento
             ? ultimoCert.fecha_vencimiento.substring(0, 10)
             : "";
 
+        certVencimientoForm.value = fechaStr;
+        certVencimientoForm.dataset.ultimoCertId = ultimoCert ? String(ultimoCert.id_certificado) : "";
+        certVencimientoForm.dataset.fechaOriginal = fechaStr;
+
     } catch (error) {
-
         console.error(error);
-
         certListaForm.innerHTML =
             "<p style='font-size:13px;color:#c44;'>No se pudieron cargar los certificados.</p>";
     }
@@ -1084,16 +1101,16 @@ function abrirEditarFechaCert(btn) {
   if (!nameSpan || nameSpan.querySelector(".cert-edit-inline")) return;
 
   const textoActual = nameSpan.innerHTML;
-  const vencimientoActual = btn.dataset.vencimiento || "";
+  const vencimientoActual = btn.dataset.vencimiento ? btn.dataset.vencimiento.substring(0, 10) : "";
 
   if (actions) actions.style.display = "none";
 
   nameSpan.innerHTML = `
-    <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-      <input type="date" class="cert-edit-inline" value="${vencimientoActual}" style="width:140px;padding:4px 8px;border:1px solid #b54747;border-radius:6px;font-size:13px;">
-      <button class="cert-edit-confirm" style="background:#b54747;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;">Guardar</button>
-      <button class="cert-edit-cancel" style="background:#888;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;">Cancelar</button>
-    </span>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;">
+      <input type="date" class="cert-edit-inline" value="${vencimientoActual}" style="width:140px;padding:4px 8px;border:1.5px solid #b54747;border-radius:6px;font-size:13px;">
+      <button type="button" class="cert-edit-confirm" style="background:#b54747;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;">Guardar</button>
+      <button type="button" class="cert-edit-cancel" style="background:#64748b;color:#fff;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;">Cancelar</button>
+    </div>
   `;
 
   const input = nameSpan.querySelector(".cert-edit-inline");
@@ -1110,16 +1127,25 @@ function abrirEditarFechaCert(btn) {
   cancelBtn.addEventListener("click", restaurar);
 
   confirmBtn.addEventListener("click", async () => {
-    const nuevaFecha = input.value;
-    if (!nuevaFecha) return;
+    const nuevaFecha = input.value ? input.value.substring(0, 10) : "";
+    if (!nuevaFecha) {
+      setFeedback("Seleccioná una fecha válida.", "error");
+      return;
+    }
     confirmBtn.disabled = true;
     confirmBtn.textContent = "...";
     try {
       await editarFechaCertificado(idCert, nuevaFecha);
-      await cargarCertificadosForm(itemEnEdicion);
-      if (certModal.dataset.idMaquinaria) await cargarCertificados(Number(certModal.dataset.idMaquinaria));
-      restaurar();
-      setFeedback("Fecha actualizada.", "success");
+      setFeedback("Fecha de vencimiento actualizada correctamente.", "success");
+
+      if (itemEnEdicion) {
+        await cargarCertificadosForm(itemEnEdicion);
+      }
+      const modalMaqId = certModal?.dataset?.idMaquinaria;
+      if (modalMaqId) {
+        await cargarCertificados(Number(modalMaqId));
+      }
+      await cargarMaquinaria();
     } catch (err) {
       setFeedback(err.message || "No se pudo actualizar.", "error");
       restaurar();
