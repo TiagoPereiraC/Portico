@@ -294,7 +294,7 @@ INSERT INTO obreros (nombre, apellido, documento, telefono, fecha_contratacion, 
 ('Óscar', 'Vargas', '41901238', '3764-60109', '2025-06-10', NULL, 'Operador de maquinaria', 1),
 ('Héctor', 'Sosa', '32012349', '3764-60110', '2025-07-10', NULL, 'Peón', 1),
 ('Daniel', 'Romero', '33123450', '3764-60111', '2025-08-10', NULL, 'Albañil', 1),
-('Sergio', 'Torres', '34234561', '3764-60112', '2025-01-10', NULL, 'Electricista', 0),
+('Sergio', 'Torres', '34234561', '3764-60112', '2025-01-10', '2026-06-30', 'Electricista', 0),
 ('Marcelo', 'Ramírez', '35345672', '3764-60113', '2025-02-10', NULL, 'Operador de maquinaria', 1),
 ('Gustavo', 'Flores', '36456783', '3764-60114', '2025-03-10', NULL, 'Albañil', 1),
 ('Alberto', 'Díaz', '37567894', '3764-60115', '2025-04-10', NULL, 'Plomero', 1),
@@ -338,7 +338,7 @@ INSERT INTO obreros (nombre, apellido, documento, telefono, fecha_contratacion, 
 ('Omar', 'Morínigo', '35345612', '3764-60153', '2025-02-10', '2026-12-31', 'Electricista', 1),
 ('Julio', 'Fernández', '36456723', '3764-60154', '2025-03-10', NULL, 'Soldador', 0),
 ('Antonio', 'Vera', '37567834', '3764-60155', '2025-04-10', NULL, 'Capataz', 1)
-ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), apellido = VALUES(apellido), telefono = VALUES(telefono), cargo = VALUES(cargo), activo = VALUES(activo);
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), apellido = VALUES(apellido), telefono = VALUES(telefono), cargo = VALUES(cargo), fecha_contratacion = VALUES(fecha_contratacion), fecha_fin = VALUES(fecha_fin), activo = VALUES(activo);
 
 -- ===== 4. CONTRATOS OBREROS =====
 INSERT INTO contrato_obrero (archivo, nombre_archivo, id_obrero, fecha_vencimiento)
@@ -360,8 +360,7 @@ WHERE o.id_obrero <= 45
 INSERT INTO contratos (id_obra, archivo, nombre_archivo, fecha_subida)
 SELECT ob.id_obra, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', CONCAT('contrato_', ob.numero_contrata, '.pdf'), ob.fecha_inicio
 FROM obras ob
-WHERE ob.id_obra <= 25
-  AND NOT EXISTS (SELECT 1 FROM contratos WHERE id_obra = ob.id_obra);
+WHERE NOT EXISTS (SELECT 1 FROM contratos WHERE id_obra = ob.id_obra);
 
 -- ===== 6. MAQUINARIA (25 maquinarias) =====
 INSERT INTO maquinaria (nombre, marca) VALUES
@@ -611,7 +610,181 @@ INSERT INTO contrato_tareas (id_contrato, id_tarea_origen, descripcion, importe,
 
 (5, NULL, 'Nivelación, perfilado y compactación de subrasante', 780000.00, 'Completada', '2026-03-15'),
 (5, NULL, 'Hormigonado de cordón cuneta en 18 cuadras', 4200000.00, 'Completada', '2026-06-20'),
-(5, NULL, 'Colocación de empedrado basáltico trabado', 5600000.00, 'Pendiente', NULL);
+(5, NULL, 'Colocación de empedrado basáltico trabado', 5600000.00, 'Pendiente', NULL),
+
+(6, NULL, 'Replanteo planialtimétrico y sondeos de interferencias', 680000.00, 'Completada', '2026-03-20'),
+(6, NULL, 'Excavación a cielo abierto para colector principal e=3.5m', 2950000.00, 'Completada', '2026-04-15'),
+(6, NULL, 'Instalación de cañerías de PVC cloacal de 315mm', 5400000.00, 'Pendiente', NULL),
+(6, NULL, 'Construcción de bocas de registro de hormigón armado', 3100000.00, 'Pendiente', NULL),
+(6, NULL, 'Ejecución de estación elevadora y bombas sumergibles', 7800000.00, 'Pendiente', NULL),
+(6, NULL, 'Pruebas hidráulicas de estanqueidad y empalme a red', 1250000.00, 'Pendiente', NULL),
+
+(7, NULL, 'Demolición de pisos existentes y retiro de escombros', 850000.00, 'Completada', '2026-02-05'),
+(7, NULL, 'Contrapiso de hormigón H13 con malla sima', 2300000.00, 'Completada', '2026-03-10'),
+(7, NULL, 'Colocación de baldosas graníticas y baldosas podotáctiles', 4100000.00, 'Pendiente', NULL),
+(7, NULL, 'Instalación subterránea de ductos y 40 farolas LED', 3200000.00, 'Pendiente', NULL),
+(7, NULL, 'Pérgolas de madera dura, bancos y cestos de residuos', 1950000.00, 'Pendiente', NULL),
+(7, NULL, 'Parquización, siembra de césped y canteros florales', 980000.00, 'Pendiente', NULL),
+
+(8, NULL, 'Limpieza de traza y desmonte de vegetación', 750000.00, 'Completada', '2026-02-28'),
+(8, NULL, 'Excavación masiva para canal aliviador', 3600000.00, 'Completada', '2026-04-05'),
+(8, NULL, 'Hormigonado de solera y muros laterales de canal H21', 8900000.00, 'Pendiente', NULL),
+(8, NULL, 'Colocación de tubos de hormigón premoldeado Ø1200', 6200000.00, 'Pendiente', NULL),
+(8, NULL, 'Badenes y sumideros de captación pluvial urbana', 2450000.00, 'Pendiente', NULL),
+(8, NULL, 'Colchonetas de piedra embolsada en desembocadura', 1800000.00, 'Pendiente', NULL),
+
+(9, NULL, 'Movimiento de suelo y nivelación de 50 plateas', 4200000.00, 'Completada', '2026-01-28'),
+(9, NULL, 'Hormigonado de plateas de fundación con instalaciones', 12800000.00, 'Completada', '2026-03-15'),
+(9, NULL, 'Mampostería de bloques de hormigón celular curado', 18500000.00, 'Pendiente', NULL),
+(9, NULL, 'Estructura de techo en perfiles C y chapa trapezoidal', 14200000.00, 'Pendiente', NULL),
+(9, NULL, 'Instalación eléctrica, agua, cloacas y termotanques solares', 16900000.00, 'Pendiente', NULL),
+(9, NULL, 'Revoques, revestimientos cerámicos y pintura látex exterior', 9600000.00, 'Pendiente', NULL),
+
+(10, NULL, 'Nivelación de terreno y excavación de pozos de bases', 920000.00, 'Completada', '2026-03-05'),
+(10, NULL, 'Hormigón armado en bases aisladas y vigas de arriostre', 3400000.00, 'Completada', '2026-04-20'),
+(10, NULL, 'Fabricación y montaje de estructura metálica reticulada', 9800000.00, 'Pendiente', NULL),
+(10, NULL, 'Cubierta de chapa con aislación térmica de lana de vidrio', 5600000.00, 'Pendiente', NULL),
+(10, NULL, 'Piso alisado de microcemento con demarcación reglamentaria', 4200000.00, 'Pendiente', NULL),
+(10, NULL, 'Construcción de módulo de vestuarios y sanitarios accesibles', 6700000.00, 'Pendiente', NULL),
+
+(11, NULL, 'Fresado de carpeta asfáltica deteriorada e=4cm', 3800000.00, 'Completada', '2026-03-25'),
+(11, NULL, 'Bacheo superficial y profundo con mezcla en caliente', 6400000.00, 'Completada', '2026-05-10'),
+(11, NULL, 'Riego de liga con emulsión asfáltica catiónica', 2100000.00, 'Pendiente', NULL),
+(11, NULL, 'Provisión y distribución de carpeta de concreto asfáltico 5cm', 18900000.00, 'Pendiente', NULL),
+(11, NULL, 'Limpieza y perfilado de banquinas y cunetas laterales', 3200000.00, 'Pendiente', NULL),
+(11, NULL, 'Pintura termoplástica reflectante y tachas viales', 2800000.00, 'Pendiente', NULL),
+
+(12, NULL, 'Apertura de pozos y hormigonado de bases cilíndricas', 1450000.00, 'Completada', '2026-02-05'),
+(12, NULL, 'Montaje de 140 columnas metálicas de acero de 9m', 4800000.00, 'Completada', '2026-03-30'),
+(12, NULL, 'Tendido de 4800m de cable de aluminio preensamblado', 3900000.00, 'Completada', '2026-05-15'),
+(12, NULL, 'Instalación y conexión de artefactos LED 150W IP66', 5200000.00, 'Pendiente', NULL),
+(12, NULL, 'Montaje de tableros de comando con fotocélulas y disyuntores', 1650000.00, 'Pendiente', NULL),
+(12, NULL, 'Medición de resistencia de puesta a tierra y puesta en servicio', 850000.00, 'Pendiente', NULL),
+
+(13, NULL, 'Demolición parcial y apertura de vanos en muros existentes', 680000.00, 'Completada', '2026-02-12'),
+(13, NULL, 'Fundaciones corridas y encadenado inferior de H°A°', 2800000.00, 'Completada', '2026-03-28'),
+(13, NULL, 'Mampostería de elevación de ladrillos cerámicos huecos', 4500000.00, 'Completada', '2026-05-20'),
+(13, NULL, 'Cubierta metálica con chapa U-45 autoportante', 3900000.00, 'Pendiente', NULL),
+(13, NULL, 'Instalación eléctrica trifásica industrial para maquinarias', 5400000.00, 'Pendiente', NULL),
+(13, NULL, 'Pisos de alta resistencia mecánica y pintura epoxi', 3100000.00, 'Pendiente', NULL),
+
+(14, NULL, 'Aserrado y demolición de veredas y cordones existentes', 980000.00, 'Completada', '2026-02-22'),
+(14, NULL, 'Contrapiso de hormigón armado H17 e=10cm', 2600000.00, 'Completada', '2026-04-10'),
+(14, NULL, 'Ejecución de 48 rampas de esquina con pendiente reglamentaria', 3400000.00, 'Pendiente', NULL),
+(14, NULL, 'Colocación de baldosas podotáctiles de advertencia y guía', 4200000.00, 'Pendiente', NULL),
+(14, NULL, 'Reubicación de tapas de registro de servicios y sumideros', 1200000.00, 'Pendiente', NULL),
+
+(15, NULL, 'Construcción de ataguías y desvío provisorio de cauce', 3200000.00, 'Completada', '2026-02-20'),
+(15, NULL, 'Pilotaje perforado de gran diámetro en estribos y pilas', 14500000.00, 'Completada', '2026-05-15'),
+(15, NULL, 'Encofrado y hormigonado de cabezales y pilas centrales', 11200000.00, 'Pendiente', NULL),
+(15, NULL, 'Montaje de 12 vigas pretensadas de 21m con grúa de 70T', 18600000.00, 'Pendiente', NULL),
+(15, NULL, 'Hormigonado de losa de tablero y carpeta de desgaste', 9800000.00, 'Pendiente', NULL),
+(15, NULL, 'Defensas tipo New Jersey, juntas de dilatación y barandas', 4700000.00, 'Pendiente', NULL),
+
+(16, NULL, 'Zanjeo y soterrado de redes eléctricas y telecomunicaciones', 3400000.00, 'Completada', '2026-03-20'),
+(16, NULL, 'Bases de hormigón y colocación de adoquines intertrabados', 6800000.00, 'Completada', '2026-05-25'),
+(16, NULL, 'Instalación de pérgolas metálicas y decks de madera tratada', 5200000.00, 'Pendiente', NULL),
+(16, NULL, 'Sistema de iluminación ambiental cálida y columnas LED', 3900000.00, 'Pendiente', NULL),
+(16, NULL, 'Mobiliario urbano: mesas gastronómicas, bancos y bebederos', 2900000.00, 'Pendiente', NULL),
+
+(17, NULL, 'Refuerzo estructural de columnas y losa de piso inferior', 4900000.00, 'Completada', '2026-02-01'),
+(17, NULL, 'Montaje de estructura liviana Steel Frame tercer piso', 12400000.00, 'Completada', '2026-04-15'),
+(17, NULL, 'Cerramientos exteriores en placas cementicias y aislación', 7800000.00, 'Pendiente', NULL),
+(17, NULL, 'Divisiones interiores en tabiquería Durlock acústico', 6500000.00, 'Pendiente', NULL),
+(17, NULL, 'Sistema central de climatización VRF y ventilación', 11800000.00, 'Pendiente', NULL),
+(17, NULL, 'Cableado estructurado de datos, audio de salas y seguridad', 5600000.00, 'Pendiente', NULL),
+
+(18, NULL, 'Dragado de borde y preparación de lecho ribereño', 4500000.00, 'Completada', '2026-03-30'),
+(18, NULL, 'Colocación de geotextil no tejido de alta resistencia', 2100000.00, 'Completada', '2026-05-10'),
+(18, NULL, 'Armado y llenado de gaviones de alambre galvanizado con piedra', 11400000.00, 'Pendiente', NULL),
+(18, NULL, 'Colchonetas tipo Reno en taludes de escurrimiento', 6800000.00, 'Pendiente', NULL),
+(18, NULL, 'Relleno compactado detrás de muro y sendero superior', 5200000.00, 'Pendiente', NULL),
+
+(19, NULL, 'Excavación masiva para reactores y piletas de decantación', 5600000.00, 'Completada', '2026-02-15'),
+(19, NULL, 'Hormigonado de plateas y tabiques de H°A° impermeable', 19800000.00, 'Pendiente', NULL),
+(19, NULL, 'Instalación de geomembranas de PEAD 1.5mm termosoldadas', 8200000.00, 'Pendiente', NULL),
+(19, NULL, 'Montaje electromecánico de aireadores y bombas dosificadoras', 14500000.00, 'Pendiente', NULL),
+(19, NULL, 'Tendido de cañerías de impulsión y manifold de distribución', 7600000.00, 'Pendiente', NULL),
+
+(20, NULL, 'Apertura de picada y limpieza de servidumbre de paso', 2400000.00, 'Completada', '2026-03-05'),
+(20, NULL, 'Izaje de 85 postes de hormigón armado y madera tratada', 5900000.00, 'Completada', '2026-04-30'),
+(20, NULL, 'Tendido y tensado de conductor de aleación de aluminio Almelec', 8400000.00, 'Pendiente', NULL),
+(20, NULL, 'Montaje de 4 subestaciones transformadoras bipostes de 63kVA', 6700000.00, 'Pendiente', NULL),
+(20, NULL, 'Seccionadores fusibles, descargadores y conexionado rural', 2900000.00, 'Pendiente', NULL),
+
+(21, NULL, 'Fabricación de pontones flotantes de acero naval', 18900000.00, 'Completada', '2026-04-10'),
+(21, NULL, 'Hincado de pilotes guía de acero rellenos de hormigón', 12400000.00, 'Pendiente', NULL),
+(21, NULL, 'Montaje de pasarela articulada de acceso de 35m', 9800000.00, 'Pendiente', NULL),
+(21, NULL, 'Instalación de defensas elásticas y bitas de amarre 50T', 4500000.00, 'Pendiente', NULL),
+(21, NULL, 'Sistema de balizamiento náutico e iluminación de cubierta', 3200000.00, 'Pendiente', NULL),
+
+(22, NULL, 'Nivelación y replanteo de edificio sanitario', 650000.00, 'Completada', '2026-03-01'),
+(22, NULL, 'Vigas de fundación y pilotines de hormigón armado', 3100000.00, 'Completada', '2026-04-15'),
+(22, NULL, 'Mampostería de ladrillos cerámicos y revoque hidrófugo', 5800000.00, 'Pendiente', NULL),
+(22, NULL, 'Instalaciones sanitarias especiales y gases médicos', 4900000.00, 'Pendiente', NULL),
+(22, NULL, 'Carpinterías de aluminio anodizado y vidrios laminados', 3700000.00, 'Pendiente', NULL),
+
+(23, NULL, 'Limpieza de franja ribereña y nivelación de suelo', 1200000.00, 'Completada', '2026-02-15'),
+(23, NULL, 'Hormigonado de veredas peatonales y circuito de bicisenda', 7400000.00, 'Completada', '2026-04-25'),
+(23, NULL, 'Pintura epoxi reflectante en bicisenda y cartelería', 2300000.00, 'Pendiente', NULL),
+(23, NULL, 'Colocación de 60 luminarias solares autónomas', 5600000.00, 'Pendiente', NULL),
+(23, NULL, 'Parquización con especies nativas y riego por goteo', 3100000.00, 'Pendiente', NULL),
+
+(24, NULL, 'Rotura de pavimento y excavación en trinchera', 2800000.00, 'Completada', '2026-02-25'),
+(24, NULL, 'Colocación de conductos premoldeados tipo cajón 2.0x1.5m', 9400000.00, 'Completada', '2026-05-15'),
+(24, NULL, 'Hormigonado de cámaras de enlace y sumideros transversales', 3800000.00, 'Pendiente', NULL),
+(24, NULL, 'Relleno con suelo cemento compactado y repavimentación', 4600000.00, 'Pendiente', NULL),
+
+(25, NULL, 'Perfilado de calzada y excavación de caja e=30cm', 2100000.00, 'Completada', '2026-04-05'),
+(25, NULL, 'Subbase de tosca cementada compactada al 98% Proctor', 4900000.00, 'Completada', '2026-05-30'),
+(25, NULL, 'Colocación de adoquines de hormigón bicapa holandés', 9800000.00, 'Pendiente', NULL),
+(25, NULL, 'Hormigonado de cordones de confinamiento y badenes', 3200000.00, 'Pendiente', NULL),
+
+(26, NULL, 'Plantado de 90 postes de madera tratada con crucetas', 2800000.00, 'Completada', '2026-02-10'),
+(26, NULL, 'Tendido de 3200m de cable preensamblado 4x50mm', 4600000.00, 'Completada', '2026-04-15'),
+(26, NULL, 'Montaje de 90 artefactos de alumbrado público LED 100W', 3900000.00, 'Pendiente', NULL),
+(26, NULL, 'Puesta a tierra individual y tablero de comando', 1400000.00, 'Pendiente', NULL),
+
+(27, NULL, 'Demolición de pisos interiores y sanitarios antiguos', 1100000.00, 'Completada', '2026-03-01'),
+(27, NULL, 'Nuevos pisos graníticos de alto tránsito en hall central', 4300000.00, 'Completada', '2026-05-10'),
+(27, NULL, 'Readecuación de 10 dársenas con pavimento de H° H30', 6800000.00, 'Pendiente', NULL),
+(27, NULL, 'Instalación de nuevos sanitarios accesibles y boleterías', 5200000.00, 'Pendiente', NULL),
+
+(28, NULL, 'Excavaciones para zapatas corridas y pilotines', 950000.00, 'Completada', '2026-03-25'),
+(28, NULL, 'Estructura de hormigón armado vigas y losas alivianadas', 8700000.00, 'Pendiente', NULL),
+(28, NULL, 'Mamposterías de ladrillos cerámicos y revoques interiores', 5400000.00, 'Pendiente', NULL),
+(28, NULL, 'Instalaciones eléctricas, sanitarias y red de climatización', 7200000.00, 'Pendiente', NULL),
+
+(29, NULL, 'Apertura de zanja de emergencia en calzada urbana', 1850000.00, 'Completada', '2026-04-10'),
+(29, NULL, 'Retiro de cañería colapsada y entibado de zanja', 2400000.00, 'Completada', '2026-05-05'),
+(29, NULL, 'Instalación de cañería cloacal de PVC corrugado Ø400', 4900000.00, 'Pendiente', NULL),
+(29, NULL, 'Reconstrucción de cámara de inspección y tapado', 2100000.00, 'Pendiente', NULL),
+
+(30, NULL, 'Nivelación de terreno y base granular compactada', 1400000.00, 'Completada', '2026-04-05'),
+(30, NULL, 'Piso de hormigón peinado H21 con junta de dilatación', 5800000.00, 'Pendiente', NULL),
+(30, NULL, 'Cerco perimetral olímpico con alambre romboidal', 3200000.00, 'Pendiente', NULL),
+(30, NULL, 'Torres de iluminación con reflectores LED y arcos/tableros', 2600000.00, 'Pendiente', NULL),
+
+(31, NULL, 'Demolición de cielorrasos y revoques con humedad', 650000.00, 'Completada', '2025-06-20'),
+(31, NULL, 'Reemplazo de cubierta de techo y canaletas de desagüe', 3400000.00, 'Completada', '2025-08-15'),
+(31, NULL, 'Instalación eléctrica completa embutida con jabalinas', 2800000.00, 'Completada', '2025-10-10'),
+(31, NULL, 'Pintura general sintética y látex lavable en celdas y oficinas', 1900000.00, 'Completada', '2025-12-15'),
+
+(32, NULL, 'Fresado de deformaciones y ahuellamientos en calzada', 2900000.00, 'Completada', '2025-08-25'),
+(32, NULL, 'Bacheo profundo con hormigón de fraguado rápido H30', 4800000.00, 'Completada', '2025-09-30'),
+(32, NULL, 'Carpeta asfáltica de terminación en caliente de 5cm', 7200000.00, 'Completada', '2025-11-20'),
+
+(33, NULL, 'Perforación hidrogeológica entubada de 130m de profundidad', 4600000.00, 'Completada', '2025-06-30'),
+(33, NULL, 'Instalación de bomba sumergible trifásica de 7.5HP', 3100000.00, 'Completada', '2025-08-10'),
+(33, NULL, 'Montaje de torre metálica y tanque cisterna de 20.000L', 5400000.00, 'Completada', '2025-10-05'),
+
+(34, NULL, 'Movimiento de suelo y contrapiso de hormigón', 1800000.00, 'Completada', '2025-07-25'),
+(34, NULL, 'Colocación de losetas atérmicas y barandas de seguridad', 3200000.00, 'Completada', '2025-09-15'),
+(34, NULL, 'Instalación de luminarias peatonales y bancos de plaza', 2100000.00, 'Completada', '2025-11-10'),
+
+(35, NULL, 'Excavación al pie de talud y perfilado de terreno', 1500000.00, 'Completada', '2025-05-10'),
+(35, NULL, 'Muro de contención de hormigón ciclópeo con barbacanas', 5900000.00, 'Completada', '2025-07-20'),
+(35, NULL, 'Canal colector pluvial superior y disipador de energía', 2600000.00, 'Completada', '2025-09-18');
 
 -- ===== 15. COMBUSTIBLE (combustible) =====
 INSERT INTO combustible (nombre_combustible, litros, precio_unitario, precio_total, fecha, id_obra, id_maquinaria) VALUES

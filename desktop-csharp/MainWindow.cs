@@ -1372,6 +1372,30 @@ public sealed class MainWindow : Form
 				}
 			}
 
+			var tareas = new List<object>();
+			await using (var cmd = conn.CreateCommand())
+			{
+				cmd.CommandText =
+					"SELECT ct.id_tarea, ct.id_contrato, ct.id_tarea_origen, ct.descripcion, ct.importe, ct.estado, ct.fecha_completada " +
+					"FROM contrato_tareas ct INNER JOIN contratos c ON c.id_contrato = ct.id_contrato " +
+					"WHERE c.id_obra = @idObra ORDER BY ct.id_tarea ASC";
+				cmd.Parameters.AddWithValue("@idObra", idObra);
+				await using var reader = await cmd.ExecuteReaderAsync();
+				while (await reader.ReadAsync())
+				{
+					tareas.Add(new
+					{
+						id_tarea = reader.GetInt32("id_tarea"),
+						id_contrato = reader.GetInt32("id_contrato"),
+						id_tarea_origen = reader.IsDBNull(reader.GetOrdinal("id_tarea_origen")) ? (int?)null : reader.GetInt32("id_tarea_origen"),
+						descripcion = reader.GetString("descripcion"),
+						importe = reader.GetDecimal("importe"),
+						estado = reader.GetString("estado"),
+						fecha_completada = ReadNullableDate(reader, "fecha_completada")
+					});
+				}
+			}
+
 			PostToJs(new
 			{
 				type = "obras_detalle_response",
@@ -1381,7 +1405,8 @@ public sealed class MainWindow : Form
 				materiales,
 				herramientas,
 				obreros,
-				maquinaria
+				maquinaria,
+				tareas
 			});
 		}
 		catch (InvalidOperationException ex)

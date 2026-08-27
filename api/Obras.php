@@ -190,21 +190,14 @@ ORDER BY ct.id_tarea ASC'
 
     $tareas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // DEBUG TEMPORAL
-    error_log(
-        'OBRA ' . $idObra .
-        ' - TAREAS: ' .
-        json_encode($tareas)
-    );
-
     echo json_encode([
-    'obra' => $obra,
-    'materiales' => $materiales,
-    'herramientas' => $herramientas,
-    'obreros' => $obreros,
-    'maquinaria' => $maquinaria,
-    'tareas' => $tareas,
-]);
+        'obra' => $obra,
+        'materiales' => $materiales,
+        'herramientas' => $herramientas,
+        'obreros' => $obreros,
+        'maquinaria' => $maquinaria,
+        'tareas' => $tareas,
+    ]);
 }
 
 function responderCambioEstado(PDO $pdo, array $body): void
@@ -369,25 +362,29 @@ function responderGuardado(PDO $pdo, array $body): void
             ]);
 
             if ($contrato !== null) {
-    $idContrato = guardarContrato($pdo, $idObra, $contrato);
-} else {
-    $idContrato = null;
-}
+                $idContrato = guardarContrato($pdo, $idObra, $contrato);
+            } else {
+                $idContrato = obtenerIdContrato($pdo, $idObra);
+            }
 
-if (!empty($tareas)) {
-    if ($idContrato === null) {
-        throw new InvalidArgumentException(
-            'Para registrar actividades debés cargar primero el contrato.'
-        );
-    }
+            if (!empty($tareas)) {
+                if ($idContrato === null) {
+                    throw new InvalidArgumentException(
+                        'Para registrar actividades debés cargar primero el contrato.'
+                    );
+                }
 
-    guardarTareas($pdo, $idContrato, $tareas);
-}
+                guardarTareas($pdo, $idContrato, $tareas);
+            }
 
-$pdo->commit();
+            $pdo->commit();
 
             $obraRespuesta = obtenerObra($pdo, $idObra);
-            registrarAuditoria($pdo, 'editar', 'obras', $idObra, ['nombre' => $obraRespuesta['nombre'], 'contrato_reemplazado' => $contrato !== null]);
+            registrarAuditoria($pdo, 'editar', 'obras', $idObra, [
+                'nombre' => $obraRespuesta['nombre'],
+                'contrato_reemplazado' => $contrato !== null,
+                'tareas_actualizadas' => count($tareas),
+            ]);
 
             http_response_code(200);
             echo json_encode([
@@ -399,76 +396,58 @@ $pdo->commit();
         }
 
         $stmt = $pdo->prepare(
-    'INSERT INTO obras (
-        numero_contrata,
-        nombre,
-        direccion,
-        descripcion,
-        fecha_inicio,
-        fecha_fin,
-        nombre_cliente,
-        telefono_cliente,
-        activo
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-);
-
-$stmt->execute([
-    $payload['numero_contrata'],
-    $payload['nombre'],
-    $payload['direccion'],
-    $payload['descripcion'],
-    $payload['fecha_inicio'],
-    $payload['fecha_fin'],
-    $payload['nombre_cliente'],
-    $payload['telefono_cliente'],
-    $payload['activo'],
-]);
-
-// IMPORTANTE: obtener el ID de la obra recién creada
-$idObra = (int) $pdo->lastInsertId();
-
-if ($contrato !== null) {
-    $idContrato = guardarContrato(
-        $pdo,
-        $idObra,
-        $contrato
-    );
-} else {
-    $idContrato = null;
-}
-
-if (!empty($tareas)) {
-    if ($idContrato === null) {
-        throw new InvalidArgumentException(
-            'Para registrar actividades debés cargar primero el contrato.'
+            'INSERT INTO obras (
+                numero_contrata,
+                nombre,
+                direccion,
+                descripcion,
+                fecha_inicio,
+                fecha_fin,
+                nombre_cliente,
+                telefono_cliente,
+                activo
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
-    }
 
-    guardarTareas(
-        $pdo,
-        $idContrato,
-        $tareas
-    );
-}
+        $stmt->execute([
+            $payload['numero_contrata'],
+            $payload['nombre'],
+            $payload['direccion'],
+            $payload['descripcion'],
+            $payload['fecha_inicio'],
+            $payload['fecha_fin'],
+            $payload['nombre_cliente'],
+            $payload['telefono_cliente'],
+            $payload['activo'],
+        ]);
 
-$pdo->commit();
+        $idObra = (int) $pdo->lastInsertId();
 
-$obraRespuesta = obtenerObra($pdo, $idObra);
-registrarAuditoria(
-    $pdo,
-    'editar',
-    'obras',
-    $idObra,
-    [
-        'nombre' => $obraRespuesta['nombre'],
-        'contrato_reemplazado' => $contrato !== null,
-        'tareas_actualizadas' => count($tareas)
-    ]
-);
+        if ($contrato !== null) {
+            $idContrato = guardarContrato($pdo, $idObra, $contrato);
+        } else {
+            $idContrato = null;
+        }
+
+        if (!empty($tareas)) {
+            if ($idContrato === null) {
+                throw new InvalidArgumentException(
+                    'Para registrar actividades debés cargar primero el contrato.'
+                );
+            }
+
+            guardarTareas($pdo, $idContrato, $tareas);
+        }
+
+        $pdo->commit();
 
         $obraRespuesta = obtenerObra($pdo, $idObra);
-        registrarAuditoria($pdo, 'crear', 'obras', $idObra, ['nombre' => $obraRespuesta['nombre'], 'numero_contrata' => $obraRespuesta['numero_contrata']]);
+        registrarAuditoria($pdo, 'crear', 'obras', $idObra, [
+            'nombre' => $obraRespuesta['nombre'],
+            'numero_contrata' => $obraRespuesta['numero_contrata'],
+            'tareas_creadas' => count($tareas),
+        ]);
 
         http_response_code(201);
         echo json_encode([

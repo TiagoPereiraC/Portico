@@ -1064,6 +1064,10 @@ tbody tr:hover {
     box-shadow: var(--input-shadow);
 }
 
+.detail-section-full {
+    grid-column: 1 / -1;
+}
+
 .detail-section h3 {
     color: var(--text-dark);
     font-size: 15px;
@@ -1603,8 +1607,8 @@ tbody tr:hover {
 
 .tasks-summary {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
     margin-bottom: 24px;
 }
 
@@ -1616,15 +1620,21 @@ tbody tr:hover {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .task-summary-label {
     font-size: 13px;
     color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .task-summary-card strong {
-    font-size: 22px;
+    font-size: 20px;
+    word-break: break-word;
 }
 
 .task-summary-card.completed {
