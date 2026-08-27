@@ -165,7 +165,7 @@ try {
                     'cert_por_vencer' => (int) $resAlertasCert['cert_por_vencer'],
                     'contratos' => (int) $resAlertasContratos['total_alertas_contratos'],
                 ]
-            ],
+            ], 
             'distribucion_cargos' => $distribucionCargos,
             'horas_por_obra' => $horasPorObra,
             'alertas_recientes' => $alertasRecientes,

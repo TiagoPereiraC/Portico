@@ -163,6 +163,105 @@
                                 <h3><i class="fas fa-circle-info"></i> Información general</h3>
                                 <div class="detail-grid" id="detailInfo"></div>
                             </div>
+                            
+                            <div class="detail-section">
+    <h3>
+        <i class="fas fa-list-check"></i>
+        Actividades del contrato
+    </h3>
+
+    <!-- RESUMEN DE ACTIVIDADES -->
+    <div class="tasks-summary">
+
+        <div class="task-summary-card">
+            <span class="task-summary-label">Total actividades</span>
+            <strong id="detailTareasTotal">0</strong>
+        </div>
+
+        <div class="task-summary-card completed">
+            <span class="task-summary-label">Completadas</span>
+            <strong id="detailTareasCompletadas">0</strong>
+        </div>
+
+        <div class="task-summary-card pending">
+            <span class="task-summary-label">Pendientes</span>
+            <strong id="detailTareasPendientes">0</strong>
+        </div>
+
+        <div class="task-summary-card earnings">
+            <span class="task-summary-label">Ganado hasta ahora</span>
+            <strong id="detailTareasGanado">$ 0,00</strong>
+        </div>
+
+    </div>
+
+    <!-- ACTIVIDADES COMPLETADAS -->
+    <div class="tasks-detail-group">
+
+        <h4>
+            <i class="fas fa-circle-check"></i>
+            Actividades completadas
+        </h4>
+
+        <div
+            class="detail-table-wrap"
+            id="detailTareasCompletadasWrap"
+        >
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th>Actividad</th>
+                        <th>Importe</th>
+                        <th>Fecha completada</th>
+                    </tr>
+                </thead>
+
+                <tbody id="detailTareasCompletadasBody"></tbody>
+            </table>
+        </div>
+
+        <p
+            class="detail-empty"
+            id="detailTareasCompletadasEmpty"
+        >
+            No hay actividades completadas.
+        </p>
+
+    </div>
+
+    <!-- ACTIVIDADES PENDIENTES -->
+    <div class="tasks-detail-group">
+
+        <h4>
+            <i class="fas fa-clock"></i>
+            Actividades pendientes
+        </h4>
+
+        <div
+            class="detail-table-wrap"
+            id="detailTareasPendientesWrap"
+        >
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th>Actividad</th>
+                        <th>Importe</th>
+                    </tr>
+                </thead>
+
+                <tbody id="detailTareasPendientesBody"></tbody>
+            </table>
+        </div>
+
+        <p
+            class="detail-empty"
+            id="detailTareasPendientesEmpty"
+        >
+            No hay actividades pendientes.
+        </p>
+
+    </div>
+</div>
 
                             <div class="detail-section">
                                 <h3><i class="fas fa-helmet-safety"></i> Obreros</h3>
@@ -408,6 +507,51 @@
                                     Sin contrato cargado.
                                 </p>
                             </div>
+
+                            <div class="contract-tasks-section">
+    <div class="tasks-header">
+        <div>
+            <label>Actividades del contrato</label>
+            <p class="field-note">
+                Ingrese las actividades o tareas incluidas en el contrato.
+            </p>
+        </div>
+
+        <button
+            type="button"
+            class="btn-secondary"
+            id="btnAgregarTarea"
+        >
+            <i class="fas fa-plus"></i>
+            Agregar actividad
+        </button>
+    </div>
+
+    <div class="tasks-table-wrap">
+        <table class="tasks-table">
+            <thead>
+                <tr>
+                    <th>Actividad</th>
+                    <th>Importe</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody id="contratoTareasBody">
+                <!-- Las actividades se agregan aquí mediante JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <p class="tasks-empty" id="tareasEmpty">
+        No hay actividades agregadas.
+    </p>
+
+    <div class="tasks-total">
+        <strong>Total del contrato:</strong>
+        <span id="totalContrato">$ 0,00</span>
+    </div>
+</div>
 
                             <div class="button-row">
                                 <button

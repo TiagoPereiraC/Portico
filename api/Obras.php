@@ -104,18 +104,18 @@ try {
 function responderDetalle(PDO $pdo): void
 {
     $idObra = isset($_GET['id_obra']) ? (int) $_GET['id_obra'] : 0;
+
     if ($idObra <= 0) {
         throw new InvalidArgumentException('Debés indicar una obra válida.');
     }
 
-    // 1. Obtener datos principales de la obra (incluye contrato si existe)
     $obra = obtenerObra($pdo, $idObra);
 
-    // 2. Materiales (es_material = 1) con Total Gastado y Cantidad Acumulada
+    // Materiales
     $stmt = $pdo->prepare(
-        'SELECT nombre, 
-                SUM(cantidad) as cantidad_total, 
-                SUM(cantidad * COALESCE(precio_unitario, 0)) as costo_total
+        'SELECT nombre,
+                SUM(cantidad) AS cantidad_total,
+                SUM(cantidad * COALESCE(precio_unitario, 0)) AS costo_total
          FROM recursos
          WHERE id_obra = ? AND es_material = 1
          GROUP BY nombre
@@ -124,9 +124,9 @@ function responderDetalle(PDO $pdo): void
     $stmt->execute([$idObra]);
     $materiales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // 3. Herramientas (es_material = 0)
+    // Herramientas
     $stmt = $pdo->prepare(
-        'SELECT nombre, SUM(cantidad) as cantidad_total
+        'SELECT nombre, SUM(cantidad) AS cantidad_total
          FROM recursos
          WHERE id_obra = ? AND es_material = 0
          GROUP BY nombre
@@ -135,11 +135,15 @@ function responderDetalle(PDO $pdo): void
     $stmt->execute([$idObra]);
     $herramientas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // 4. Obreros asignados y total de horas trabajadas
+    // Obreros
     $stmt = $pdo->prepare(
-        'SELECT obr.id_obrero, obr.nombre, obr.apellido, SUM(reg.horas_trabajadas) as horas_totales
+        'SELECT obr.id_obrero,
+                obr.nombre,
+                obr.apellido,
+                SUM(reg.horas_trabajadas) AS horas_totales
          FROM registros reg
-         INNER JOIN obreros obr ON obr.id_obrero = reg.id_obrero
+         INNER JOIN obreros obr
+             ON obr.id_obrero = reg.id_obrero
          WHERE reg.id_obra = ?
          GROUP BY obr.id_obrero, obr.nombre, obr.apellido
          ORDER BY obr.apellido, obr.nombre'
@@ -147,25 +151,60 @@ function responderDetalle(PDO $pdo): void
     $stmt->execute([$idObra]);
     $obreros = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // 5. Maquinarias/Equipos asignados
+    // Maquinaria
     $stmt = $pdo->prepare(
-        'SELECT m.nombre, m.marca, om.fecha_asignacion, om.fecha_retiro
+        'SELECT m.nombre,
+                m.marca,
+                om.fecha_asignacion,
+                om.fecha_retiro
          FROM obra_maquinaria om
-         INNER JOIN maquinaria m ON m.id_maquinaria = om.id_maquinaria
+         INNER JOIN maquinaria m
+             ON m.id_maquinaria = om.id_maquinaria
          WHERE om.id_obra = ?
          ORDER BY om.fecha_asignacion DESC, m.nombre'
     );
     $stmt->execute([$idObra]);
     $maquinaria = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // 6. Respuesta JSON unificada
+    // =====================================================
+    // ACTIVIDADES DEL CONTRATO
+    // =====================================================
+
+    $stmt = $pdo->prepare(
+        'SELECT
+    ct.id_tarea,
+    ct.id_contrato,
+    ct.id_tarea_origen,
+    ct.descripcion,
+    ct.importe,
+    ct.estado,
+    ct.fecha_completada
+FROM contrato_tareas ct
+INNER JOIN contratos c
+    ON c.id_contrato = ct.id_contrato
+WHERE c.id_obra = ?
+ORDER BY ct.id_tarea ASC'
+    );
+
+    $stmt->execute([$idObra]);
+
+    $tareas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // DEBUG TEMPORAL
+    error_log(
+        'OBRA ' . $idObra .
+        ' - TAREAS: ' .
+        json_encode($tareas)
+    );
+
     echo json_encode([
-        'obra' => $obra,
-        'materiales' => $materiales,
-        'herramientas' => $herramientas,
-        'obreros' => $obreros,
-        'maquinaria' => $maquinaria,
-    ]);
+    'obra' => $obra,
+    'materiales' => $materiales,
+    'herramientas' => $herramientas,
+    'obreros' => $obreros,
+    'maquinaria' => $maquinaria,
+    'tareas' => $tareas,
+]);
 }
 
 function responderCambioEstado(PDO $pdo, array $body): void
@@ -173,19 +212,44 @@ function responderCambioEstado(PDO $pdo, array $body): void
     $idObra = isset($body['id_obra']) ? (int) $body['id_obra'] : 0;
     $activo = isset($body['activo']) ? (int) $body['activo'] : null;
 
-    if ($idObra <= 0 || $activo === null) {
-        throw new InvalidArgumentException('Debés indicar una obra válida y el estado deseado.');
+    if ($idObra <= 0) {
+        throw new InvalidArgumentException('Debés indicar una obra válida.');
     }
 
-    $stmt = $pdo->prepare('UPDATE obras SET activo = ? WHERE id_obra = ?');
+    if ($activo !== 0 && $activo !== 1) {
+        throw new InvalidArgumentException('El estado de la obra es inválido.');
+    }
+
+    $stmt = $pdo->prepare(
+        'UPDATE obras SET activo = ? WHERE id_obra = ?'
+    );
+
     $stmt->execute([$activo, $idObra]);
 
     if ($stmt->rowCount() === 0) {
-        throw new RuntimeException('No se pudo actualizar la obra o ya tenía ese estado.');
+        // Verificamos si la obra realmente existe.
+        $check = $pdo->prepare(
+            'SELECT id_obra FROM obras WHERE id_obra = ? LIMIT 1'
+        );
+        $check->execute([$idObra]);
+
+        if (!$check->fetchColumn()) {
+            throw new RuntimeException('La obra indicada no existe.');
+        }
     }
 
     $obra = obtenerObra($pdo, $idObra);
-    registrarAuditoria($pdo, 'cambiar_estado', 'obras', $idObra, ['nombre' => $obra['nombre'], 'activo' => $activo]);
+
+    registrarAuditoria(
+        $pdo,
+        'cambiar_estado',
+        'obras',
+        $idObra,
+        [
+            'nombre' => $obra['nombre'],
+            'activo' => $activo
+        ]
+    );
 
     echo json_encode([
         'success' => true,
@@ -210,7 +274,7 @@ function responderListado(PDO $pdo): void
 
     if ($search !== '') {
         $where[] = '(o.numero_contrata LIKE ? OR o.nombre LIKE ? OR o.direccion LIKE ? OR o.descripcion LIKE ? OR o.nombre_cliente LIKE ? OR o.telefono_cliente LIKE ?)';
-        $searchLike = $search . '%';
+        $searchLike = '%' . $search . '%';
         $params = array_merge($params, [$searchLike, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike]);
     }
 
@@ -271,7 +335,9 @@ function responderGuardado(PDO $pdo, array $body): void
 {
     $payload = validarPayload($body);
     $contrato = extraerContrato($body);
+    $tareas = validarTareas($body['tareas'] ?? []);
     $idObra = isset($body['id_obra']) && $body['id_obra'] !== '' ? (int) $body['id_obra'] : null;
+    
 
     $pdo->beginTransaction();
 
@@ -303,10 +369,22 @@ function responderGuardado(PDO $pdo, array $body): void
             ]);
 
             if ($contrato !== null) {
-                guardarContrato($pdo, $idObra, $contrato);
-            }
+    $idContrato = guardarContrato($pdo, $idObra, $contrato);
+} else {
+    $idContrato = null;
+}
 
-            $pdo->commit();
+if (!empty($tareas)) {
+    if ($idContrato === null) {
+        throw new InvalidArgumentException(
+            'Para registrar actividades debés cargar primero el contrato.'
+        );
+    }
+
+    guardarTareas($pdo, $idContrato, $tareas);
+}
+
+$pdo->commit();
 
             $obraRespuesta = obtenerObra($pdo, $idObra);
             registrarAuditoria($pdo, 'editar', 'obras', $idObra, ['nombre' => $obraRespuesta['nombre'], 'contrato_reemplazado' => $contrato !== null]);
@@ -321,28 +399,73 @@ function responderGuardado(PDO $pdo, array $body): void
         }
 
         $stmt = $pdo->prepare(
-            'INSERT INTO obras (numero_contrata, nombre, direccion, descripcion, fecha_inicio, fecha_fin, nombre_cliente, telefono_cliente, activo)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO obras (
+        numero_contrata,
+        nombre,
+        direccion,
+        descripcion,
+        fecha_inicio,
+        fecha_fin,
+        nombre_cliente,
+        telefono_cliente,
+        activo
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+);
+
+$stmt->execute([
+    $payload['numero_contrata'],
+    $payload['nombre'],
+    $payload['direccion'],
+    $payload['descripcion'],
+    $payload['fecha_inicio'],
+    $payload['fecha_fin'],
+    $payload['nombre_cliente'],
+    $payload['telefono_cliente'],
+    $payload['activo'],
+]);
+
+// IMPORTANTE: obtener el ID de la obra recién creada
+$idObra = (int) $pdo->lastInsertId();
+
+if ($contrato !== null) {
+    $idContrato = guardarContrato(
+        $pdo,
+        $idObra,
+        $contrato
+    );
+} else {
+    $idContrato = null;
+}
+
+if (!empty($tareas)) {
+    if ($idContrato === null) {
+        throw new InvalidArgumentException(
+            'Para registrar actividades debés cargar primero el contrato.'
         );
-        $stmt->execute([
-            $payload['numero_contrata'],
-            $payload['nombre'],
-            $payload['direccion'],
-            $payload['descripcion'],
-            $payload['fecha_inicio'],
-            $payload['fecha_fin'],
-            $payload['nombre_cliente'],
-            $payload['telefono_cliente'],
-            $payload['activo'],
-        ]);
+    }
 
-        $idObra = (int) $pdo->lastInsertId();
+    guardarTareas(
+        $pdo,
+        $idContrato,
+        $tareas
+    );
+}
 
-        if ($contrato !== null) {
-            guardarContrato($pdo, $idObra, $contrato);
-        }
+$pdo->commit();
 
-        $pdo->commit();
+$obraRespuesta = obtenerObra($pdo, $idObra);
+registrarAuditoria(
+    $pdo,
+    'editar',
+    'obras',
+    $idObra,
+    [
+        'nombre' => $obraRespuesta['nombre'],
+        'contrato_reemplazado' => $contrato !== null,
+        'tareas_actualizadas' => count($tareas)
+    ]
+);
 
         $obraRespuesta = obtenerObra($pdo, $idObra);
         registrarAuditoria($pdo, 'crear', 'obras', $idObra, ['nombre' => $obraRespuesta['nombre'], 'numero_contrata' => $obraRespuesta['numero_contrata']]);
@@ -364,25 +487,82 @@ function responderGuardado(PDO $pdo, array $body): void
 function responderEliminacion(PDO $pdo, array $body): void
 {
     $idObra = isset($body['id_obra']) ? (int) $body['id_obra'] : 0;
+
     if ($idObra <= 0) {
         throw new InvalidArgumentException('Debés indicar una obra válida.');
     }
 
-    $stmt = $pdo->prepare('SELECT id_obra, nombre FROM obras WHERE id_obra = ? LIMIT 1');
+    $stmt = $pdo->prepare(
+        'SELECT id_obra, nombre
+         FROM obras
+         WHERE id_obra = ?
+         LIMIT 1'
+    );
     $stmt->execute([$idObra]);
-    $obra = $stmt->fetch();
+
+    $obra = $stmt->fetch(PDO::FETCH_ASSOC);
+
     if (!$obra) {
         throw new RuntimeException('La obra indicada no existe.');
     }
 
-    $pdo->prepare('DELETE FROM obras WHERE id_obra = ?')->execute([$idObra]);
+    $pdo->beginTransaction();
 
-    registrarAuditoria($pdo, 'eliminar', 'obras', $idObra, ['nombre' => $obra['nombre']]);
+    try {
+        /*
+         * Eliminamos primero los registros relacionados.
+         * Esto evita problemas si la base de datos no tiene
+         * ON DELETE CASCADE.
+         */
 
-    echo json_encode([
-        'success' => true,
-        'message' => 'Obra eliminada correctamente.',
-    ]);
+        // Contrato
+        $pdo->prepare(
+            'DELETE FROM contratos WHERE id_obra = ?'
+        )->execute([$idObra]);
+
+        // Recursos: materiales y herramientas
+        $pdo->prepare(
+            'DELETE FROM recursos WHERE id_obra = ?'
+        )->execute([$idObra]);
+
+        // Registros de asistencia/trabajo
+        $pdo->prepare(
+            'DELETE FROM registros WHERE id_obra = ?'
+        )->execute([$idObra]);
+
+        // Maquinaria asignada
+        $pdo->prepare(
+            'DELETE FROM obra_maquinaria WHERE id_obra = ?'
+        )->execute([$idObra]);
+
+        // Finalmente la obra
+        $pdo->prepare(
+            'DELETE FROM obras WHERE id_obra = ?'
+        )->execute([$idObra]);
+
+        $pdo->commit();
+
+        registrarAuditoria(
+            $pdo,
+            'eliminar',
+            'obras',
+            $idObra,
+            ['nombre' => $obra['nombre']]
+        );
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Obra eliminada correctamente.',
+        ]);
+
+    } catch (Throwable $e) {
+
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        throw $e;
+    }
 }
 
 function validarCsrf(): void
@@ -539,7 +719,7 @@ function responderDescargaContrato(PDO $pdo): void
     }
 
     $nombreArchivo = $contrato['nombre_archivo'] ?: "contrato-{$idObra}";
-    $mime = detectarMimeContrato($nombreArchivo, $contrato['archivo']);
+    $mime = detectarMimeContrato($nombreArchivo);
 
     header_remove('Content-Type');
     header('Content-Type: ' . $mime);
@@ -576,23 +756,181 @@ function extraerContrato(array $body): ?array
     ];
 }
 
-function guardarContrato(PDO $pdo, int $idObra, array $contrato): void
+function guardarContrato(PDO $pdo, int $idObra, array $contrato): int
 {
-    $pdo->prepare('DELETE FROM contratos WHERE id_obra = ?')->execute([$idObra]);
+    // Eliminar el contrato anterior.
+    // Sus tareas también se eliminan por ON DELETE CASCADE.
+    $pdo->prepare(
+        'DELETE FROM contratos WHERE id_obra = ?'
+    )->execute([$idObra]);
 
     $stmt = $pdo->prepare(
-        'INSERT INTO contratos (id_obra, archivo, nombre_archivo, fecha_subida)
-         VALUES (?, ?, ?, CURDATE())'
+        'INSERT INTO contratos (
+            id_obra,
+            archivo,
+            nombre_archivo,
+            fecha_subida
+        )
+        VALUES (?, ?, ?, CURDATE())'
     );
+
     $stmt->bindValue(1, $idObra, PDO::PARAM_INT);
     $stmt->bindValue(2, $contrato['archivo'], PDO::PARAM_LOB);
     $stmt->bindValue(3, $contrato['nombre_archivo']);
     $stmt->execute();
+
+    return (int) $pdo->lastInsertId();
 }
 
-function detectarMimeContrato(string $nombreArchivo, string $archivo): string
+function obtenerIdContrato(PDO $pdo, int $idObra): ?int
+{
+    $stmt = $pdo->prepare(
+        'SELECT id_contrato
+         FROM contratos
+         WHERE id_obra = ?
+         ORDER BY id_contrato DESC
+         LIMIT 1'
+    );
+
+    $stmt->execute([$idObra]);
+
+    $idContrato = $stmt->fetchColumn();
+
+    return $idContrato !== false ? (int) $idContrato : null;
+}
+
+function validarTareas(mixed $tareas): array
+{
+    if ($tareas === null || $tareas === '') {
+        return [];
+    }
+
+    if (!is_array($tareas)) {
+        throw new InvalidArgumentException(
+            'Las actividades del contrato son inválidas.'
+        );
+    }
+
+    $resultado = [];
+
+    foreach ($tareas as $tarea) {
+
+        if (!is_array($tarea)) {
+            throw new InvalidArgumentException(
+                'Una de las actividades es inválida.'
+            );
+        }
+
+        $descripcion = limpiarTexto(
+            $tarea['descripcion'] ?? '',
+            255
+        );
+
+        if ($descripcion === '') {
+            throw new InvalidArgumentException(
+                'La descripción de la actividad es obligatoria.'
+            );
+        }
+
+        $importe = $tarea['importe'] ?? 0;
+
+        if (!is_numeric($importe) || (float)$importe < 0) {
+            throw new InvalidArgumentException(
+                'El importe de una actividad es inválido.'
+            );
+        }
+
+        $estado = $tarea['estado'] ?? 'Pendiente';
+
+        if (!in_array(
+            $estado,
+            ['Pendiente', 'Completada'],
+            true
+        )) {
+            throw new InvalidArgumentException(
+                'El estado de una actividad es inválido.'
+            );
+        }
+
+        $fechaCompletada = null;
+
+        if (
+            $estado === 'Completada' &&
+            !empty($tarea['fecha_completada'])
+        ) {
+            $fechaCompletada = normalizarFecha(
+                $tarea['fecha_completada']
+            );
+        }
+
+        $idTareaOrigen = null;
+
+        if (
+            isset($tarea['id_tarea_origen']) &&
+            $tarea['id_tarea_origen'] !== ''
+        ) {
+            $idTareaOrigen = (int) $tarea['id_tarea_origen'];
+
+            if ($idTareaOrigen <= 0) {
+                $idTareaOrigen = null;
+            }
+        }
+
+        $resultado[] = [
+            'id_tarea_origen' => $idTareaOrigen,
+            'descripcion' => $descripcion,
+            'importe' => number_format((float)$importe, 2, '.', ''),
+            'estado' => $estado,
+            'fecha_completada' => $fechaCompletada,
+        ];
+    }
+
+    return $resultado;
+}
+
+function guardarTareas(PDO $pdo, int $idContrato, array $tareas): void
+{
+    // Al editar, reemplazamos las actividades actuales
+    // por las que vienen del formulario.
+    $stmt = $pdo->prepare(
+        'DELETE FROM contrato_tareas
+         WHERE id_contrato = ?'
+    );
+
+    $stmt->execute([$idContrato]);
+
+    if (empty($tareas)) {
+        return;
+    }
+
+    $stmt = $pdo->prepare(
+        'INSERT INTO contrato_tareas (
+            id_contrato,
+            id_tarea_origen,
+            descripcion,
+            importe,
+            estado,
+            fecha_completada
+        )
+        VALUES (?, ?, ?, ?, ?, ?)'
+    );
+
+    foreach ($tareas as $tarea) {
+        $stmt->execute([
+            $idContrato,
+            $tarea['id_tarea_origen'],
+            $tarea['descripcion'],
+            $tarea['importe'],
+            $tarea['estado'],
+            $tarea['fecha_completada'],
+        ]);
+    }
+}
+
+function detectarMimeContrato(string $nombreArchivo): string
 {
     $extension = strtolower(pathinfo($nombreArchivo, PATHINFO_EXTENSION));
+
     return match ($extension) {
         'pdf' => 'application/pdf',
         'doc' => 'application/msword',

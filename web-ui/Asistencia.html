@@ -380,6 +380,35 @@ data.maquinaria.forEach(m => {
 
     </div>
 
+    <!-- COMBUSTIBLE -->
+    <div class="smart-box" style="margin-top:10px; border-top:1px dashed #ccc; padding-top:10px;">
+        <div>
+            <label>Litros Combustible</label>
+            <input
+                type="number"
+                step="0.01"
+                name="litros[${id}]"
+                placeholder="Ej: 50.5"
+                min="0">
+        </div>
+        <div>
+            <label>Tipo Combustible</label>
+            <select name="nombre_combustible[${id}]">
+                <option value="Diesel">Diesel</option>
+                <option value="Nafta">Nafta</option>
+            </select>
+        </div>
+        <div>
+            <label>Precio Total ($)</label>
+            <input
+                type="number"
+                step="0.01"
+                name="precio_total[${id}]"
+                placeholder="Ej: 2500"
+                min="0">
+        </div>
+    </div>
+
     <div class="item-actions">
         <button
             type="button"
