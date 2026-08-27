@@ -43,6 +43,12 @@ CREATE TABLE IF NOT EXISTS obreros (
     activo BOOLEAN DEFAULT 1
 );
 
+CREATE TABLE IF NOT EXISTS maquinaria (
+    id_maquinaria INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(150) NOT NULL,
+    marca VARCHAR(100)
+);
+
 CREATE TABLE IF NOT EXISTS contrato_obrero (
     id_contrato_obrero INT AUTO_INCREMENT PRIMARY KEY,
     archivo LONGBLOB NOT NULL,
@@ -52,6 +58,76 @@ CREATE TABLE IF NOT EXISTS contrato_obrero (
 
     FOREIGN KEY (id_obrero) REFERENCES obreros(id_obrero)
         ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS certificado (
+    id_certificado INT AUTO_INCREMENT PRIMARY KEY,
+    archivo LONGBLOB NOT NULL,
+    nombre_archivo VARCHAR(255),
+    id_maquinaria INT NOT NULL,
+    fecha_vencimiento DATE,
+
+    FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS obra_maquinaria (
+    id_obra_maquinaria INT AUTO_INCREMENT PRIMARY KEY,
+    id_obra INT NOT NULL,
+    id_maquinaria INT NOT NULL,
+    fecha_asignacion DATE,
+    fecha_retiro DATE,
+
+    FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    UNIQUE KEY uq_obra_maquinaria (id_obra, id_maquinaria, fecha_asignacion)
+);
+
+CREATE TABLE IF NOT EXISTS asistencia_maquinaria (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_obra INT NOT NULL,
+    id_maquinaria INT NOT NULL,
+    fecha DATE NOT NULL,
+    hora_salida TIME NOT NULL,
+    hora_devolucion TIME NOT NULL,
+
+    FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    UNIQUE KEY uq_asistencia_maquinaria (id_obra, id_maquinaria, fecha)
+);
+
+CREATE TABLE IF NOT EXISTS contratos (
+    id_contrato INT AUTO_INCREMENT PRIMARY KEY,
+    id_obra INT NOT NULL,
+    archivo LONGBLOB NOT NULL,
+    nombre_archivo VARCHAR(255),
+    fecha_subida DATE NOT NULL,
+
+    FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS contrato_tareas (
+    id_tarea INT AUTO_INCREMENT PRIMARY KEY,
+    id_contrato INT NOT NULL,
+    id_tarea_origen INT NULL,
+    descripcion VARCHAR(255) NOT NULL,
+    importe DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    estado ENUM('Pendiente','Completada') NOT NULL DEFAULT 'Pendiente',
+    fecha_completada DATE NULL,
+
+    FOREIGN KEY (id_contrato) REFERENCES contratos(id_contrato)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    INDEX idx_contrato_tareas_contrato (id_contrato),
+    INDEX idx_contrato_tareas_origen (id_tarea_origen)
 );
 
 CREATE TABLE IF NOT EXISTS registros (
@@ -75,17 +151,6 @@ CREATE TABLE IF NOT EXISTS registros (
         ON UPDATE CASCADE ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS contratos (
-    id_contrato INT AUTO_INCREMENT PRIMARY KEY,
-    id_obra INT NOT NULL,
-    archivo LONGBLOB NOT NULL,
-    nombre_archivo VARCHAR(255),
-    fecha_subida DATE NOT NULL,
-
-    FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
-        ON UPDATE CASCADE ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS recursos (
     id_recurso INT AUTO_INCREMENT PRIMARY KEY,
     id_obra INT NOT NULL,
@@ -103,54 +168,25 @@ CREATE TABLE IF NOT EXISTS recursos (
         ON UPDATE CASCADE ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS maquinaria (
-    id_maquinaria INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(150) NOT NULL,
-    marca VARCHAR(100)
-);
-
-CREATE TABLE IF NOT EXISTS obra_maquinaria (
-    id_obra_maquinaria INT AUTO_INCREMENT PRIMARY KEY,
-    id_obra INT NOT NULL,
-    id_maquinaria INT NOT NULL,
-    fecha_asignacion DATE,
-    fecha_retiro DATE,
-
-    FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-
-    FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-
-    UNIQUE KEY uq_obra_maquinaria (id_obra, id_maquinaria, fecha_asignacion)
-);
-
-CREATE TABLE IF NOT EXISTS certificado (
-    id_certificado INT AUTO_INCREMENT PRIMARY KEY,
-    archivo LONGBLOB NOT NULL,
-    nombre_archivo VARCHAR(255),
-    id_maquinaria INT NOT NULL,
-    fecha_vencimiento DATE,
-
-    FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
-        ON UPDATE CASCADE ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS asistencia_maquinaria (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    id_obra INT NOT NULL,
-    id_maquinaria INT NOT NULL,
+CREATE TABLE IF NOT EXISTS combustible (
+    id_combustible INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_combustible VARCHAR(100) NOT NULL,
+    litros DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    precio_unitario DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    precio_total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     fecha DATE NOT NULL,
-    hora_salida TIME NOT NULL,
-    hora_devolucion TIME NOT NULL,
+    id_obra INT NOT NULL,
+    id_maquinaria INT NULL,
 
     FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
         ON UPDATE CASCADE ON DELETE CASCADE,
 
     FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
-        ON UPDATE CASCADE ON DELETE CASCADE,
+        ON UPDATE CASCADE ON DELETE SET NULL,
 
-    UNIQUE KEY uq_asistencia_maquinaria (id_obra, id_maquinaria, fecha)
+    INDEX idx_combustible_fecha (fecha),
+    INDEX idx_combustible_obra (id_obra),
+    INDEX idx_combustible_maquinaria (id_maquinaria)
 );
 
 CREATE TABLE IF NOT EXISTS intentos_login (
@@ -543,5 +579,51 @@ INSERT INTO auditoria_logs (id_usuario, usuario, rol, accion, entidad, entidad_i
 (1, 'admin', 'Administrador', 'subir_certificado', 'certificados_maquinaria', 5, '{"nombre_archivo":"Cert_CA250_Dynapac.pdf","id_maquinaria":5}', '127.0.0.1', '2026-07-10 14:20:00'),
 (2, 'capataz', 'Capataz', 'guardar', 'asistencia', 5, '{"fecha":"2026-08-24","obreros_presentes":15,"horas_totales":120.0}', '127.0.0.1', '2026-08-24 16:00:00'),
 (1, 'admin', 'Administrador', 'logout', 'auth', 1, '{"usuario":"admin"}', '127.0.0.1', '2026-08-26 18:00:00');
+
+-- ===== 14. TAREAS DE CONTRATOS (contrato_tareas) =====
+INSERT INTO contrato_tareas (id_contrato, id_tarea_origen, descripcion, importe, estado, fecha_completada) VALUES
+(1, NULL, 'Replanteo topográfico y cartel de obra', 450000.00, 'Completada', '2026-01-15'),
+(1, NULL, 'Movimiento de suelo, excavación y desmonte', 1850000.00, 'Completada', '2026-02-10'),
+(1, NULL, 'Subbase de suelo cemento compactada e=15cm', 3200000.00, 'Completada', '2026-03-20'),
+(1, NULL, 'Pavimento de hormigón H30 con pasadores e=18cm', 8900000.00, 'Pendiente', NULL),
+(1, NULL, 'Cordón cuneta y badenes de escurrimiento', 2400000.00, 'Pendiente', NULL),
+(1, NULL, 'Señalización vial horizontal y vertical', 850000.00, 'Pendiente', NULL),
+
+(2, NULL, 'Instalación de obrador, cerco y servicios provisorios', 650000.00, 'Completada', '2026-01-25'),
+(2, NULL, 'Excavaciones masivas para bases y vigas de fundación', 2100000.00, 'Completada', '2026-02-28'),
+(2, NULL, 'Estructura resistente de H°A° planta baja y losa', 14500000.00, 'Pendiente', NULL),
+(2, NULL, 'Mampostería exterior de ladrillo cerámico portante', 8200000.00, 'Pendiente', NULL),
+(2, NULL, 'Instalaciones troncales de gases medicinales y sanitarias', 6800000.00, 'Pendiente', NULL),
+
+(3, NULL, 'Apertura de zanja para tendido de red troncal', 1200000.00, 'Completada', '2026-02-15'),
+(3, NULL, 'Tendido de cañería PEAD 110mm por electrofusión', 4500000.00, 'Completada', '2026-04-10'),
+(3, NULL, 'Instalación de 320 conexiones domiciliarias y cajas', 3800000.00, 'Pendiente', NULL),
+(3, NULL, 'Pruebas de presión hidráulica y desinfección', 950000.00, 'Pendiente', NULL),
+
+(4, NULL, 'Desmontaje de pasarelas deterioradas y retiro', 850000.00, 'Completada', '2026-02-25'),
+(4, NULL, 'Recalce y refuerzo de pilotes de H°A° en lecho', 3400000.00, 'Completada', '2026-04-30'),
+(4, NULL, 'Montaje de pórticos y vigas de acero galvanizado', 7200000.00, 'Pendiente', NULL),
+(4, NULL, 'Colocación de rejillas de tránsito y barandas', 2900000.00, 'Pendiente', NULL),
+
+(5, NULL, 'Nivelación, perfilado y compactación de subrasante', 780000.00, 'Completada', '2026-03-15'),
+(5, NULL, 'Hormigonado de cordón cuneta en 18 cuadras', 4200000.00, 'Completada', '2026-06-20'),
+(5, NULL, 'Colocación de empedrado basáltico trabado', 5600000.00, 'Pendiente', NULL);
+
+-- ===== 15. COMBUSTIBLE (combustible) =====
+INSERT INTO combustible (nombre_combustible, litros, precio_unitario, precio_total, fecha, id_obra, id_maquinaria) VALUES
+('Diesel', 180.00, 1180.00, 212400.00, '2026-01-15', 1, 1),
+('Diesel', 120.00, 1180.00, 141600.00, '2026-01-20', 1, 8),
+('Diesel', 250.00, 1195.00, 298750.00, '2026-02-05', 2, 1),
+('Diesel', 150.00, 1195.00, 179250.00, '2026-02-12', 2, 2),
+('Nafta', 45.00, 1250.00, 56250.00, '2026-02-15', 3, 11),
+('Diesel', 90.00, 1210.00, 108900.00, '2026-03-02', 4, 7),
+('Diesel', 200.00, 1220.00, 244000.00, '2026-03-10', 5, 5),
+('Nafta', 60.00, 1260.00, 75600.00, '2026-04-05', 1, 13),
+('Diesel', 140.00, 1230.00, 172200.00, '2026-05-12', 2, 4),
+('Diesel', 220.00, 1240.00, 272800.00, '2026-06-08', 3, 15),
+('Nafta', 50.00, 1280.00, 64000.00, '2026-07-15', 4, 11),
+('Diesel', 160.00, 1250.00, 200000.00, '2026-08-03', 5, 8),
+('Diesel', 175.00, 1260.00, 220500.00, '2026-08-18', 1, 1),
+('Nafta', 40.00, 1290.00, 51600.00, '2026-08-25', 2, 14);
 
 COMMIT;

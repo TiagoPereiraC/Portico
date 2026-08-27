@@ -38,6 +38,12 @@ CREATE TABLE IF NOT EXISTS obreros (
     activo BOOLEAN DEFAULT 1
 );
 
+CREATE TABLE IF NOT EXISTS maquinaria (
+    id_maquinaria INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(150) NOT NULL,
+    marca VARCHAR(100)
+);
+
 CREATE TABLE IF NOT EXISTS contrato_obrero (
     id_contrato_obrero INT AUTO_INCREMENT PRIMARY KEY,
     archivo LONGBLOB NOT NULL,
@@ -47,6 +53,76 @@ CREATE TABLE IF NOT EXISTS contrato_obrero (
 
     FOREIGN KEY (id_obrero) REFERENCES obreros(id_obrero)
         ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS certificado (
+    id_certificado INT AUTO_INCREMENT PRIMARY KEY,
+    archivo LONGBLOB NOT NULL,
+    nombre_archivo VARCHAR(255),
+    id_maquinaria INT NOT NULL,
+    fecha_vencimiento DATE,
+
+    FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS obra_maquinaria (
+    id_obra_maquinaria INT AUTO_INCREMENT PRIMARY KEY,
+    id_obra INT NOT NULL,
+    id_maquinaria INT NOT NULL,
+    fecha_asignacion DATE,
+    fecha_retiro DATE,
+
+    FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    UNIQUE KEY uq_obra_maquinaria (id_obra, id_maquinaria, fecha_asignacion)
+);
+
+CREATE TABLE IF NOT EXISTS asistencia_maquinaria (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_obra INT NOT NULL,
+    id_maquinaria INT NOT NULL,
+    fecha DATE NOT NULL,
+    hora_salida TIME NOT NULL,
+    hora_devolucion TIME NOT NULL,
+
+    FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    UNIQUE KEY uq_asistencia_maquinaria (id_obra, id_maquinaria, fecha)
+);
+
+CREATE TABLE IF NOT EXISTS contratos (
+    id_contrato INT AUTO_INCREMENT PRIMARY KEY,
+    id_obra INT NOT NULL,
+    archivo LONGBLOB NOT NULL,
+    nombre_archivo VARCHAR(255),
+    fecha_subida DATE NOT NULL,
+
+    FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS contrato_tareas (
+    id_tarea INT AUTO_INCREMENT PRIMARY KEY,
+    id_contrato INT NOT NULL,
+    id_tarea_origen INT NULL,
+    descripcion VARCHAR(255) NOT NULL,
+    importe DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    estado ENUM('Pendiente','Completada') NOT NULL DEFAULT 'Pendiente',
+    fecha_completada DATE NULL,
+
+    FOREIGN KEY (id_contrato) REFERENCES contratos(id_contrato)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    INDEX idx_contrato_tareas_contrato (id_contrato),
+    INDEX idx_contrato_tareas_origen (id_tarea_origen)
 );
 
 CREATE TABLE IF NOT EXISTS registros (
@@ -70,17 +146,6 @@ CREATE TABLE IF NOT EXISTS registros (
         ON UPDATE CASCADE ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS contratos (
-    id_contrato INT AUTO_INCREMENT PRIMARY KEY,
-    id_obra INT NOT NULL,
-    archivo LONGBLOB NOT NULL,
-    nombre_archivo VARCHAR(255),
-    fecha_subida DATE NOT NULL,
-
-    FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
-        ON UPDATE CASCADE ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS recursos (
     id_recurso INT AUTO_INCREMENT PRIMARY KEY,
     id_obra INT NOT NULL,
@@ -98,54 +163,25 @@ CREATE TABLE IF NOT EXISTS recursos (
         ON UPDATE CASCADE ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS maquinaria (
-    id_maquinaria INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(150) NOT NULL,
-    marca VARCHAR(100)
-);
-
-CREATE TABLE IF NOT EXISTS obra_maquinaria (
-    id_obra_maquinaria INT AUTO_INCREMENT PRIMARY KEY,
-    id_obra INT NOT NULL,
-    id_maquinaria INT NOT NULL,
-    fecha_asignacion DATE,
-    fecha_retiro DATE,
-
-    FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-
-    FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-
-    UNIQUE KEY uq_obra_maquinaria (id_obra, id_maquinaria, fecha_asignacion)
-);
-
-CREATE TABLE IF NOT EXISTS certificado (
-    id_certificado INT AUTO_INCREMENT PRIMARY KEY,
-    archivo LONGBLOB NOT NULL,
-    nombre_archivo VARCHAR(255),
-    id_maquinaria INT NOT NULL,
-    fecha_vencimiento DATE,
-
-    FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
-        ON UPDATE CASCADE ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS asistencia_maquinaria (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    id_obra INT NOT NULL,
-    id_maquinaria INT NOT NULL,
+CREATE TABLE IF NOT EXISTS combustible (
+    id_combustible INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_combustible VARCHAR(100) NOT NULL,
+    litros DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    precio_unitario DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    precio_total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     fecha DATE NOT NULL,
-    hora_salida TIME NOT NULL,
-    hora_devolucion TIME NOT NULL,
+    id_obra INT NOT NULL,
+    id_maquinaria INT NULL,
 
     FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
         ON UPDATE CASCADE ON DELETE CASCADE,
 
     FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
-        ON UPDATE CASCADE ON DELETE CASCADE,
+        ON UPDATE CASCADE ON DELETE SET NULL,
 
-    UNIQUE KEY uq_asistencia_maquinaria (id_obra, id_maquinaria, fecha)
+    INDEX idx_combustible_fecha (fecha),
+    INDEX idx_combustible_obra (id_obra),
+    INDEX idx_combustible_maquinaria (id_maquinaria)
 );
 
 CREATE TABLE IF NOT EXISTS intentos_login (
