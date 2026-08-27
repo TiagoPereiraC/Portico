@@ -749,17 +749,23 @@ function renderCertItem(cert) {
     }
   }
 
+  const nombreArchivo = cert.nombre_archivo || "Certificado";
+
   return `
-    <div class="obrero-item cert-item ${clase}" style="margin-bottom:8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 8px; background: #ffffff; border: 1px solid #e2e8f0;">
-      <span class="obrero-name" style="display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 13px; color: #1e293b;">
-        <i class="fas fa-file-pdf" style="color: #e11d48; font-size: 15px;"></i>
-        ${escapeHtml(cert.nombre_archivo || "Certificado")}
-        <span class="alerta-badge ${badgeClase}" style="font-size: 11px; margin-left: 6px;">
-          ${etiquetaBadge}
-        </span>
+    <div class="obrero-item cert-item ${clase}">
+      <span class="obrero-name">
+        <div class="cert-file-row">
+          <i class="fas fa-file-pdf" style="color: #e11d48; font-size: 15px; flex-shrink: 0;"></i>
+          <span class="cert-file-name" title="${escapeHtml(nombreArchivo)}">${escapeHtml(nombreArchivo)}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+          <span class="alerta-badge ${badgeClase}">
+            ${etiquetaBadge}
+          </span>
+        </div>
       </span>
-      <div class="obrero-actions" style="display: flex; gap: 6px;">
-        <button type="button" class="btn-delete" data-descargar="${cert.id_certificado}" data-nombre="${escapeHtml(cert.nombre_archivo || "certificado")}" title="Descargar certificado" style="background: #f1f5f9; color: #334155; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer;">
+      <div class="obrero-actions">
+        <button type="button" class="btn-download" data-descargar="${cert.id_certificado}" data-nombre="${escapeHtml(nombreArchivo)}" title="Descargar certificado" style="background: #f1f5f9; color: #334155; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer;">
           <i class="fas fa-download"></i>
         </button>
         <button type="button" class="btn-edit" data-edit-cert="${cert.id_certificado}" data-vencimiento="${cert.fecha_vencimiento || ''}" title="Editar fecha de vencimiento" style="background: #f1f5f9; color: #334155; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer;">

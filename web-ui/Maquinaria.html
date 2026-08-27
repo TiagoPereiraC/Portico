@@ -75,8 +75,66 @@
             .cert-item.critico { border-left: 4px solid #f97316; background: #fff7ed; }
             .cert-item.advertencia { border-left: 4px solid #facc15; background: #fefce8; }
             .cert-item.vigente { border-left: 4px solid #22c55e; background: #f0fdf4; }
-            .cert-item { transition: background 0.15s; border-radius: 8px; }
-            .cert-item:hover { background: #f3f4f6; }
+            .cert-item {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                width: 100%;
+                box-sizing: border-box;
+                padding: 10px 12px;
+                margin-bottom: 8px;
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                transition: background 0.15s, border-color 0.15s;
+            }
+            .cert-item:hover { background: #f8fafc; }
+            .cert-item .obrero-name {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                flex: 1 1 180px;
+                min-width: 0;
+                max-width: 100%;
+            }
+            .cert-item .obrero-name .cert-file-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                min-width: 0;
+                font-weight: 600;
+                font-size: 13px;
+                color: #1e293b;
+            }
+            .cert-item .obrero-name .cert-file-name {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                word-break: break-all;
+                max-width: 100%;
+            }
+            .cert-item .obrero-actions {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                flex-shrink: 0;
+                margin-left: auto;
+            }
+            .cert-item .obrero-actions button {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                height: 32px;
+                min-width: 32px;
+                padding: 0 8px;
+                border-radius: 6px;
+                border: none;
+                cursor: pointer;
+                font-size: 12px;
+                transition: all 0.15s ease;
+            }
             .cert-section {
                 background: #fafafa;
                 border: 1px solid #e5e7eb;
@@ -88,10 +146,6 @@
                 display: inline-block;
                 padding: 8px 16px;
                 font-size: 13px;
-            }
-            .cert-section .obrero-item {
-                display: flex;
-                align-items: center;
             }
             /* Estilo para el filtro de certificados */
             .filter-checkbox {
