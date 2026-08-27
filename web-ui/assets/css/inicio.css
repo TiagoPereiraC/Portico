@@ -56,6 +56,13 @@ nav.main-top-nav {
     z-index: 100;
 }
 
+@media (min-width: 1428px) {
+    nav.main-top-nav {
+        padding-left: calc((100% - 1380px) / 2 + 24px);
+        padding-right: calc((100% - 1380px) / 2 + 24px);
+    }
+}
+
 .logo-wrap {
     display: flex;
     align-items: center;
@@ -106,7 +113,8 @@ nav.dashboard-nav-tabs {
     padding: 0 24px;
     display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+    gap: 6px;
     overflow-x: auto;
     scrollbar-width: none;
 }
@@ -119,7 +127,7 @@ nav.dashboard-nav-tabs {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 16px;
+    padding: 10px 14px;
     color: #475569;
     text-decoration: none;
     font-size: 13.5px;
@@ -127,6 +135,7 @@ nav.dashboard-nav-tabs {
     white-space: nowrap;
     border-bottom: 3px solid transparent;
     transition: all 0.2s ease;
+    border-radius: 8px 8px 0 0;
 }
 
 .nav-tab-item svg {
@@ -155,7 +164,7 @@ nav.dashboard-nav-tabs {
 }
 
 .nav-tab-item.nav-tab-logout {
-    margin-left: auto;
+    margin-left: 8px;
     color: #b91c1c;
 }
 
