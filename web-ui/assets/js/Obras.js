@@ -55,13 +55,6 @@ const detailMapSection = document.getElementById("detailMapSection");
 const detailMapIframe = document.getElementById("detailMapIframe");
 const isDesktopWebView = Boolean(window.chrome?.webview);
 const detailMaterialesTotal = document.getElementById("detailMaterialesTotal");
-const detailTareasWrap =document.getElementById("detailTareasWrap");
-
-const detailTareasBody =
-  document.getElementById("detailTareasBody");
-
-const detailTareasEmpty =
-  document.getElementById("detailTareasEmpty");
 
 const detailTareasTotal = document.getElementById("detailTareasTotal");
 const detailTareasCompletadas = document.getElementById("detailTareasCompletadas");
@@ -1252,21 +1245,9 @@ function renderDetalle(data) {
   }
 
   // =========================================================
-// ACTIVIDADES DEL CONTRATO
-// =========================================================
-
-// =========================================================
-// ACTIVIDADES DEL CONTRATO
-// =========================================================
-
-if (
-  detailTareasWrap &&
-  detailTareasBody &&
-  detailTareasEmpty
-) {
-  // ---------------------------------------------------------
-  // CALCULAR ESTADÍSTICAS
-  // ---------------------------------------------------------
+  // =========================================================
+  // ACTIVIDADES DEL CONTRATO
+  // =========================================================
 
   const totalTareas = tareas.length;
 
@@ -1310,56 +1291,6 @@ if (
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`;
-  }
-
-  // ---------------------------------------------------------
-  // TABLA GENERAL DE ACTIVIDADES
-  // ---------------------------------------------------------
-
-  if (tareas.length) {
-    detailTareasWrap.classList.remove("hidden");
-    detailTareasEmpty.classList.add("hidden");
-
-    detailTareasBody.innerHTML = tareas
-      .map((tarea) => {
-        const importe = Number(tarea.importe || 0);
-
-        const estado = tarea.estado || "Pendiente";
-
-        const fecha = tarea.fecha_completada || "";
-
-        return `
-          <tr>
-            <td>
-              ${escapeHtml(tarea.descripcion || "—")}
-            </td>
-
-            <td>
-              $ ${importe.toLocaleString("es-UY", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </td>
-
-            <td>
-              ${escapeHtml(estado)}
-            </td>
-
-            <td>
-              ${
-                fecha
-                  ? formatDate(fecha)
-                  : "—"
-              }
-            </td>
-          </tr>
-        `;
-      })
-      .join("");
-  } else {
-    detailTareasWrap.classList.add("hidden");
-    detailTareasEmpty.classList.remove("hidden");
-    detailTareasBody.innerHTML = "";
   }
 
   // ---------------------------------------------------------
@@ -1439,10 +1370,6 @@ if (
                     maximumFractionDigits: 2,
                   })}
                 </td>
-
-                <td>
-                  ${escapeHtml(tarea.estado || "Pendiente")}
-                </td>
               </tr>
             `;
           })
@@ -1453,7 +1380,6 @@ if (
       detailTareasPendientesBody.innerHTML = "";
     }
   }
-}
 
   // =========================================================
   // RECURSOS
