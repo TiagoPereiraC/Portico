@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Pórtico - Maquinaria</title>
+        <link rel="icon" type="image/png" href="assets/img/logo.png" />
+        <link rel="stylesheet" href="assets/css/theme.css" />
+        <link rel="stylesheet" href="assets/css/RegObrero.css" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        />
+        <link rel="stylesheet" href="assets/css/nav-sidebar.css" />
+        <script src="assets/js/auth.js" data-role="Administrador"></script>
+        <style>
+            .alertas-vencimiento {
+                background: #fef2f2;
+                border: 1px solid #fca5a5;
+                border-radius: 12px;
+                padding: 16px 20px;
+                margin-bottom: 20px;
+                box-shadow: 0 2px 8px rgba(220, 38, 38, 0.10);
+            }
+            .alertas-vencimiento.hidden { display: none; }
+            .alertas-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: #b91c1c;
+                font-size: 15px;
+                margin-bottom: 10px;
+            }
+            .alertas-header i { font-size: 18px; }
+            .alertas-close {
+                margin-left: auto;
+                background: none;
+                border: none;
+                color: #b91c1c;
+                cursor: pointer;
+                font-size: 16px;
+                padding: 2px 6px;
+                border-radius: 4px;
+                transition: background 0.2s;
+            }
+            .alertas-close:hover { background: #fecaca; }
+            #alertasLista {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+            #alertasLista li {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 10px;
+                border-radius: 8px;
+                font-size: 13px;
+                color: #7f1d1d;
+            }
+            #alertasLista li + li { border-top: 1px solid #fecaca; }
+            .alerta-badge {
+                display: inline-block;
+                font-size: 11px;
+                font-weight: 600;
+                padding: 2px 8px;
+                border-radius: 20px;
+            }
+            .alerta-badge.expirado, .alerta-badge.vencido { background: #fee2e2; color: #b91c1c; }
+            .alerta-badge.critico { background: #ffedd5; color: #c2410c; }
+            .alerta-badge.advertencia { background: #fef3c7; color: #92400e; }
+            .alerta-badge.vigente { background: #dcfce7; color: #166534; }
+            .alerta-badge.sin-fecha { background: #f1f5f9; color: #64748b; }
+            .cert-item.vencido { border-left: 4px solid #dc2626; background: #fef2f2; }
+            .cert-item.critico { border-left: 4px solid #f97316; background: #fff7ed; }
+            .cert-item.advertencia { border-left: 4px solid #facc15; background: #fefce8; }
+            .cert-item.vigente { border-left: 4px solid #22c55e; background: #f0fdf4; }
+            .cert-item {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                width: 100%;
+                box-sizing: border-box;
+                padding: 10px 12px;
+                margin-bottom: 8px;
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                transition: background 0.15s, border-color 0.15s;
+            }
+            .cert-item:hover { background: #f8fafc; }
+            .cert-item .obrero-name {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                flex: 1 1 180px;
+                min-width: 0;
+                max-width: 100%;
+            }
+            .cert-item .obrero-name .cert-file-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                min-width: 0;
+                font-weight: 600;
+                font-size: 13px;
+                color: #1e293b;
+            }
+            .cert-item .obrero-name .cert-file-name {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                word-break: break-all;
+                max-width: 100%;
+            }
+            .cert-item .obrero-actions {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                flex-shrink: 0;
+                margin-left: auto;
+            }
+            .cert-item .obrero-actions button {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                height: 32px;
+                min-width: 32px;
+                padding: 0 8px;
+                border-radius: 6px;
+                border: none;
+                cursor: pointer;
+                font-size: 12px;
+                transition: all 0.15s ease;
+            }
+            .cert-section {
+                background: #fafafa;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 16px;
+                margin-top: 16px;
+            }
+            .cert-section .btn-save {
+                display: inline-block;
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            /* Estilo para el filtro de certificados */
+            .filter-checkbox {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: #fff;
+                padding: 0 12px;
+                border-radius: 10px;
+                border: 1.5px solid var(--input-border);
+                height: 42px;
+                cursor: pointer;
+                font-size: 13px;
+                white-space: nowrap;
+            }
+            .filter-checkbox input {
+                margin: 0;
+                width: 16px;
+                height: 16px;
+                cursor: pointer;
+            }
+            .filter-checkbox span {
+                color: var(--text-dark);
+                user-select: none;
+            }
+            @media (max-width: 640px) {
+                .list-filters {
+                    flex-wrap: wrap;
+                }
+                .filter-checkbox {
+                    white-space: normal;
+                    flex: 1;
+                }
+            }
+
+            #maquinariaTableBody tr { transition: background 0.15s; }
+            #maquinariaTableBody tr:hover { background: #f1eaea; }
+        </style>
+    </head>
+    <body>
+        <nav class="main-top-nav">
+            <div class="logo-wrap">
+                <img
+                    src="assets/img/logo.png"
+                    alt="Pórtico Construcciones y Servicios"
+                />
+            </div>
+            <div class="user-pill">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span class="user-pill-name">Admin</span>
+            </div>
+        </nav>
+
+        <!-- Barra de Navegación Horizontal (Sub-header) -->
+        <nav class="dashboard-nav-tabs" aria-label="Navegación principal">
+            <div class="nav-tabs-container">
+                <a href="PanelInicio.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    <span>Panel</span>
+                </a>
+                <a href="Obras.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="6" x2="9" y2="6"/><line x1="15" y1="6" x2="15" y2="6"/><line x1="9" y1="10" x2="9" y2="10"/><line x1="15" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="9" y2="14"/><line x1="15" y1="14" x2="15" y2="14"/></svg>
+                    <span>Obras</span>
+                </a>
+                <a href="RegistrarObrero.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span>Obreros</span>
+                </a>
+                <a href="Maquinaria.html" class="nav-tab-item active">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    <span>Maquinaria</span>
+                </a>
+                <a href="Asistencia.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    <span>Asistencias</span>
+                </a>
+                <a href="Consultas.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    <span>Consultas</span>
+                </a>
+                <a href="LogsAuditoria.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span>Logs</span>
+                </a>
+                <a href="ExportarDatos.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>Exportar</span>
+                </a>
+                <a href="TablaUsuarios.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    <span>Usuarios</span>
+                </a>
+                <a href="Login.html" class="nav-tab-item nav-tab-logout">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <span>Salir</span>
+                </a>
+            </div>
+        </nav>
+
+        <main>
+            <div class="card">
+                <div
+                    id="feedbackPanel"
+                    class="feedback-panel hidden"
+                    role="alert"
+                    aria-live="polite"
+                >
+                    <div class="feedback-icon">
+                        <i class="fas fa-circle-info"></i>
+                    </div>
+                    <div>
+                        <strong id="feedbackTitle">Atención</strong>
+                        <p id="feedbackMessage"></p>
+                    </div>
+                    <button
+                        type="button"
+                        class="feedback-close"
+                        id="feedbackClose"
+                        aria-label="Cerrar mensaje"
+                    >
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div
+                    id="confirmModal"
+                    class="confirm-modal hidden"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="confirmTitle"
+                    aria-describedby="confirmMessage"
+                >
+                    <div class="confirm-box">
+                        <h3 id="confirmTitle">Confirmar acción</h3>
+                        <p id="confirmMessage"></p>
+                        <div class="confirm-actions">
+                            <button
+                                type="button"
+                                class="btn-secondary"
+                                id="confirmCancel"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                class="btn-save"
+                                id="confirmAccept"
+                            >
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    id="certModal"
+                    class="confirm-modal hidden"
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <div class="confirm-box" style="max-width: 640px; width: 90%;">
+                        <h3 id="certModalTitle">Certificados</h3>
+
+                        <div class="grupo" style="margin-top: 16px;">
+                            <div class="label">Subir certificado</div>
+                            <input type="file" id="certArchivo" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" />
+                        </div>
+
+                        <div class="grupo">
+                            <div class="label">Fecha de vencimiento</div>
+                            <input type="date" id="certVencimiento" class="input" />
+                        </div>
+
+                        <div class="confirm-actions" style="margin-top: 12px; justify-content: flex-start;">
+                            <button type="button" class="btn-save" id="certSubirBtn">Subir</button>
+                            <button type="button" class="btn-secondary" id="certCancelarBtn">Cerrar</button>
+                        </div>
+
+                        <div id="certListaWrap" style="margin-top: 20px;">
+                            <h4 style="font-size: 14px; color: #444; margin-bottom: 10px;">Certificados cargados</h4>
+                            <div id="certLista"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <section id="panelListado" class="panel-view active">
+                    <div
+                        id="alertasVencimiento"
+                        class="alertas-vencimiento hidden"
+                        role="alert"
+                        aria-live="polite"
+                    >
+                        <div class="alertas-header">
+                            <i class="fas fa-triangle-exclamation"></i>
+                            <strong>Certificados por vencer</strong>
+                            <button type="button" class="alertas-close" id="alertasCerrar" aria-label="Cerrar alerta">
+                                <i class="fas fa-xmark"></i>
+                            </button>
+                        </div>
+                        <ul id="alertasLista"></ul>
+                    </div>
+
+                    <div class="panel-head panel-head-spread">
+                        <h2>Maquinaria</h2>
+                        <span class="results-count" id="resultsCount">0 equipos</span>
+                    </div>
+
+                    <div class="list-filters">
+                        <label class="search-box" for="searchMaquinaria">
+                            <i
+                                class="fas fa-magnifying-glass"
+                                aria-hidden="true"
+                            ></i>
+                            <input
+                                type="search"
+                                id="searchMaquinaria"
+                                placeholder="Buscar por nombre o marca"
+                                autocomplete="off"
+                            />
+                        </label>
+                        <label class="filter-checkbox" id="filterCertLabel">
+                            <input type="checkbox" id="filtroCertificados" />
+                            <span>Certificados vencidos o por vencer</span>
+                        </label>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn-new"
+                        id="openFormPanel"
+                    >
+                        <i class="fas fa-plus"></i> Nueva maquinaria
+                    </button>
+
+                    <div
+                        class="loading-state"
+                        id="loadingState"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        <span class="loader" aria-hidden="true"></span>
+                        <p>Cargando maquinaria...</p>
+                    </div>
+
+                    <div class="table-container hidden" id="tableWrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Marca</th>
+                                    <th>Vencimiento</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="maquinariaTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination hidden" id="pagination">
+                        <span class="pagination-info" id="paginationInfo">Mostrando 0-0 de 0 equipos</span>
+                        <div class="pagination-actions">
+                            <button type="button" class="pagination-btn" id="paginationPrev">Anterior</button>
+                            <span class="pagination-page" id="paginationPage">Página 1 de 1</span>
+                            <button type="button" class="pagination-btn" id="paginationNext">Siguiente</button>
+                        </div>
+                    </div>
+
+                    <div class="empty-state hidden" id="emptyState">
+                        <i class="fas fa-truck-monster"></i>
+                        <p id="emptyStateMessage">No hay maquinaria registrada todavía.</p>
+                    </div>
+
+                    <a href="PanelInicio.html" class="btn-back">Volver</a>
+                </section>
+
+                <section id="panelFormulario" class="panel-view hidden">
+                    <div class="form-wrap">
+                        <h2 class="form-title" id="formTitle">
+                            Registrar maquinaria
+                        </h2>
+
+                        <form id="maquinariaForm" novalidate>
+                            <input
+                                type="hidden"
+                                id="id_maquinaria"
+                                name="id_maquinaria"
+                            />
+
+                            <div class="grupo">
+                                <div class="label">Nombre</div>
+                                <input
+                                    type="text"
+                                    id="nombre"
+                                    name="nombre"
+                                    class="input"
+                                    placeholder="Ej: Excavadora hidráulica"
+                                    required
+                                />
+                            </div>
+
+                            <div class="grupo">
+                                <div class="label">Marca</div>
+                                <input
+                                    type="text"
+                                    id="marca"
+                                    name="marca"
+                                    class="input"
+                                    placeholder="Ej: Caterpillar"
+                                />
+                            </div>
+
+                            <div id="certSection" class="cert-section hidden">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                    <h4 class="form-title" style="margin: 0; font-size: 15px;">Certificados y Documentación</h4>
+                                    <span style="font-size: 11px; color: #666; background: #e2e8f0; padding: 2px 8px; border-radius: 12px; font-weight: 500;">Opcional</span>
+                                </div>
+                                <p style="font-size: 12.5px; color: #64748b; margin: 0 0 14px 0; line-height: 1.4;">
+                                    <i class="fas fa-circle-info" style="color: var(--accent);"></i>
+                                    Podés seleccionar un certificado (VTV, seguro, etc.). Se guardará automáticamente junto con la maquinaria al pulsar el botón <strong>Guardar maquinaria</strong> de abajo.
+                                </p>
+
+                                <div class="grupo">
+                                    <div class="label">Adjuntar certificado (PDF, DOC, DOCX, JPG, PNG)</div>
+                                    <input type="file" id="certArchivoForm" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" />
+                                </div>
+
+                                <div class="grupo">
+                                    <div class="label">Fecha de vencimiento del certificado</div>
+                                    <input type="date" id="certVencimientoForm" class="input" />
+                                </div>
+
+                                <div id="certListaFormWrap" style="margin-top: 16px;">
+                                    <div style="font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px;">
+                                        Certificados registrados:
+                                    </div>
+                                    <div id="certListaForm"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions" style="margin-top: 24px;">
+                                <button type="submit" class="btn" id="btnGuardar" style="display: inline-flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-floppy-disk"></i> Guardar maquinaria
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn-back"
+                                    id="cancelFormPanel"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <script src="assets/js/maquinaria.js"></script>
+    </body>
+</html>

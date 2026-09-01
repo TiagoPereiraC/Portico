@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Crear Cuenta</title>
+
+        <link rel="stylesheet" href="assets/css/theme.css" />
+        <link rel="stylesheet" href="assets/css/CrearCuenta.css" />
+        <link rel="stylesheet" href="assets/css/nav-sidebar.css" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        />
+        <script src="assets/js/auth.js" data-role="Administrador"></script>
+        <script src="assets/js/users.js"></script>
+    </head>
+
+    <body>
+        <nav class="main-top-nav">
+            <div class="logo-wrap">
+                <img
+                    src="assets/img/logo.png"
+                    alt="Pórtico Construcciones y Servicios"
+                />
+            </div>
+            <div class="user-pill">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span class="user-pill-name">Admin</span>
+            </div>
+        </nav>
+
+        <!-- Barra de Navegación Horizontal (Sub-header) -->
+        <nav class="dashboard-nav-tabs" aria-label="Navegación principal">
+            <div class="nav-tabs-container">
+                <a href="PanelInicio.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    <span>Panel</span>
+                </a>
+                <a href="Obras.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="6" x2="9" y2="6"/><line x1="15" y1="6" x2="15" y2="6"/><line x1="9" y1="10" x2="9" y2="10"/><line x1="15" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="9" y2="14"/><line x1="15" y1="14" x2="15" y2="14"/></svg>
+                    <span>Obras</span>
+                </a>
+                <a href="RegistrarObrero.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span>Obreros</span>
+                </a>
+                <a href="Maquinaria.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    <span>Maquinaria</span>
+                </a>
+                <a href="Asistencia.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    <span>Asistencias</span>
+                </a>
+                <a href="Consultas.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    <span>Consultas</span>
+                </a>
+                <a href="LogsAuditoria.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span>Logs</span>
+                </a>
+                <a href="ExportarDatos.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>Exportar</span>
+                </a>
+                <a href="TablaUsuarios.html" class="nav-tab-item active">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    <span>Usuarios</span>
+                </a>
+                <a href="Login.html" class="nav-tab-item nav-tab-logout">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <span>Salir</span>
+                </a>
+            </div>
+        </nav>
+
+        <main>
+            <div class="card">
+                <img src="assets/img/logo.png" alt="Logo" class="logo" />
+
+                <h2>Crear Cuenta</h2>
+                <p class="form-helper">
+                    Completá los datos para registrar un usuario con acceso al
+                    sistema.
+                </p>
+
+                <div id="feedback" class="feedback" hidden></div>
+
+                <form id="create-user-form" novalidate>
+                    <div class="input-group" id="group-nombre">
+                        <i class="fas fa-id-card"></i>
+                        <input
+                            type="text"
+                            id="nombre"
+                            name="nombre"
+                            placeholder="Nombre completo"
+                            maxlength="100"
+                            required
+                        />
+                        <div class="error-message" id="error-nombre">
+                            El nombre completo es obligatorio.
+                        </div>
+                    </div>
+
+                    <div class="input-group" id="group-usuario">
+                        <i class="fas fa-user"></i>
+                        <input
+                            type="text"
+                            id="usuario"
+                            name="usuario"
+                            placeholder="Nombre de usuario"
+                            maxlength="50"
+                            required
+                        />
+                        <div class="error-message" id="error-usuario">
+                            El nombre de usuario es obligatorio.
+                        </div>
+                    </div>
+
+                    <div class="input-group" id="group-password">
+                        <i class="fas fa-lock"></i>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Contraseña"
+                            maxlength="255"
+                            required
+                        />
+                        <button
+                            type="button"
+                            class="toggle-password"
+                            id="toggle-password-btn"
+                        >
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div class="error-message" id="error-password">
+                            La contraseña debe tener al menos 6 caracteres.
+                        </div>
+                    </div>
+
+                    <div class="input-group select-rol" id="group-rol">
+                        <i class="fas fa-users"></i>
+                        <select id="rol" name="rol" required>
+                            <option value="">Seleccionar rol</option>
+                            <option value="Administrador">Administrador</option>
+                            <option value="Capataz">Capataz</option>
+                        </select>
+                        <div class="error-message" id="error-rol">
+                            Debe seleccionar un rol.
+                        </div>
+                    </div>
+
+                    <button class="btn" type="submit" id="submitBtn">
+                        Crear Cuenta
+                    </button>
+                    <a href="TablaUsuarios.html" class="btn-back">Volver</a>
+                </form>
+            </div>
+        </main>
+
+        <script>
+            const form = document.getElementById("create-user-form");
+            const feedbackEl = document.getElementById("feedback");
+            const submitBtn = document.getElementById("submitBtn");
+
+            const fields = {
+                nombre: document.getElementById("nombre"),
+                usuario: document.getElementById("usuario"),
+                password: document.getElementById("password"),
+                rol: document.getElementById("rol"),
+            };
+
+            document
+                .getElementById("toggle-password-btn")
+                .addEventListener("click", function () {
+                    togglePassword("password", this);
+                });
+
+            fields.nombre.addEventListener("input", validateNombre);
+            fields.usuario.addEventListener("input", validateUsuario);
+            fields.password.addEventListener("input", validatePassword);
+            fields.rol.addEventListener("change", validateRol);
+
+            form.addEventListener("submit", async function (event) {
+                event.preventDefault();
+
+                if (!validateAll()) {
+                    showFeedback(
+                        "Por favor, complete todos los campos correctamente antes de enviar.",
+                        "error",
+                    );
+                    return;
+                }
+
+                setSubmitting(true, "Creando...");
+                showFeedback("", "success");
+
+                try {
+                    const data = await window.userApi.createUser({
+                        nombre: fields.nombre.value.trim(),
+                        usuario: fields.usuario.value.trim(),
+                        password: fields.password.value,
+                        rol: fields.rol.value,
+                    });
+
+                    sessionStorage.setItem(
+                        "user_flash",
+                        JSON.stringify({
+                            type: "success",
+                            message:
+                                data.message || "Usuario creado correctamente.",
+                        }),
+                    );
+                    window.location.href = "TablaUsuarios.html";
+                } catch (error) {
+                    showFeedback(
+                        error.message || "No se pudo crear el usuario.",
+                        "error",
+                    );
+                    setSubmitting(false, "Crear Cuenta");
+                }
+            });
+
+            function togglePassword(inputId, btn) {
+                const input = document.getElementById(inputId);
+                const icon = btn.querySelector("i");
+                if (input.type === "password") {
+                    input.type = "text";
+                    icon.classList.replace("fa-eye", "fa-eye-slash");
+                } else {
+                    input.type = "password";
+                    icon.classList.replace("fa-eye-slash", "fa-eye");
+                }
+            }
+
+            function showFeedback(message, type) {
+                if (!message) {
+                    feedbackEl.hidden = true;
+                    feedbackEl.textContent = "";
+                    feedbackEl.className = "feedback";
+                    return;
+                }
+
+                feedbackEl.hidden = false;
+                feedbackEl.textContent = message;
+                feedbackEl.className = `feedback feedback-${type}`;
+            }
+
+            function setSubmitting(disabled, label) {
+                submitBtn.disabled = disabled;
+                submitBtn.textContent = label;
+            }
+
+            function setFieldValidity(fieldName, isValid) {
+                const group = document.getElementById(`group-${fieldName}`);
+                const error = document.getElementById(`error-${fieldName}`);
+                const field = fields[fieldName];
+
+                group.classList.toggle("error", !isValid);
+                field.classList.toggle(
+                    "success-border",
+                    isValid && field.value.trim() !== "",
+                );
+                error.classList.toggle("visible", !isValid);
+            }
+
+            function validateNombre() {
+                const isValid = fields.nombre.value.trim() !== "";
+                setFieldValidity("nombre", isValid);
+                return isValid;
+            }
+
+            function validateUsuario() {
+                const isValid = fields.usuario.value.trim() !== "";
+                setFieldValidity("usuario", isValid);
+                return isValid;
+            }
+
+            function validatePassword() {
+                const isValid = fields.password.value.length >= 6;
+                setFieldValidity("password", isValid);
+                return isValid;
+            }
+
+            function validateRol() {
+                const isValid = fields.rol.value !== "";
+                setFieldValidity("rol", isValid);
+                return isValid;
+            }
+
+            function validateAll() {
+                return (
+                    validateNombre() &&
+                    validateUsuario() &&
+                    validatePassword() &&
+                    validateRol()
+                );
+            }
+        </script>
+    </body>
+</html>

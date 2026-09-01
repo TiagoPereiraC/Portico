@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Usuarios Registrados</title>
+
+        <link rel="stylesheet" href="assets/css/theme.css" />
+        <link rel="stylesheet" href="assets/css/TablaUsuarios.css" />
+        <link rel="stylesheet" href="assets/css/nav-sidebar.css" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        />
+        <script src="assets/js/auth.js" data-role="Administrador"></script>
+        <script src="assets/js/users.js"></script>
+    </head>
+
+    <body>
+        <nav class="main-top-nav">
+            <div class="logo-wrap">
+                <img
+                    src="assets/img/logo.png"
+                    alt="Pórtico Construcciones y Servicios"
+                />
+            </div>
+            <div class="user-pill">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span class="user-pill-name">Admin</span>
+            </div>
+        </nav>
+
+        <!-- Barra de Navegación Horizontal (Sub-header) -->
+        <nav class="dashboard-nav-tabs" aria-label="Navegación principal">
+            <div class="nav-tabs-container">
+                <a href="PanelInicio.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    <span>Panel</span>
+                </a>
+                <a href="Obras.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="6" x2="9" y2="6"/><line x1="15" y1="6" x2="15" y2="6"/><line x1="9" y1="10" x2="9" y2="10"/><line x1="15" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="9" y2="14"/><line x1="15" y1="14" x2="15" y2="14"/></svg>
+                    <span>Obras</span>
+                </a>
+                <a href="RegistrarObrero.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span>Obreros</span>
+                </a>
+                <a href="Maquinaria.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    <span>Maquinaria</span>
+                </a>
+                <a href="Asistencia.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    <span>Asistencias</span>
+                </a>
+                <a href="Consultas.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    <span>Consultas</span>
+                </a>
+                <a href="LogsAuditoria.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span>Logs</span>
+                </a>
+                <a href="ExportarDatos.html" class="nav-tab-item">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>Exportar</span>
+                </a>
+                <a href="TablaUsuarios.html" class="nav-tab-item active">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    <span>Usuarios</span>
+                </a>
+                <a href="Login.html" class="nav-tab-item nav-tab-logout">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <span>Salir</span>
+                </a>
+            </div>
+        </nav>
+
+        <main>
+            <div class="card">
+                <h2>Usuarios Registrados</h2>
+
+                <div id="feedback" class="feedback" hidden></div>
+
+                <div class="toolbar">
+                    <a href="CrearCuenta.html" class="btn-new">
+                        <i class="fas fa-user-plus"></i> Nueva Cuenta
+                    </a>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Usuario</th>
+                                <th>Rol</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="users-body">
+                            <tr>
+                                <td colspan="4" class="table-status">
+                                    Cargando usuarios...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination hidden" id="pagination">
+                    <span class="pagination-info" id="paginationInfo">Mostrando 0-0 de 0 usuarios</span>
+                    <div class="pagination-actions">
+                        <button type="button" class="pagination-btn" id="paginationPrev">Anterior</button>
+                        <span class="pagination-page" id="paginationPage">Página 1 de 1</span>
+                        <button type="button" class="pagination-btn" id="paginationNext">Siguiente</button>
+                    </div>
+                </div>
+
+                <a href="PanelInicio.html" class="btn-back">Volver</a>
+            </div>
+        </main>
+
+        <div id="modalConfirm" class="modal-confirm" aria-hidden="true">
+            <div class="modal-content">
+                <div class="modal-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3>¿Eliminar usuario?</h3>
+                <p id="modalUsuarioTexto">Esta acción no se puede deshacer.</p>
+                <div class="modal-buttons">
+                    <button
+                        class="modal-btn modal-cancel"
+                        id="btnCancelar"
+                        type="button"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        class="modal-btn modal-delete"
+                        id="btnConfirmarEliminar"
+                        type="button"
+                    >
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const tbody = document.getElementById("users-body");
+            const feedbackEl = document.getElementById("feedback");
+            const modal = document.getElementById("modalConfirm");
+            const modalTexto = document.getElementById("modalUsuarioTexto");
+            const btnCancelar = document.getElementById("btnCancelar");
+            const btnConfirmar = document.getElementById(
+                "btnConfirmarEliminar",
+            );
+
+            const pagination = document.getElementById("pagination");
+            const paginationInfo = document.getElementById("paginationInfo");
+            const paginationPage = document.getElementById("paginationPage");
+            const paginationPrev = document.getElementById("paginationPrev");
+            const paginationNext = document.getElementById("paginationNext");
+
+            const USUARIOS_POR_PAGINA = 10;
+            let paginaActual = 1;
+            let totalPaginas = 1;
+            let totalUsuarios = 0;
+
+            let pendingDelete = null;
+
+            btnCancelar.addEventListener("click", closeModal);
+            btnConfirmar.addEventListener("click", confirmDelete);
+            modal.addEventListener("click", function (event) {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+            paginationPrev.addEventListener("click", function () {
+                cambiarPagina(-1);
+            });
+            paginationNext.addEventListener("click", function () {
+                cambiarPagina(1);
+            });
+
+            tbody.addEventListener("click", function (event) {
+                const deleteButton = event.target.closest(".btn-delete");
+                if (!deleteButton) {
+                    return;
+                }
+
+                pendingDelete = {
+                    id: Number(deleteButton.dataset.id),
+                    usuario: deleteButton.dataset.usuario || "",
+                };
+
+                modalTexto.innerHTML = `Estás a punto de eliminar a <strong>${escapeHtml(pendingDelete.usuario)}</strong>. Esta acción no se puede deshacer.`;
+                modal.classList.add("active");
+                modal.setAttribute("aria-hidden", "false");
+                document.body.classList.add("modal-open");
+            });
+
+            loadUsers();
+            showFlashMessage();
+
+            async function loadUsers() {
+                tbody.innerHTML =
+                    '<tr><td colspan="4" class="table-status">Cargando usuarios...</td></tr>';
+
+                try {
+                    const data = await window.userApi.listUsers({
+                        page: paginaActual,
+                        limit: USUARIOS_POR_PAGINA,
+                    });
+                    renderUsers(data.users || []);
+                    totalUsuarios = Number(data.total || 0);
+                    totalPaginas = Math.max(1, Number(data.total_pages || 1));
+                    paginaActual = Math.min(
+                        Math.max(1, Number(data.page || paginaActual)),
+                        totalPaginas,
+                    );
+                    actualizarPaginacion();
+                } catch (error) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="table-status">${escapeHtml(error.message || "No se pudieron cargar los usuarios.")}</td></tr>`;
+                    showFeedback(
+                        error.message || "No se pudieron cargar los usuarios.",
+                        "error",
+                    );
+                }
+            }
+
+            function renderUsers(users) {
+                if (!Array.isArray(users) || users.length === 0) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="4" class="table-status">No hay usuarios registrados.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = users
+                    .map(function (user) {
+                        return `
+      <tr>
+        <td>${escapeHtml(user.nombre)}</td>
+        <td>${escapeHtml(user.usuario)}</td>
+        <td>${escapeHtml(user.rol)}</td>
+        <td>
+          <div class="table-actions">
+            <a href="EditarUsuario.html?id=${encodeURIComponent(user.id_usuario)}" class="btn-edit" title="Editar usuario">
+              <i class="fas fa-pen"></i>
+            </a>
+            <button class="btn-delete" type="button" data-id="${user.id_usuario}" data-usuario="${escapeHtml(user.usuario)}" title="Eliminar usuario">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>`;
+                    })
+                    .join("");
+            }
+
+            async function confirmDelete() {
+                if (!pendingDelete?.id) {
+                    closeModal();
+                    return;
+                }
+
+                btnConfirmar.disabled = true;
+
+                try {
+                    const data = await window.userApi.deleteUser(
+                        pendingDelete.id,
+                    );
+                    showFeedback(
+                        data.message || "Usuario eliminado correctamente.",
+                        "success",
+                    );
+                    closeModal();
+                    await loadUsers();
+                } catch (error) {
+                    showFeedback(
+                        error.message || "No se pudo eliminar el usuario.",
+                        "error",
+                    );
+                    btnConfirmar.disabled = false;
+                }
+            }
+
+            function closeModal() {
+                modal.classList.remove("active");
+                modal.setAttribute("aria-hidden", "true");
+                document.body.classList.remove("modal-open");
+                btnConfirmar.disabled = false;
+                pendingDelete = null;
+            }
+
+            function showFlashMessage() {
+                const raw = sessionStorage.getItem("user_flash");
+                if (!raw) {
+                    return;
+                }
+
+                sessionStorage.removeItem("user_flash");
+
+                try {
+                    const flash = JSON.parse(raw);
+                    if (flash?.message) {
+                        showFeedback(flash.message, flash.type || "success");
+                    }
+                } catch {
+                    showFeedback(raw, "success");
+                }
+            }
+
+            function showFeedback(message, type) {
+                if (!message) {
+                    feedbackEl.hidden = true;
+                    feedbackEl.textContent = "";
+                    feedbackEl.className = "feedback";
+                    return;
+                }
+
+                feedbackEl.hidden = false;
+                feedbackEl.textContent = message;
+                feedbackEl.className = `feedback feedback-${type}`;
+            }
+
+            function actualizarPaginacion() {
+                pagination.classList.toggle(
+                    "hidden",
+                    totalUsuarios === 0 || totalPaginas === 1,
+                );
+
+                const desde =
+                    totalUsuarios === 0
+                        ? 0
+                        : (paginaActual - 1) * USUARIOS_POR_PAGINA + 1;
+                const hasta = Math.min(
+                    paginaActual * USUARIOS_POR_PAGINA,
+                    totalUsuarios,
+                );
+
+                paginationInfo.textContent =
+                    "Mostrando " +
+                    desde +
+                    "-" +
+                    hasta +
+                    " de " +
+                    totalUsuarios +
+                    " " +
+                    (totalUsuarios === 1 ? "usuario" : "usuarios");
+                paginationPage.textContent =
+                    "Página " + paginaActual + " de " + totalPaginas;
+                paginationPrev.disabled = paginaActual === 1;
+                paginationNext.disabled = paginaActual === totalPaginas;
+            }
+
+            async function cambiarPagina(direccion) {
+                const nuevaPagina = paginaActual + direccion;
+                if (nuevaPagina < 1 || nuevaPagina > totalPaginas) {
+                    return;
+                }
+
+                paginaActual = nuevaPagina;
+                await loadUsers();
+            }
+
+            function escapeHtml(value) {
+                return String(value ?? "").replace(/[&<>"']/g, function (char) {
+                    return {
+                        "&": "&amp;",
+                        "<": "&lt;",
+                        ">": "&gt;",
+                        '"': "&quot;",
+                        "'": "&#39;",
+                    }[char];
+                });
+            }
+        </script>
+    </body>
+</html>

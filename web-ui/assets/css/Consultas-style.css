@@ -1,0 +1,441 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Inter", sans-serif;
+}
+
+:root {
+    --bg: #954043;
+    --card-bg: #e8e3df;
+    --input-bg: #f5f5f5;
+    --input-border: #e0e0e0;
+    --text-dark: #666;
+    --text-muted: #888;
+    --text-strong: #444;
+    --btn-bg: #b54747;
+    --btn-hover: #9e3c3c;
+    --accent: #b54747;
+    --input-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    --shadow-card: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Fondo general */
+body {
+    background-color: var(--bg);
+    min-height: 100vh;
+}
+
+/* NAVBAR */
+nav.main-top-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    height: 80px;
+    min-height: 80px;
+    box-sizing: border-box;
+    background-color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    position: relative;
+    z-index: 100;
+}
+
+.logo-wrap {
+    display: flex;
+    align-items: center;
+    line-height: 1;
+}
+
+.logo-wrap img {
+    height: 60px;
+    width: auto;
+    max-width: 220px;
+    object-fit: contain;
+}
+
+/* Usuario */
+.user-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-dark);
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 6px 14px;
+    border-radius: 20px;
+}
+
+.user-pill svg {
+    width: 18px;
+    height: 18px;
+    color: var(--accent);
+}
+
+/* CONTENIDO PRINCIPAL */
+main {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 48px 16px;
+}
+
+/* CARD */
+.card {
+    background-color: var(--card-bg);
+    border-radius: 25px;
+    padding: 40px;
+    width: min(100%, 1400px);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+    gap: 30px;
+    box-shadow: var(--shadow-card);
+}
+
+/* TÍTULO */
+.card h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--text-dark);
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+}
+
+/* FORMULARIO */
+.form-section {
+    display: flex;
+    flex-direction: column;
+    color: var(--text-dark);
+}
+
+.form-section label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-strong);
+    margin-bottom: 8px;
+}
+
+/* SELECT */
+select {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--input-border);
+    margin-bottom: 15px;
+    font-size: 14px;
+    background-color: var(--input-bg);
+    box-shadow: var(--input-shadow);
+    transition: 0.2s;
+}
+
+select:hover {
+    border-color: var(--accent);
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 5px rgba(181, 71, 71, 0.5);
+}
+
+/* FECHAS */
+.date-range {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.date-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.date-group span {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text-strong);
+}
+
+.date-range input {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--input-border);
+    background-color: var(--input-bg);
+    box-shadow: var(--input-shadow);
+    transition: 0.2s;
+}
+
+.date-range input:hover {
+    border-color: var(--accent);
+}
+
+.date-range input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 5px rgba(181, 71, 71, 0.5);
+}
+
+/* BOTONES */
+.btn-search {
+    display: block;
+    text-align: center;
+    width: 100%;
+    padding: 14px;
+    background: var(--btn-bg);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: 0.2s;
+}
+
+.btn-search:hover {
+    background: var(--btn-hover);
+    transform: scale(1.02);
+}
+
+.btn-back {
+    display: block;
+    text-align: center;
+    background: var(--text-muted);
+    color: white;
+    padding: 14px;
+    border-radius: 10px;
+    margin-top: 12px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: 0.2s;
+    width: 100%;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-back:hover {
+    background: var(--text-dark);
+    transform: scale(1.02);
+}
+
+/* FEEDBACK */
+.feedback-msg {
+    grid-column: span 2;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.feedback-msg.hidden { display: none; }
+.feedback-msg.error { background: #f8d7da; color: #721c24; }
+.feedback-msg.success { background: #d4edda; color: #155724; }
+.feedback-msg.warning { background: #fff3cd; color: #856404; }
+.feedback-msg.info { background: #d1ecf1; color: #0c5460; }
+
+/* PANEL DERECHO */
+.result-section {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* RESUMEN */
+#resumen-consultas {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.resumen-card {
+    background: #ffffff;
+    border-radius: 15px;
+    padding: 18px;
+    text-align: center;
+    box-shadow: var(--input-shadow);
+}
+
+.resumen-card h3 {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.resumen-card span {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+/* TABLA */
+.table {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 600px;
+    background-color: #fff;
+    border-radius: 15px;
+    padding: 15px;
+    box-shadow: var(--input-shadow);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+thead {
+    background-color: var(--accent);
+}
+
+.table th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+th,
+td {
+    border-bottom: 1px solid var(--input-border);
+    padding: 12px 10px;
+    text-align: center;
+}
+
+th {
+    color: #fff;
+    border-bottom: none;
+}
+
+tbody tr:nth-child(even) {
+    background-color: #f7f7f7;
+}
+
+tbody tr:hover {
+    background-color: #ececec;
+}
+
+.table td {
+    vertical-align: middle;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.table td:nth-child(5) {
+    font-weight: 600;
+}
+
+.no-data {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 25px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1100px) {
+
+    .card {
+        grid-template-columns: 1fr;
+    }
+
+    #resumen-consultas {
+        grid-template-columns: 1fr;
+    }
+}
+
+.pagination {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: var(--input-shadow);
+}
+
+.pagination.hidden { display: none; }
+
+.pagination-info,
+.pagination-page {
+    color: var(--text-dark);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.pagination-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.pagination-btn {
+    border: none;
+    border-radius: 10px;
+    background: var(--btn-bg);
+    color: white;
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.pagination-btn:hover {
+    background: var(--btn-hover);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+@media (max-width: 1100px) {
+
+    .card {
+        grid-template-columns: 1fr;
+    }
+
+    #resumen-consultas {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 900px) {
+
+    .card {
+        padding: 28px 24px 32px;
+    }
+
+    .date-range {
+        flex-direction: column;
+    }
+
+    .pagination,
+    .pagination-actions {
+        justify-content: center;
+    }
+}
