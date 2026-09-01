@@ -37,7 +37,7 @@
                     <span>Panel</span>
                 </a>
                 <a href="Obras.html" class="nav-tab-item">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="6" x2="9" y2="6"/><line x1="15" y1="6" x2="15" y2="6"/><line x1="9" y1="10" x2="9" y2="10"/><line x1="15" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="9" y2="14"/><line x1="15" y1="14" x2="15" y2="14"/></svg>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1 8 8 0 0 0-16 0"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15h16"/></svg>
                     <span>Obras</span>
                 </a>
                 <a href="RegistrarObrero.html" class="nav-tab-item">
@@ -92,11 +92,27 @@
 
                 <h1>Consultas de Obreros</h1>
 
-                <select id="obrero">
-                    <option value="">
-                        Seleccionar obrero
-                    </option>
-                </select>
+                <label for="obreroSearchInput">Seleccionar Obrero</label>
+                <div class="obrero-combobox-wrap">
+                    <input type="hidden" id="obrero" name="id_obrero" value="" />
+                    <div class="obrero-search-box">
+                        <input
+                            type="text"
+                            id="obreroSearchInput"
+                            class="obrero-search-input"
+                            placeholder="Escribí nombre, apellido, DNI o cargo..."
+                            autocomplete="off"
+                        />
+                        <button type="button" id="obreroClearBtn" class="obrero-clear-btn" title="Limpiar selección">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="obreroDropdown" class="obrero-dropdown-list hidden"></div>
+                    <div id="obreroSelectedCard" class="obrero-selected-card hidden">
+                        <span id="obreroSelectedText" class="obrero-selected-text"></span>
+                        <span style="font-size:11px;color:#888;">(Seleccionado)</span>
+                    </div>
+                </div>
 
                 <label>Período de búsqueda</label>
 

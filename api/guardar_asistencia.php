@@ -53,6 +53,7 @@ try {
 
     guardarObreros($pdo, $fecha, $id_obra, $id_usuario);
     guardarMateriales($pdo, $fecha, $id_obra);
+    guardarHerramientas($pdo, $fecha, $id_obra);
     guardarMaquinaria($pdo, $fecha, $id_obra);
     guardarCombustible($pdo, $fecha, $id_obra);
     finalizarObra($pdo, $fecha, $id_obra);

@@ -52,7 +52,8 @@ nav.main-top-nav {
     background-color: #ffffff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     box-sizing: border-box;
-    position: relative;
+    position: sticky;
+    top: 0;
     z-index: 100;
 }
 
@@ -110,17 +111,31 @@ nav.dashboard-nav-tabs {
 .nav-tabs-container {
     max-width: 1380px;
     margin: 0 auto;
-    padding: 0 24px;
+    padding: 0 16px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 6px;
     overflow-x: auto;
-    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #e2e8f0 transparent;
+}
+
+@media (min-width: 1200px) {
+    .nav-tabs-container {
+        justify-content: center;
+        padding: 0 24px;
+    }
 }
 
 .nav-tabs-container::-webkit-scrollbar {
-    display: none;
+    height: 4px;
+}
+
+.nav-tabs-container::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 4px;
 }
 
 .nav-tab-item {
@@ -404,6 +419,72 @@ nav.dashboard-nav-tabs {
     justify-content: center;
     font-size: 18px;
     flex-shrink: 0;
+}
+
+.metric-icon-small.icon-theme-burgundy {
+    color: #b54747;
+    background: #fdf2f2;
+    border-color: #fce7e7;
+}
+
+.metric-icon-small.icon-theme-emerald {
+    color: #166534;
+    background: #f0fdf4;
+    border-color: #dcfce7;
+}
+
+.metric-icon-small.icon-theme-amber {
+    color: #d97706;
+    background: #fffbeb;
+    border-color: #fef3c7;
+}
+
+.alert-empty-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 18px;
+    background: #f0fdf4;
+    border-radius: 10px;
+    color: #166534;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.alert-item-title {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.alert-item-subtitle {
+    font-size: 11.5px;
+    color: #64748b;
+}
+
+.fallback-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.fallback-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+}
+
+.fallback-badge-dot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fallback-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
 }
 
 .metric-info {
@@ -740,16 +821,191 @@ nav.dashboard-nav-tabs {
     nav.dashboard-nav-tabs {
         top: 72px;
     }
+    .logo-wrap img {
+        height: 48px;
+    }
     .dashboard-main {
-        padding: 16px 12px;
+        padding: 20px 16px 40px 16px;
     }
     .kpi-grid {
         grid-template-columns: 1fr;
     }
-    .operational-summary-grid {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    .header-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+/* Estilos de Exportación de Datos */
+.export-dashboard-main {
+    max-width: 1380px;
+    margin: 0 auto;
+    padding: 32px 24px 60px 24px;
+    box-sizing: border-box;
+}
+
+.export-header {
+    margin-bottom: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.export-header h1 {
+    font-size: 26px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+}
+
+.export-header p {
+    font-size: 14px;
+    color: #ffffff;
+    margin: 0;
+}
+
+.feedback {
+    display: none;
+    width: 100%;
+    max-width: 650px;
+    margin: 0 0 24px 0;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    box-sizing: border-box;
+}
+
+.feedback.info {
+    display: block;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.feedback.success {
+    display: block;
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.feedback.error {
+    display: block;
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.export-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.export-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 24px 22px;
+    text-decoration: none;
+    color: var(--text-dark, #333);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    border: 1px solid #eef2f6;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 200px;
+    box-sizing: border-box;
+}
+
+.export-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(181, 71, 71, 0.12);
+    border-color: #f1cbc7;
+}
+
+.export-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.export-icon-wrap {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.export-card:hover .export-icon-wrap {
+    transform: scale(1.06);
+}
+
+.export-format-badge {
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    letter-spacing: 0.5px;
+}
+
+.export-card-body h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 6px 0;
+}
+
+.export-card-body p {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.45;
+    margin: 0 0 18px 0;
+}
+
+.export-action-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent, #b54747);
+    padding-top: 14px;
+    border-top: 1px solid #f1f5f9;
+    transition: gap 0.2s ease;
+}
+
+.export-card:hover .export-action-row {
+    gap: 9px;
+}
+
+@media (max-width: 1050px) {
+    .export-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .export-cards-grid {
         grid-template-columns: 1fr;
     }
-    .welcome-title {
-        font-size: 22px;
+    .export-dashboard-main {
+        padding: 20px 16px 40px 16px;
     }
 }

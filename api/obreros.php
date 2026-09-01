@@ -33,6 +33,14 @@ try {
 
     switch ($_SERVER['REQUEST_METHOD']) {
         case 'GET':
+            if (isset($_GET['descargar_contrato'])) {
+                responderDescargaContratoObrero($pdo);
+                break;
+            }
+            if (isset($_GET['id_obrero_contratos'])) {
+                responderListadoContratosObrero($pdo);
+                break;
+            }
             responderListado($pdo);
             break;
 
@@ -49,6 +57,18 @@ try {
                 break;
             }
             $body = leerJson();
+            if (($body['accion'] ?? '') === 'eliminar_contrato') {
+                responderEliminarContrato($pdo, $body);
+                break;
+            }
+            if (($body['accion'] ?? '') === 'editar_fecha_contrato') {
+                responderEditarFechaContrato($pdo, $body);
+                break;
+            }
+            if (($body['accion'] ?? '') === 'subir_contrato_base64') {
+                responderSubirContratoBase64($pdo, $body);
+                break;
+            }
             responderGuardado($pdo, $body);
             break;
 
@@ -102,9 +122,9 @@ function responderListado(PDO $pdo): void
 
     // Filtro por búsqueda
     if ($search !== '') {
-        $where[] = '(nombre LIKE ? OR apellido LIKE ? OR documento LIKE ? OR telefono LIKE ?)';
-        $searchLike = $search . '%';
-        $params = array_merge($params, [$searchLike, $searchLike, $searchLike, $searchLike]);
+        $where[] = '(nombre LIKE ? OR apellido LIKE ? OR documento LIKE ? OR telefono LIKE ? OR cargo LIKE ?)';
+        $searchLike = '%' . $search . '%';
+        $params = array_merge($params, [$searchLike, $searchLike, $searchLike, $searchLike, $searchLike]);
     }
 
     // Filtro por estado del contrato (usa fecha_fin del obrero)
@@ -382,26 +402,138 @@ function obtenerObrero(PDO $pdo, int $idObrero): array
     return $obrero;
 }
 
-function validarExtensionContrato(string $nombreArchivo): void
+function responderListadoContratosObrero(PDO $pdo): void
 {
-    $extension = strtolower(pathinfo($nombreArchivo, PATHINFO_EXTENSION));
-    $permitidas = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
-    if (!in_array($extension, $permitidas, true)) {
-        throw new InvalidArgumentException('Formato de archivo no permitido. Solo se aceptan PDF, DOC, DOCX, JPG o PNG.');
+    $id = (int) ($_GET['id_obrero_contratos'] ?? 0);
+    if ($id <= 0) {
+        throw new InvalidArgumentException('Obrero inválido');
     }
+
+    $stmt = $pdo->prepare('SELECT id_contrato_obrero, nombre_archivo, fecha_vencimiento FROM contrato_obrero WHERE id_obrero = ? ORDER BY fecha_vencimiento DESC, id_contrato_obrero DESC');
+    $stmt->execute([$id]);
+
+    echo json_encode([
+        'success' => true,
+        'contratos' => $stmt->fetchAll()
+    ]);
 }
 
-function verificarLimitePost(): void
+function responderDescargaContratoObrero(PDO $pdo): void
 {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
-        if ($contentLength > 0 && empty($_POST) && empty($_FILES)) {
-            $rawInput = file_get_contents('php://input');
-            if ($rawInput === false || strlen($rawInput) === 0) {
-                $postMax = ini_get('post_max_size') ?: '8M';
-                throw new InvalidArgumentException("El archivo o solicitud enviada supera el tamaño máximo permitido por el servidor (límite post_max_size: {$postMax}).");
-            }
-        }
+    $idContrato = isset($_GET['descargar_contrato']) ? (int) $_GET['descargar_contrato'] : 0;
+    if ($idContrato <= 0) {
+        throw new InvalidArgumentException('Debés indicar un contrato válido.');
     }
+
+    $stmt = $pdo->prepare('SELECT archivo, nombre_archivo FROM contrato_obrero WHERE id_contrato_obrero = ? LIMIT 1');
+    $stmt->execute([$idContrato]);
+    $contrato = $stmt->fetch();
+
+    if (!$contrato) {
+        throw new RuntimeException('El contrato indicado no existe.');
+    }
+
+    $nombreArchivo = $contrato['nombre_archivo'] ?? "contrato-{$idContrato}";
+    $archivo = $contrato['archivo'];
+
+    echo json_encode([
+        'success' => true,
+        'nombre_archivo' => $nombreArchivo,
+        'tipo_contenido' => guessMimeTypeContrato($nombreArchivo),
+        'contenido_base64' => base64_encode($archivo),
+    ]);
+}
+
+function responderEliminarContrato(PDO $pdo, array $body): void
+{
+    $id = (int) ($body['id_contrato_obrero'] ?? 0);
+
+    $stmt = $pdo->prepare('SELECT id_contrato_obrero, id_obrero, nombre_archivo FROM contrato_obrero WHERE id_contrato_obrero = ? LIMIT 1');
+    $stmt->execute([$id]);
+    $contrato = $stmt->fetch();
+    if (!$contrato) {
+        throw new RuntimeException('El contrato indicado no existe.');
+    }
+
+    $pdo->prepare('DELETE FROM contrato_obrero WHERE id_contrato_obrero = ?')->execute([$id]);
+
+    registrarAuditoria($pdo, 'eliminar_contrato', 'contrato_obrero', $contrato['id_obrero'], [
+        'nombre_archivo' => $contrato['nombre_archivo'],
+        'id_contrato_obrero' => $id,
+    ]);
+
+    echo json_encode(['success' => true, 'message' => 'Contrato eliminado correctamente.']);
+}
+
+function responderEditarFechaContrato(PDO $pdo, array $body): void
+{
+    $id = (int) ($body['id_contrato_obrero'] ?? 0);
+    $fecha = normalizarFecha($body['fecha_vencimiento'] ?? null);
+
+    if ($id <= 0) {
+        throw new InvalidArgumentException('Debés indicar un contrato válido.');
+    }
+
+    $stmt = $pdo->prepare('SELECT id_contrato_obrero, id_obrero FROM contrato_obrero WHERE id_contrato_obrero = ? LIMIT 1');
+    $stmt->execute([$id]);
+    $contrato = $stmt->fetch();
+    if (!$contrato) {
+        throw new RuntimeException('El contrato indicado no existe.');
+    }
+
+    $stmt = $pdo->prepare('UPDATE contrato_obrero SET fecha_vencimiento = ? WHERE id_contrato_obrero = ?');
+    $stmt->execute([$fecha, $id]);
+
+    registrarAuditoria($pdo, 'editar_contrato', 'contrato_obrero', $contrato['id_obrero'], [
+        'id_contrato_obrero' => $id,
+        'fecha_vencimiento' => $fecha,
+    ]);
+
+    echo json_encode(['success' => true, 'message' => 'Fecha de vencimiento actualizada.']);
+}
+
+function responderSubirContratoBase64(PDO $pdo, array $body): void
+{
+    $id = (int) ($body['id_obrero'] ?? 0);
+    $nombre = trim($body['nombre_archivo'] ?? '');
+    $fecha = normalizarFecha($body['fecha_vencimiento'] ?? null);
+    $archivo = base64_decode($body['contenido_base64'] ?? '', true);
+
+    if ($id <= 0 || !$archivo) {
+        throw new InvalidArgumentException('Datos de contrato inválidos.');
+    }
+
+    if (strlen($archivo) > 10 * 1024 * 1024) {
+        throw new InvalidArgumentException('El contrato no puede superar los 10 MB.');
+    }
+
+    validarExtensionContrato($nombre);
+
+    $stmt = $pdo->prepare('INSERT INTO contrato_obrero (archivo, nombre_archivo, id_obrero, fecha_vencimiento) VALUES (?, ?, ?, ?)');
+    $stmt->bindValue(1, $archivo, PDO::PARAM_LOB);
+    $stmt->bindValue(2, $nombre);
+    $stmt->bindValue(3, $id, PDO::PARAM_INT);
+    $stmt->bindValue(4, $fecha);
+    $stmt->execute();
+
+    registrarAuditoria($pdo, 'subir_contrato', 'contrato_obrero', $id, [
+        'nombre_archivo' => $nombre,
+        'fecha_vencimiento' => $fecha,
+    ]);
+
+    echo json_encode(['success' => true, 'message' => 'Contrato subido correctamente.']);
+}
+
+function guessMimeTypeContrato(string $nombreArchivo): string
+{
+    $extension = strtolower(pathinfo($nombreArchivo, PATHINFO_EXTENSION));
+    return match ($extension) {
+        'pdf' => 'application/pdf',
+        'doc' => 'application/msword',
+        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'jpg', 'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        default => 'application/octet-stream',
+    };
 }
 ?>

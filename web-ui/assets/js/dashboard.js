@@ -1,20 +1,37 @@
 document.addEventListener("DOMContentLoaded", () => {
     inicializarFecha();
+    inicializarTabsAlertas();
     cargarMetricasDashboard();
 });
 
+function inicializarTabsAlertas() {
+    const btnMaq = document.getElementById("tabAlertasMaq");
+    const btnObr = document.getElementById("tabAlertasObr");
+
+    if (btnMaq) {
+        btnMaq.addEventListener("click", () => cambiarTabAlertas("maquinaria"));
+    }
+    if (btnObr) {
+        btnObr.addEventListener("click", () => cambiarTabAlertas("obreros"));
+    }
+}
+
 // Paleta de colores de Pórtico para gráficos
 const COLORES_PORTICO = [
-    "#954043", // Borgoña oscuro institucional
-    "#b54747", // Rojo terracota primario
-    "#c25e5e", // Terracota claro
-    "#d97d7d", // Rosa suave
-    "#8e3a3d", // Borgoña fuerte
-    "#e29595", // Rosa pastel
-    "#d97706", // Ámbar constructivo
-    "#475569", // Pizarra
-    "#64748b", // Pizarra suave
-    "#94a3b8"  // Gris azulado
+    "#954043",
+    "#ffb300",
+    "#e5ff00",
+    "#ff0000",
+    "#8e3a84",
+    "#00f825",
+    "#00ffe1",
+    "#475569",
+    "#7b88ff",
+    "#f990f5",
+    "#50783e",
+    "#7b00ff",
+    "#004a00",  
+
 ];
 
 let chartCargosInstance = null;
@@ -362,9 +379,9 @@ function renderizarAlertas() {
             : "Todos los contratos de personal se encuentran vigentes y al día.";
 
         container.innerHTML = `
-            <div style="display:flex; align-items:center; gap:8px; padding:14px 18px; background:#f0fdf4; border-radius:10px; color:#166534; font-size:13px; font-weight:500;">
+            <div class="alert-empty-notice">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                ${mensajeVacio}
+                <span>${mensajeVacio}</span>
             </div>
         `;
         return;
@@ -398,8 +415,8 @@ function renderizarAlertas() {
                 <div class="alert-left">
                     <svg class="alert-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     <div>
-                        <div style="font-weight: 600; color: #1e293b;">${titulo}</div>
-                        <div style="font-size: 11.5px; color: #64748b;">${subtitulo}</div>
+                        <div class="alert-item-title">${titulo}</div>
+                        <div class="alert-item-subtitle">${subtitulo}</div>
                     </div>
                 </div>
                 <span class="alert-badge-tag ${badgeClass}">${badgeText}</span>
@@ -420,11 +437,11 @@ function escapeHtml(str) {
 
 function renderizarFallbackCargos(container, cargos) {
     container.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:8px; width:100%;">
+        <div class="fallback-list">
             ${cargos.slice(0, 5).map((c, i) => `
-                <div style="display:flex; justify-content:space-between; font-size:12.5px;">
-                    <span style="display:flex; align-items:center; gap:6px;">
-                        <span style="width:10px; height:10px; border-radius:50%; background:${COLORES_PORTICO[i % COLORES_PORTICO.length]}; display:inline-block;"></span>
+                <div class="fallback-row">
+                    <span class="fallback-badge-dot">
+                        <span class="fallback-dot" style="background:${COLORES_PORTICO[i % COLORES_PORTICO.length]};"></span>
                         ${escapeHtml(c.cargo)}
                     </span>
                     <strong>${c.cantidad}</strong>
@@ -436,9 +453,9 @@ function renderizarFallbackCargos(container, cargos) {
 
 function renderizarFallbackHoras(container, obras) {
     container.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:8px; width:100%;">
+        <div class="fallback-list">
             ${obras.slice(0, 5).map(o => `
-                <div style="display:flex; justify-content:space-between; font-size:12.5px;">
+                <div class="fallback-row">
                     <span>${escapeHtml(o.nombre)}</span>
                     <strong>${o.total_horas}h</strong>
                 </div>

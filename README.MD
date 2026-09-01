@@ -128,5 +128,4 @@ git push -u origin nombre-de-tu-rama
 | `--accent`        | `#b54747` | Color de acento / focus    |
 
 # To Do
-- Organizar directorios y archivos.
-- Revisar entrada de datos para evitar errores humanos
+- Organizar el codigo separando por secciones y no solo js, css, etc.

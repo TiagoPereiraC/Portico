@@ -44,9 +44,9 @@ try {
     $params = [];
 
     if ($search !== '') {
-        $where[] = '(nombre LIKE ? OR apellido LIKE ? OR documento LIKE ?)';
-        $searchLike = $search . '%';
-        $params = [$searchLike, $searchLike, $searchLike];
+        $where[] = '(nombre LIKE ? OR apellido LIKE ? OR documento LIKE ? OR cargo LIKE ?)';
+        $searchLike = '%' . $search . '%';
+        $params = [$searchLike, $searchLike, $searchLike, $searchLike];
     }
 
     $whereSql = implode(' AND ', $where);
@@ -55,10 +55,12 @@ try {
         SELECT
             id_obrero,
             nombre,
-            apellido
+            apellido,
+            documento,
+            cargo
         FROM obreros
         WHERE {$whereSql}
-        ORDER BY nombre
+        ORDER BY nombre ASC, apellido ASC
     ";
 
     if ($limit > 0) {

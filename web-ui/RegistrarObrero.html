@@ -36,7 +36,7 @@
                     <span>Panel</span>
                 </a>
                 <a href="Obras.html" class="nav-tab-item">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="6" x2="9" y2="6"/><line x1="15" y1="6" x2="15" y2="6"/><line x1="9" y1="10" x2="9" y2="10"/><line x1="15" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="9" y2="14"/><line x1="15" y1="14" x2="15" y2="14"/></svg>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1 8 8 0 0 0-16 0"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15h16"/></svg>
                     <span>Obras</span>
                 </a>
                 <a href="RegistrarObrero.html" class="nav-tab-item active">
@@ -136,46 +136,27 @@
                     aria-modal="true"
                     aria-labelledby="contratoModalTitle"
                 >
-                    <div class="confirm-box">
-                        <h3 id="contratoModalTitle">Subir contrato</h3>
-                        <form id="contratoForm" novalidate>
-                            <input type="hidden" id="contrato_id_obrero" name="id_obrero" />
-                            <div class="field file-field" style="margin-bottom: 14px;">
-                                <label for="contrato_file">Archivo (PDF, imagen, etc.)</label>
-                                <div class="file-upload-wrap">
-                                    <label class="file-upload-btn" for="contrato_file">
-                                        <i class="fas fa-cloud-arrow-up"></i>
-                                        <span>Seleccionar archivo</span>
-                                    </label>
-                                    <span class="file-upload-name" id="contratoFileName">Ningún archivo seleccionado</span>
-                                    <input
-                                        type="file"
-                                        id="contrato_file"
-                                        name="contrato"
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                    />
-                                </div>
-                            </div>
-                            <div class="field">
-                                <label for="fecha_vencimiento">Fecha de vencimiento</label>
-                                <input type="date" id="fecha_vencimiento" name="fecha_vencimiento" required />
-                            </div>
-                        </form>
-                        <div class="confirm-actions">
-                            <button
-                                type="button"
-                                class="btn-secondary"
-                                id="contratoCancel"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="button"
-                                class="btn-save"
-                                id="contratoAccept"
-                            >
-                                Guardar contrato
-                            </button>
+                    <div class="confirm-box" style="max-width: 640px; width: 90%;">
+                        <h3 id="contratoModalTitle">Contratos del personal</h3>
+
+                        <div class="grupo" style="margin-top: 16px;">
+                            <div class="label">Subir nuevo contrato</div>
+                            <input type="file" id="contrato_file" name="contrato" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" />
+                        </div>
+
+                        <div class="grupo">
+                            <div class="label">Fecha de vencimiento</div>
+                            <input type="date" id="fecha_vencimiento" name="fecha_vencimiento" class="input" />
+                        </div>
+
+                        <div class="confirm-actions" style="margin-top: 12px; justify-content: flex-start; gap: 8px;">
+                            <button type="button" class="btn-save" id="contratoAccept">Subir contrato</button>
+                            <button type="button" class="btn-secondary" id="contratoCancel">Cerrar</button>
+                        </div>
+
+                        <div id="contratoListaWrap" style="margin-top: 20px;">
+                            <h4 style="font-size: 14px; color: #444; margin-bottom: 10px; font-weight: 700;">Contratos cargados</h4>
+                            <div id="contratoLista"></div>
                         </div>
                     </div>
                 </div>

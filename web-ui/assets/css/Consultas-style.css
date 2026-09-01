@@ -122,7 +122,7 @@ main {
     margin-bottom: 8px;
 }
 
-/* SELECT */
+/* SELECT & AUTOCOMPLETE */
 select {
     width: 100%;
     min-height: 48px;
@@ -144,6 +144,143 @@ select:focus {
     outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 5px rgba(181, 71, 71, 0.5);
+}
+
+/* Autocomplete Obrero */
+.obrero-combobox-wrap {
+    position: relative;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.obrero-search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.obrero-search-input {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 38px 12px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--input-border);
+    background-color: var(--input-bg);
+    box-shadow: var(--input-shadow);
+    font-size: 14px;
+    color: #1e293b;
+    transition: 0.2s;
+    outline: none;
+}
+
+.obrero-search-input:hover,
+.obrero-search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 6px rgba(181, 71, 71, 0.35);
+}
+
+.obrero-clear-btn {
+    position: absolute;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s;
+}
+
+.obrero-clear-btn:hover {
+    color: var(--accent);
+}
+
+.obrero-dropdown-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 250px;
+    overflow-y: auto;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+    z-index: 50;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.obrero-dropdown-list.hidden {
+    display: none;
+}
+
+.obrero-option-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 13px;
+}
+
+.obrero-option-item:hover,
+.obrero-option-item.selected {
+    background: #fdf2f2;
+}
+
+.obrero-option-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.obrero-option-name {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.obrero-option-meta {
+    font-size: 11.5px;
+    color: #64748b;
+}
+
+.obrero-option-badge {
+    font-size: 11px;
+    font-weight: 600;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.obrero-selected-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff8f8;
+    border: 1px solid #f1cbc7;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-top: 6px;
+    font-size: 13px;
+}
+
+.obrero-selected-card.hidden {
+    display: none;
+}
+
+.obrero-selected-text {
+    font-weight: 600;
+    color: #954043;
 }
 
 /* FECHAS */

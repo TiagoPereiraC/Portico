@@ -33,6 +33,7 @@ const contratoCancel = document.getElementById("contratoCancel");
 const contratoAccept = document.getElementById("contratoAccept");
 const contratoFileInput = document.getElementById("contrato_file");
 const contratoFileName = document.getElementById("contratoFileName");
+const contratoLista = document.getElementById("contratoLista");
 
 // NUEVO: Elementos del filtro de contrato
 const filtroButtons = document.querySelectorAll("[data-filtro-contrato]");
@@ -139,7 +140,8 @@ contratoFileInput.addEventListener("change", () => {
   contratoFileName.textContent = file ? file.name : "Ningún archivo seleccionado";
 });
 contratoAccept.addEventListener("click", async () => {
-  if (!contratoAccept.dataset.idObrero) {
+  const idObrero = Number(contratoAccept.dataset.idObrero);
+  if (!idObrero) {
     cerrarContratoModal();
     return;
   }
@@ -160,10 +162,12 @@ contratoAccept.addEventListener("click", async () => {
     return;
   }
   contratoAccept.disabled = true;
-  contratoAccept.textContent = "Guardando...";
+  contratoAccept.textContent = "Subiendo...";
   try {
-    await subirContratoObrero(Number(contratoAccept.dataset.idObrero), file, fechaVencimiento);
-    cerrarContratoModal();
+    await subirContratoObrero(idObrero, file, fechaVencimiento);
+    contratoFileInput.value = "";
+    document.getElementById("fecha_vencimiento").value = "";
+    await cargarContratosObrero(idObrero);
     await cargarObreros();
     setFeedback("Contrato subido correctamente.", "success");
   } catch (error) {
@@ -171,7 +175,7 @@ contratoAccept.addEventListener("click", async () => {
     setFeedback(error.message || "No se pudo subir el contrato.", "error");
   } finally {
     contratoAccept.disabled = false;
-    contratoAccept.textContent = "Guardar contrato";
+    contratoAccept.textContent = "Subir contrato";
   }
 });
 paginationPrev.addEventListener("click", () => cambiarPagina(-1));
@@ -297,13 +301,47 @@ document.addEventListener("click", async (event) => {
   if (button.dataset.action === "contrato") {
     event.stopPropagation();
     const nombre = button.dataset.nombre || "";
-    document.getElementById("contrato_id_obrero").value = idObrero;
-    contratoModalTitle.textContent = `Subir contrato de ${nombre}`;
-    contratoFileInput.value = "";
-    contratoFileName.textContent = "Ningún archivo seleccionado";
-    document.getElementById("fecha_vencimiento").value = "";
-    contratoAccept.dataset.idObrero = String(idObrero);
-    contratoModal.classList.remove("hidden");
+    await abrirModalContrato(idObrero, nombre);
+    return;
+  }
+});
+
+contratoCancel.addEventListener("click", () => {
+  cerrarContratoModal();
+});
+
+document.addEventListener("click", async (event) => {
+  const downloadBtn = event.target.closest("button[data-download-contrato]");
+  if (downloadBtn) {
+    event.stopPropagation();
+    const idContrato = Number(downloadBtn.dataset.downloadContrato);
+    if (idContrato) {
+      await descargarContratoObrero(idContrato);
+    }
+    return;
+  }
+
+  const deleteBtn = event.target.closest("button[data-delete-contrato]");
+  if (deleteBtn) {
+    event.stopPropagation();
+    const idContrato = Number(deleteBtn.dataset.deleteContrato);
+    if (idContrato) {
+      abrirConfirmacion({
+        title: "Confirmar eliminación",
+        message: "¿Eliminar este contrato? Esta acción no se puede deshacer.",
+        acceptLabel: "Eliminar",
+        onAccept: async () => {
+          await eliminarContratoObrero(idContrato);
+        },
+      });
+    }
+    return;
+  }
+
+  const editBtn = event.target.closest("button[data-edit-contrato]");
+  if (editBtn) {
+    event.stopPropagation();
+    abrirEditarFechaContrato(editBtn);
     return;
   }
 });
@@ -814,6 +852,266 @@ function obtenerMensajeSinResultados(busqueda) {
 function cerrarContratoModal() {
   contratoModal.classList.add("hidden");
   contratoAccept.dataset.idObrero = "";
+  contratoFileInput.value = "";
+  if (contratoFileName) contratoFileName.textContent = "Ningún archivo seleccionado";
+  document.getElementById("fecha_vencimiento").value = "";
+}
+
+async function abrirModalContrato(idObrero, nombreObrero) {
+  contratoAccept.dataset.idObrero = String(idObrero);
+  contratoModalTitle.textContent = `Contratos de ${nombreObrero || "Obrero"}`;
+  contratoFileInput.value = "";
+  if (contratoFileName) contratoFileName.textContent = "Ningún archivo seleccionado";
+  document.getElementById("fecha_vencimiento").value = "";
+  contratoModal.classList.remove("hidden");
+  await cargarContratosObrero(idObrero);
+}
+
+async function cargarContratosObrero(idObrero) {
+  if (!contratoLista) return;
+  contratoLista.innerHTML = '<p class="empty-hint">Cargando contratos...</p>';
+
+  try {
+    let data;
+    if (apiBase) {
+      data = await fetchJson(`${apiBase}/obreros.php?id_obrero_contratos=${idObrero}`);
+    } else {
+      data = await sendDesktopRequest(
+        "obreros_contratos_listar",
+        { id_obrero: idObrero },
+        "obreros_contratos_listar_response"
+      );
+    }
+
+    renderizarContratosObrero(data.contratos || []);
+  } catch (error) {
+    console.error("Error cargando contratos:", error);
+    contratoLista.innerHTML = '<p class="empty-hint" style="color:#b54747;">No se pudieron cargar los contratos.</p>';
+  }
+}
+
+function renderizarContratosObrero(contratos) {
+  if (!contratoLista) return;
+
+  if (!contratos.length) {
+    contratoLista.innerHTML = '<p class="empty-hint">No hay contratos registrados para este obrero.</p>';
+    return;
+  }
+
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  contratoLista.innerHTML = contratos.map((c) => {
+    let estadoBadge = "";
+    if (c.fecha_vencimiento) {
+      const vDate = new Date(c.fecha_vencimiento + "T00:00:00");
+      const diffDays = Math.ceil((vDate - hoy) / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) {
+        estadoBadge = '<span class="alert-badge-tag vencido" style="font-size:10.5px;padding:2px 6px;">Vencido</span>';
+      } else if (diffDays <= 30) {
+        estadoBadge = '<span class="alert-badge-tag por_vencer" style="font-size:10.5px;padding:2px 6px;">Por vencer</span>';
+      } else {
+        estadoBadge = '<span class="kpi-badge badge-success" style="font-size:10.5px;padding:2px 6px;">Vigente</span>';
+      }
+    }
+
+    return `
+      <div class="contrato-item-row" data-id-contrato="${c.id_contrato_obrero}" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">
+          <i class="fas fa-file-pdf" style="color:#b54747;font-size:20px;flex-shrink:0;"></i>
+          <div style="min-width:0;">
+            <div style="font-weight:600;font-size:13px;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(c.nombre_archivo || 'Contrato')}">${escapeHtml(c.nombre_archivo || 'Contrato')}</div>
+            <div style="font-size:11.5px;color:#64748b;display:flex;align-items:center;gap:6px;margin-top:2px;">
+              <span>Vence: ${formatDate(c.fecha_vencimiento)}</span>
+              ${estadoBadge}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+          <button type="button" class="btn-icon" data-download-contrato="${c.id_contrato_obrero}" title="Descargar contrato" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#ffffff;border:1px solid #cbd5e1;color:#334155;cursor:pointer;">
+            <i class="fas fa-download"></i>
+          </button>
+          <button type="button" class="btn-icon" data-edit-contrato="${c.id_contrato_obrero}" data-fecha="${c.fecha_vencimiento || ''}" title="Editar fecha de vencimiento" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#ffffff;border:1px solid #cbd5e1;color:#334155;cursor:pointer;">
+            <i class="fas fa-pen"></i>
+          </button>
+          <button type="button" class="btn-icon" data-delete-contrato="${c.id_contrato_obrero}" title="Eliminar contrato" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fee2e2;border:1px solid #fca5a5;color:#dc2626;cursor:pointer;">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function descargarContratoObrero(idContrato) {
+  try {
+    let data;
+    if (apiBase) {
+      const response = await fetch(`${apiBase}/obreros.php?descargar_contrato=${idContrato}`, {
+        credentials: "include",
+      });
+      data = await parseJsonResponse(response, "No se pudo descargar el contrato.");
+      if (!response.ok) throw new Error(data.error || "No se pudo descargar.");
+    } else {
+      data = await sendDesktopRequest(
+        "obreros_contrato_descargar",
+        { id_contrato_obrero: idContrato },
+        "obreros_contrato_descargar_response"
+      );
+    }
+
+    if (!data.contenido_base64) {
+      throw new Error("No se pudo obtener el archivo del contrato.");
+    }
+
+    const blob = base64ToBlob(data.contenido_base64, data.tipo_contenido || "application/octet-stream");
+    triggerBrowserDownload(blob, data.nombre_archivo || `contrato-${idContrato}`);
+    setFeedback("Descarga iniciada.", "info");
+  } catch (error) {
+    console.error("Error descargando contrato:", error);
+    setFeedback(error.message || "No se pudo descargar el contrato.", "error");
+  }
+}
+
+async function eliminarContratoObrero(idContrato) {
+  try {
+    let data;
+    if (apiBase) {
+      if (!csrfToken) csrfToken = await obtenerCsrf();
+      const response = await fetch(`${apiBase}/obreros.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          accion: "eliminar_contrato",
+          id_contrato_obrero: idContrato,
+        }),
+      });
+      data = await parseJsonResponse(response, "No se pudo eliminar el contrato.");
+      if (!response.ok) throw new Error(data.error || "No se pudo eliminar.");
+    } else {
+      data = await sendDesktopRequest(
+        "obreros_contrato_eliminar",
+        { id_contrato_obrero: idContrato },
+        "obreros_contrato_eliminar_response"
+      );
+    }
+
+    const idObrero = Number(contratoAccept.dataset.idObrero);
+    if (idObrero) {
+      await cargarContratosObrero(idObrero);
+    }
+    await cargarObreros();
+    setFeedback(data.message || "Contrato eliminado correctamente.", "success");
+  } catch (error) {
+    console.error("Error eliminando contrato:", error);
+    setFeedback(error.message || "No se pudo eliminar el contrato.", "error");
+  }
+}
+
+async function editarFechaContratoObrero(idContrato, fecha) {
+  if (apiBase) {
+    if (!csrfToken) csrfToken = await obtenerCsrf();
+    const response = await fetch(`${apiBase}/obreros.php`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken,
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        accion: "editar_fecha_contrato",
+        id_contrato_obrero: idContrato,
+        fecha_vencimiento: fecha,
+      }),
+    });
+    const data = await parseJsonResponse(response, "No se pudo actualizar la fecha.");
+    if (!response.ok) throw new Error(data.error || "No se pudo actualizar la fecha.");
+    return data;
+  }
+
+  return sendDesktopRequest(
+    "obreros_contrato_editar_fecha",
+    { id_contrato_obrero: idContrato, fecha_vencimiento: fecha },
+    "obreros_contrato_editar_fecha_response"
+  );
+}
+
+function abrirEditarFechaContrato(btn) {
+  const idContrato = Number(btn.dataset.editContrato);
+  if (!idContrato) return;
+
+  const row = btn.closest(".contrato-item-row");
+  if (!row) return;
+
+  const fechaActual = btn.dataset.fecha || "";
+  const originalHtml = row.innerHTML;
+
+  row.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;width:100%;">
+      <span style="font-size:12.5px;font-weight:600;color:#1e293b;white-space:nowrap;">Nueva fecha:</span>
+      <input type="date" class="input input-nueva-fecha" value="${fechaActual}" style="padding:4px 8px;font-size:12.5px;height:32px;flex:1;" />
+      <button type="button" class="btn-save btn-guardar-fecha" style="padding:4px 10px;font-size:12px;height:32px;">Guardar</button>
+      <button type="button" class="btn-secondary btn-cancelar-fecha" style="padding:4px 10px;font-size:12px;height:32px;">Cancelar</button>
+    </div>
+  `;
+
+  const inputFecha = row.querySelector(".input-nueva-fecha");
+  const btnGuardarFecha = row.querySelector(".btn-guardar-fecha");
+  const btnCancelarFecha = row.querySelector(".btn-cancelar-fecha");
+
+  btnCancelarFecha.addEventListener("click", () => {
+    row.innerHTML = originalHtml;
+  });
+
+  btnGuardarFecha.addEventListener("click", async () => {
+    const nuevaFecha = inputFecha.value;
+    if (!nuevaFecha) {
+      setFeedback("Debés ingresar una fecha válida.", "error");
+      return;
+    }
+
+    btnGuardarFecha.disabled = true;
+    btnGuardarFecha.textContent = "...";
+
+    try {
+      await editarFechaContratoObrero(idContrato, nuevaFecha);
+      const idObrero = Number(contratoAccept.dataset.idObrero);
+      if (idObrero) {
+        await cargarContratosObrero(idObrero);
+      }
+      await cargarObreros();
+      setFeedback("Fecha de vencimiento actualizada.", "success");
+    } catch (error) {
+      console.error(error);
+      setFeedback(error.message || "Error al actualizar la fecha.", "error");
+      row.innerHTML = originalHtml;
+    }
+  });
+}
+
+function base64ToBlob(base64, mime) {
+  const byteCharacters = atob(base64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  return new Blob([byteArray], { type: mime });
+}
+
+function triggerBrowserDownload(blob, nombreArchivo) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nombreArchivo;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 async function subirContratoObrero(idObrero, file, fechaVencimiento) {

@@ -1,5 +1,8 @@
-document.addEventListener('DOMContentLoaded', () => {
+let obrerosList = [];
+let debounceTimer = null;
 
+document.addEventListener('DOMContentLoaded', () => {
+    inicializarAutocompletadoObreros();
     cargarObreros();
 
     document
@@ -14,63 +17,132 @@ const paginationPage = document.getElementById('paginationPage');
 const paginationPrev = document.getElementById('paginationPrev');
 const paginationNext = document.getElementById('paginationNext');
 
-const ITEMS_POR_PAGINA = 10;
-let paginaActual = 1;
-let totalPaginas = 1;
-let totalRegistros = 0;
-let filtrosActivos = null;
+const obreroHiddenInput = document.getElementById('obrero');
+const obreroSearchInput = document.getElementById('obreroSearchInput');
+const obreroDropdown = document.getElementById('obreroDropdown');
+const obreroClearBtn = document.getElementById('obreroClearBtn');
+const obreroSelectedCard = document.getElementById('obreroSelectedCard');
+const obreroSelectedText = document.getElementById('obreroSelectedText');
 
-paginationPrev.addEventListener('click', () => cambiarPagina(-1));
-paginationNext.addEventListener('click', () => cambiarPagina(1));
+function inicializarAutocompletadoObreros() {
+    if (!obreroSearchInput || !obreroDropdown) return;
 
-function mostrarFeedback(mensaje, tipo) {
-    feedback.innerHTML = `<i class="fas ${tipo === 'error' ? 'fa-circle-exclamation' : tipo === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i><span>${escapeHtml(mensaje)}</span>`;
-    feedback.className = `feedback-msg ${tipo}`;
-    feedback.classList.remove('hidden');
+    obreroSearchInput.addEventListener('focus', () => {
+        filtrarYRenderizarDropdown(obreroSearchInput.value);
+    });
+
+    obreroSearchInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            filtrarYRenderizarDropdown(e.target.value);
+        }, 150);
+    });
+
+    if (obreroClearBtn) {
+        obreroClearBtn.addEventListener('click', () => {
+            limpiarSeleccionObrero();
+            filtrarYRenderizarDropdown('');
+            obreroSearchInput.focus();
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.obrero-combobox-wrap')) {
+            obreroDropdown.classList.add('hidden');
+        }
+    });
+
+    obreroDropdown.addEventListener('click', (e) => {
+        const item = e.target.closest('.obrero-option-item');
+        if (!item) return;
+
+        const id = item.dataset.id;
+        if (id === '') {
+            limpiarSeleccionObrero();
+            obreroDropdown.classList.add('hidden');
+            return;
+        }
+
+        const obrero = obrerosList.find(o => String(o.id_obrero) === String(id));
+        if (obrero) {
+            seleccionarObrero(obrero);
+        }
+        obreroDropdown.classList.add('hidden');
+    });
 }
 
-function ocultarFeedback() {
-    feedback.classList.add('hidden');
+function filtrarYRenderizarDropdown(query) {
+    const q = (query || '').toLowerCase().trim();
+    let filtrados = obrerosList;
+
+    if (q) {
+        filtrados = obrerosList.filter(o => {
+            const nom = `${o.nombre || ''} ${o.apellido || ''}`.toLowerCase();
+            const doc = (o.documento || '').toLowerCase();
+            const car = (o.cargo || '').toLowerCase();
+            return nom.includes(q) || doc.includes(q) || car.includes(q);
+        });
+    }
+
+    let html = `
+        <div class="obrero-option-item" data-id="">
+            <div class="obrero-option-info">
+                <span class="obrero-option-name">Todos los obreros</span>
+                <span class="obrero-option-meta">Consulta general de toda la plantilla</span>
+            </div>
+            <span class="obrero-option-badge">General</span>
+        </div>
+    `;
+
+    if (!filtrados.length && q) {
+        html += `<div style="padding:10px;text-align:center;font-size:12.5px;color:#888;">No se encontraron obreros para "${escapeHtml(query)}"</div>`;
+    } else {
+        html += filtrados.slice(0, 30).map(o => `
+            <div class="obrero-option-item ${obreroHiddenInput.value === String(o.id_obrero) ? 'selected' : ''}" data-id="${o.id_obrero}">
+                <div class="obrero-option-info">
+                    <span class="obrero-option-name">${escapeHtml(o.nombre)} ${escapeHtml(o.apellido || '')}</span>
+                    <span class="obrero-option-meta">DNI: ${escapeHtml(o.documento || 'S/D')}</span>
+                </div>
+                <span class="obrero-option-badge">${escapeHtml(o.cargo || 'Obrero')}</span>
+            </div>
+        `).join('');
+    }
+
+    obreroDropdown.innerHTML = html;
+    obreroDropdown.classList.remove('hidden');
+}
+
+function seleccionarObrero(obrero) {
+    obreroHiddenInput.value = obrero.id_obrero;
+    obreroSearchInput.value = `${obrero.nombre} ${obrero.apellido || ''}`.trim();
+    if (obreroSelectedCard && obreroSelectedText) {
+        obreroSelectedText.textContent = `${obrero.nombre} ${obrero.apellido || ''} · DNI: ${obrero.documento || 'S/D'} (${obrero.cargo || 'Obrero'})`;
+        obreroSelectedCard.classList.remove('hidden');
+    }
+}
+
+function limpiarSeleccionObrero() {
+    obreroHiddenInput.value = '';
+    obreroSearchInput.value = '';
+    if (obreroSelectedCard) {
+        obreroSelectedCard.classList.add('hidden');
+    }
 }
 
 async function cargarObreros() {
-
     try {
-
         ocultarFeedback();
-
-        const response =
-            await fetch('../api/obtener_obrero.php');
-
-        const data =
-            await response.json();
+        const response = await fetch('../api/obtener_obrero.php');
+        const data = await response.json();
 
         if (!data.success) {
             throw new Error(data.error);
         }
 
-        const select =
-            document.getElementById('obrero');
-
-        data.obreros.forEach(obrero => {
-
-            const option =
-                document.createElement('option');
-
-            option.value =
-                obrero.id_obrero;
-
-            option.textContent =
-                `${obrero.nombre} ${obrero.apellido ?? ''}`;
-
-            select.appendChild(option);
-        });
-
+        obrerosList = data.obreros || [];
     } catch (error) {
-
         console.error(error);
-
-        mostrarFeedback('Error cargando obreros.', 'error');
+        mostrarFeedback('Error cargando la lista de obreros.', 'error');
     }
 }
 

@@ -147,6 +147,18 @@ public sealed class MainWindow : Form
 			case "obreros_subir_contrato":
 				await HandleObrerosSubirContratoAsync(root);
 				break;
+			case "obreros_contratos_listar":
+				await HandleObrerosContratosListarAsync(root);
+				break;
+			case "obreros_contrato_descargar":
+				await HandleObrerosContratoDescargarAsync(root);
+				break;
+			case "obreros_contrato_eliminar":
+				await HandleObrerosContratoEliminarAsync(root);
+				break;
+			case "obreros_contrato_editar_fecha":
+				await HandleObrerosContratoEditarFechaAsync(root);
+				break;
 			case "maquinaria_listar":
 				await HandleMaquinariaListarAsync(root);
 				break;
@@ -1037,9 +1049,11 @@ public sealed class MainWindow : Form
 
 			await using var cmd = conn.CreateCommand();
 			cmd.CommandText =
-				"SELECT id_obrero, nombre, apellido, documento, telefono, fecha_contratacion, fecha_fin FROM obreros"
+				"SELECT o.id_obrero, o.nombre, o.apellido, o.documento, o.telefono, o.fecha_contratacion, o.fecha_fin, o.cargo, " +
+				"(SELECT c.fecha_vencimiento FROM contrato_obrero c WHERE c.id_obrero = o.id_obrero ORDER BY c.fecha_vencimiento DESC LIMIT 1) AS vencimiento " +
+				"FROM obreros o"
 				+ whereSql
-				+ " ORDER BY id_obrero DESC LIMIT @limit OFFSET @offset";
+				+ " ORDER BY o.id_obrero DESC LIMIT @limit OFFSET @offset";
 
 			foreach (var param in countParams)
 				cmd.Parameters.AddWithValue(param.ParameterName, param.Value);
@@ -1058,7 +1072,9 @@ public sealed class MainWindow : Form
 					documento = reader.GetString("documento"),
 					telefono = ReadNullableString(reader, "telefono"),
 					fecha_contratacion = ReadNullableDate(reader, "fecha_contratacion"),
-					fecha_fin = ReadNullableDate(reader, "fecha_fin")
+					fecha_fin = ReadNullableDate(reader, "fecha_fin"),
+					cargo = ReadNullableString(reader, "cargo") ?? "Peón",
+					vencimiento = ReadNullableDate(reader, "vencimiento")
 				});
 			}
 
@@ -1527,6 +1543,227 @@ public sealed class MainWindow : Form
 		{
 			System.Diagnostics.Debug.WriteLine($"[Obreros subir contrato error] {ex}");
 			PostToJs(new { type = "obreros_subir_contrato_response", requestId, success = false, error = "No se pudo subir el contrato." });
+		}
+	}
+
+	private async Task HandleObrerosContratosListarAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAutenticado(requestId, "obreros_contratos_listar_response"))
+			return;
+
+		try
+		{
+			var idObrero = ReadPositiveInt(root, "id_obrero");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			var contratos = new List<object>();
+			await using (var cmd = conn.CreateCommand())
+			{
+				cmd.CommandText = "SELECT id_contrato_obrero, nombre_archivo, fecha_vencimiento FROM contrato_obrero WHERE id_obrero = @idObrero ORDER BY fecha_vencimiento DESC, id_contrato_obrero DESC";
+				cmd.Parameters.AddWithValue("@idObrero", idObrero);
+				await using var reader = await cmd.ExecuteReaderAsync();
+				while (await reader.ReadAsync())
+				{
+					contratos.Add(new
+					{
+						id_contrato_obrero = reader.GetInt32("id_contrato_obrero"),
+						nombre_archivo = ReadNullableString(reader, "nombre_archivo"),
+						fecha_vencimiento = ReadNullableDate(reader, "fecha_vencimiento")
+					});
+				}
+			}
+
+			PostToJs(new
+			{
+				type = "obreros_contratos_listar_response",
+				requestId,
+				success = true,
+				contratos
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "obreros_contratos_listar_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Obreros contratos listar error] {ex}");
+			PostToJs(new { type = "obreros_contratos_listar_response", requestId, success = false, error = "No se pudieron cargar los contratos." });
+		}
+	}
+
+	private async Task HandleObrerosContratoDescargarAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAutenticado(requestId, "obreros_contrato_descargar_response"))
+			return;
+
+		try
+		{
+			var idContrato = ReadPositiveInt(root, "id_contrato_obrero");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			string? nombreArchivo = null;
+			byte[]? archivo = null;
+
+			await using (var cmd = conn.CreateCommand())
+			{
+				cmd.CommandText = "SELECT nombre_archivo, archivo FROM contrato_obrero WHERE id_contrato_obrero = @idContrato LIMIT 1";
+				cmd.Parameters.AddWithValue("@idContrato", idContrato);
+				await using var reader = await cmd.ExecuteReaderAsync();
+				if (await reader.ReadAsync())
+				{
+					nombreArchivo = ReadNullableString(reader, "nombre_archivo");
+					if (!reader.IsDBNull(reader.GetOrdinal("archivo")))
+						archivo = (byte[])reader["archivo"];
+				}
+			}
+
+			if (archivo is null)
+				throw new InvalidOperationException("El contrato solicitado no existe.");
+
+			var nombreSeguro = string.IsNullOrWhiteSpace(nombreArchivo) ? $"contrato-{idContrato}" : nombreArchivo;
+			var base64 = Convert.ToBase64String(archivo);
+			var ext = Path.GetExtension(nombreSeguro).ToLowerInvariant();
+			var mime = ext switch
+			{
+				".pdf" => "application/pdf",
+				".doc" => "application/msword",
+				".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+				".jpg" or ".jpeg" => "image/jpeg",
+				".png" => "image/png",
+				_ => "application/octet-stream"
+			};
+
+			PostToJs(new
+			{
+				type = "obreros_contrato_descargar_response",
+				requestId,
+				success = true,
+				nombre_archivo = nombreSeguro,
+				tipo_contenido = mime,
+				contenido_base64 = base64
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "obreros_contrato_descargar_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Obreros contrato descargar error] {ex}");
+			PostToJs(new { type = "obreros_contrato_descargar_response", requestId, success = false, error = "No se pudo descargar el contrato." });
+		}
+	}
+
+	private async Task HandleObrerosContratoEliminarAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAdministrador(requestId, "obreros_contrato_eliminar_response"))
+			return;
+
+		try
+		{
+			var idContrato = ReadPositiveInt(root, "id_contrato_obrero");
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			await using (var cmd = conn.CreateCommand())
+			{
+				cmd.CommandText = "DELETE FROM contrato_obrero WHERE id_contrato_obrero = @idContrato";
+				cmd.Parameters.AddWithValue("@idContrato", idContrato);
+				var rows = await cmd.ExecuteNonQueryAsync();
+				if (rows == 0)
+					throw new InvalidOperationException("El contrato no existe.");
+			}
+
+			PostToJs(new
+			{
+				type = "obreros_contrato_eliminar_response",
+				requestId,
+				success = true,
+				message = "Contrato eliminado correctamente."
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "obreros_contrato_eliminar_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Obreros contrato eliminar error] {ex}");
+			PostToJs(new { type = "obreros_contrato_eliminar_response", requestId, success = false, error = "No se pudo eliminar el contrato." });
+		}
+	}
+
+	private async Task HandleObrerosContratoEditarFechaAsync(JsonElement root)
+	{
+		var requestId = root.TryGetProperty("requestId", out var requestIdProp)
+			? requestIdProp.GetString() ?? string.Empty
+			: string.Empty;
+
+		if (!EnsureAdministrador(requestId, "obreros_contrato_editar_fecha_response"))
+			return;
+
+		try
+		{
+			var idContrato = ReadPositiveInt(root, "id_contrato_obrero");
+			var fechaVencimiento = root.TryGetProperty("fecha_vencimiento", out var fechaProp) && fechaProp.ValueKind == JsonValueKind.String
+				? (fechaProp.GetString()?.Trim() ?? string.Empty)
+				: string.Empty;
+
+			string? fechaDb = null;
+			if (!string.IsNullOrWhiteSpace(fechaVencimiento))
+			{
+				if (!DateTime.TryParseExact(fechaVencimiento, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
+					throw new InvalidOperationException("Formato de fecha inválido.");
+				fechaDb = fechaVencimiento;
+			}
+
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			await using (var cmd = conn.CreateCommand())
+			{
+				cmd.CommandText = "UPDATE contrato_obrero SET fecha_vencimiento = @fechaVencimiento WHERE id_contrato_obrero = @idContrato";
+				cmd.Parameters.AddWithValue("@fechaVencimiento", fechaDb is null ? DBNull.Value : fechaDb);
+				cmd.Parameters.AddWithValue("@idContrato", idContrato);
+				var rows = await cmd.ExecuteNonQueryAsync();
+				if (rows == 0)
+					throw new InvalidOperationException("El contrato no existe.");
+			}
+
+			PostToJs(new
+			{
+				type = "obreros_contrato_editar_fecha_response",
+				requestId,
+				success = true,
+				message = "Fecha de vencimiento actualizada."
+			});
+		}
+		catch (InvalidOperationException ex)
+		{
+			PostToJs(new { type = "obreros_contrato_editar_fecha_response", requestId, success = false, error = ex.Message });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Obreros contrato editar fecha error] {ex}");
+			PostToJs(new { type = "obreros_contrato_editar_fecha_response", requestId, success = false, error = "No se pudo actualizar la fecha del contrato." });
 		}
 	}
 
@@ -2828,6 +3065,25 @@ public sealed class MainWindow : Form
 				}
 			}
 
+			// 10. Alertas contratos recientes (Top 5)
+			var alertasContratos = new List<object>();
+			await using (var cmd = new MySqlCommand("SELECT co.id_contrato_obrero, co.fecha_vencimiento, CONCAT(o.nombre, ' ', COALESCE(o.apellido, '')) AS nombre_obrero, o.documento, DATEDIFF(co.fecha_vencimiento, CURDATE()) AS dias_restantes, 'obrero' AS tipo_alerta FROM contrato_obrero co JOIN obreros o ON co.id_obrero = o.id_obrero WHERE co.fecha_vencimiento IS NOT NULL AND co.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) ORDER BY co.fecha_vencimiento ASC LIMIT 5", conn))
+			await using (var reader = await cmd.ExecuteReaderAsync())
+			{
+				while (await reader.ReadAsync())
+				{
+					alertasContratos.Add(new
+					{
+						id_contrato_obrero = reader.GetInt32(0),
+						fecha_vencimiento = reader.GetDateTime(1).ToString("yyyy-MM-dd"),
+						nombre_obrero = reader.GetString(2).Trim(),
+						documento = reader.IsDBNull(3) ? "" : reader.GetString(3),
+						dias_restantes = reader.GetInt32(4),
+						tipo_alerta = "obrero"
+					});
+				}
+			}
+
 			PostToJs(new
 			{
 				type = responseType,
@@ -2851,7 +3107,8 @@ public sealed class MainWindow : Form
 					},
 					distribucion_cargos = distribucionCargos,
 					horas_por_obra = horasPorObra,
-					alertas_recientes = alertasRecientes
+					alertas_recientes = alertasRecientes,
+					alertas_contratos = alertasContratos
 				}
 			});
 		}
