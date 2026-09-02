@@ -141,13 +141,47 @@ $herramientas = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $stmt->execute();
     $maquinaria = $stmt->fetchAll();
 
+// ================= TAREAS =================
+
+$idObra = isset($_GET['id_obra']) && is_numeric($_GET['id_obra'])
+    ? (int) $_GET['id_obra']
+    : null;
+
+$tareas = [];
+
+if ($idObra) {
+
+    $stmt = $pdo->prepare("
+        SELECT
+            ct.id_tarea,
+            ct.id_contrato,
+            ct.descripcion,
+            ct.importe,
+            ct.estado,
+            ct.fecha_completada
+        FROM contrato_tareas ct
+        INNER JOIN contratos c
+            ON c.id_contrato = ct.id_contrato
+        WHERE c.id_obra = ?
+          AND c.estado = 'Activo'
+        ORDER BY ct.id_tarea ASC
+    ");
+
+    $stmt->execute([$idObra]);
+
+    $tareas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+
     echo json_encode([
-        "obras" => $obras,
-        "obreros" => $obreros,
-        "materiales" => $materiales,
-        "herramientas" => $herramientas,
-        "maquinaria" => $maquinaria
-    ]);
+    "obras" => $obras,
+    "obreros" => $obreros,
+    "materiales" => $materiales,
+    "herramientas" => $herramientas,
+    "maquinaria" => $maquinaria,
+    "tareas" => $tareas
+]);
 
 } catch (Throwable $e) {
     error_log('datos_asistencia.php error: ' . $e->getMessage());

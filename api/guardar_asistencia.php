@@ -57,6 +57,7 @@ try {
     guardarMaquinaria($pdo, $fecha, $id_obra);
     guardarCombustible($pdo, $fecha, $id_obra);
     finalizarObra($pdo, $fecha, $id_obra);
+    guardarTareas($pdo, $fecha, $id_obra);
 
     $obraFinalizada = (isset($_POST['finaliza']) && in_array(strtolower(trim((string) $_POST['finaliza'])), ['si', 'sí'], true));
     $totalObreros = count($_POST['obreros'] ?? []);
@@ -64,6 +65,15 @@ try {
     $totalHerramientas = count($_POST['herramienta_nombre'] ?? []);
     $totalMaquinaria = count($_POST['maquinaria'] ?? []);
     $totalCombustible = count(array_filter($_POST['litros'] ?? [], function($v) { return (float)$v > 0; }));
+$totalTareas = count($_POST['tarea_estado'] ?? []);
+$tareasCompletadas = count(
+    array_filter(
+        $_POST['tarea_estado'] ?? [],
+        fn($estado) => $estado === 'Completada'
+    )
+);
+
+
 
     registrarAuditoria($pdo, 'guardar', 'asistencia', $id_obra, [
         'id_obra' => $id_obra,
@@ -74,6 +84,9 @@ try {
         'maquinarias' => $totalMaquinaria,
         'combustible_items' => $totalCombustible,
         'obra_finalizada' => $obraFinalizada,
+    'tareas' => $totalTareas,
+    'tareas_completadas' => $tareasCompletadas,
+
     ]);
 
     $pdo->commit();
@@ -244,11 +257,11 @@ function guardarMaquinaria(PDO $pdo, string $fecha, int $id_obra): void
             );
         }
 
-        if (strtotime($retorno) < strtotime($salida)) {
-            throw new InvalidArgumentException(
-                "La devolución no puede ser antes de la salida (maquinaria ID {$id_maquinaria})."
-            );
-        }
+        if (strtotime($retorno) <= strtotime($salida)) {
+    throw new InvalidArgumentException(
+        "La devolución debe ser posterior a la salida (maquinaria ID {$id_maquinaria})."
+    );
+}
 
         $stmtObra->execute([$id_obra, $id_maquinaria, $fecha]);
 
@@ -300,11 +313,114 @@ function guardarCombustible(PDO $pdo, string $fecha, int $id_obra): void
 
 function finalizarObra(PDO $pdo, string $fecha, int $id_obra): void
 {
-    $finaliza = isset($_POST['finaliza']) ? trim((string) $_POST['finaliza']) : 'No';
-    if (strtolower($finaliza) === 'si' || $finaliza === 'Sí') {
-        $stmt = $pdo->prepare("UPDATE obras SET fecha_fin = ? WHERE id_obra = ?");
-        $stmt->execute([$fecha, $id_obra]);
-        registrarAuditoria($pdo, 'finalizar_obra', 'obras', $id_obra, ['fecha_fin' => $fecha]);
+    $finaliza = isset($_POST['finaliza'])
+        ? trim((string) $_POST['finaliza'])
+        : 'No';
+
+    $finalizaNormalizado = strtolower($finaliza);
+
+    if ($finalizaNormalizado === 'si' || $finalizaNormalizado === 'sí') {
+
+        $stmt = $pdo->prepare("
+            UPDATE obras
+            SET fecha_fin = ?
+            WHERE id_obra = ?
+        ");
+
+        $stmt->execute([
+            $fecha,
+            $id_obra
+        ]);
+
+        registrarAuditoria(
+            $pdo,
+            'finalizar_obra',
+            'obras',
+            $id_obra,
+            [
+                'fecha_fin' => $fecha
+            ]
+        );
     }
+}
+
+function guardarTareas(PDO $pdo, string $fecha, int $id_obra): void
+{
+if (
+empty($_POST['tarea_estado']) ||
+!is_array($_POST['tarea_estado'])
+) {
+return;
+}
+
+/*
+ * Verificamos que la tarea realmente pertenezca
+ * a un contrato de la obra seleccionada.
+ */
+$stmtBuscar = $pdo->prepare("
+    SELECT ct.id_tarea
+    FROM contrato_tareas ct
+    INNER JOIN contratos c
+        ON c.id_contrato = ct.id_contrato
+    WHERE ct.id_tarea = ?
+      AND c.id_obra = ?
+      AND c.estado = 'Activo'
+    LIMIT 1
+");
+
+$stmtActualizar = $pdo->prepare("
+    UPDATE contrato_tareas
+    SET
+        estado = ?,
+        fecha_completada = ?
+    WHERE id_tarea = ?
+");
+
+foreach ($_POST['tarea_estado'] as $id_tarea => $estado) {
+
+    $id_tarea = (int) $id_tarea;
+
+    if ($id_tarea <= 0) {
+        continue;
+    }
+
+    if (
+        $estado !== 'Pendiente' &&
+        $estado !== 'Completada'
+    ) {
+        throw new InvalidArgumentException(
+            "Estado inválido para la tarea {$id_tarea}."
+        );
+    }
+
+    // Verificar que pertenece a la obra seleccionada
+    $stmtBuscar->execute([
+        $id_tarea,
+        $id_obra
+    ]);
+
+    if (!$stmtBuscar->fetchColumn()) {
+
+        throw new InvalidArgumentException(
+            "La tarea {$id_tarea} no pertenece a la obra seleccionada."
+        );
+    }
+
+    if ($estado === 'Completada') {
+
+        $fechaCompletada = $fecha;
+
+    } else {
+
+        $fechaCompletada = null;
+    }
+
+    $stmtActualizar->execute([
+        $estado,
+        $fechaCompletada,
+        $id_tarea
+    ]);
+}
+
 }
 

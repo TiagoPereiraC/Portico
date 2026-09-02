@@ -1442,19 +1442,6 @@ function renderDetalle(data) {
             })}
           </td>
 
-          <td>
-            <button
-              type="button"
-              class="action-btn complete-task-detail"
-              data-task-action="complete"
-              data-tarea-id="${tarea.id_tarea}"
-              data-obra-id="${obra.id_obra}"
-              title="Marcar actividad como completada"
-            >
-            <i class="fas fa-check"></i>
-              Completar
-            </button>
-          </td>
         </tr>
       `;
     })
@@ -1883,48 +1870,6 @@ async function cambiarEstadoObra(idObra, activo) {
 }
 
 
-async function completarTarea(idTarea) {
-  if (apiBase) {
-    const response = await fetch(`${apiBase}/Obras.php`, {
-      method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": csrfToken,
-      },
-
-      credentials: "include",
-
-      body: JSON.stringify({
-        accion: "completar_tarea",
-        id_tarea: idTarea,
-      }),
-    });
-
-    const data = await parseJsonResponse(
-      response,
-      "No se pudo completar la actividad."
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        data.error ||
-          "No se pudo completar la actividad."
-      );
-    }
-
-    return data;
-  }
-
-  return sendDesktopRequest(
-    "obras_completar_tarea",
-    {
-      id_tarea: idTarea,
-    },
-    "obras_completar_tarea_response"
-  );
-}
-
 function formatDate(value) {
   if (!value) {
     return "Sin fecha";
@@ -2060,18 +2005,6 @@ function renderTareasContrato() {
           </option>
         </select>
       </td>
-
-      <td>
-        <button
-          type="button"
-          class="action-btn delete-task"
-          data-task-action="delete"
-          data-tarea-id="${tarea.id_tarea}"
-          title="Eliminar actividad"
-        >
-          <i class="fas fa-trash"></i>
-        </button>
-      </td>
     `;
 
     contratoTareasBody.appendChild(row);
@@ -2165,23 +2098,6 @@ if (contratoTareasBody) {
   });
 
 
-  contratoTareasBody.addEventListener("click", (event) => {
-    const button = event.target.closest(
-      "button[data-task-action='delete']"
-    );
-
-    if (!button) {
-      return;
-    }
-
-    const idTarea = Number(button.dataset.tareaId);
-
-    tareasContrato = tareasContrato.filter(
-      (tarea) => tarea.id_tarea !== idTarea
-    );
-
-    renderTareasContrato();
-  });
 }
 
 async function obtenerDetalleObra(idObra) {

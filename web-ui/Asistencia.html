@@ -107,6 +107,19 @@
   <input type="hidden" name="id_obra" id="inputObra">
 </div>
 
+<!-- TAREAS DE LA OBRA -->
+
+<div class="full">
+  <label class="label">Tareas de la obra</label>
+
+  <div id="contenedorTareas" class="tareas-container">
+    <div class="tareas-vacio">
+      Seleccioná una obra para ver sus tareas.
+    </div>
+  </div>
+</div>
+
+
 <!-- FECHA -->
 <div>
 <label class="label">Fecha</label>
@@ -256,16 +269,13 @@
 </div>
 
 <!-- MAQUINARIA -->
-<div class="full">
-<h3>Maquinaria</h3>
 
-<div class="custom-select">
-  <div class="custom-select-box" id="selectBoxMaquinaria">Seleccionar maquinaria</div>
-  <div class="custom-select-options" id="optionsMaquinaria"></div>
-</div>
 
-<div id="listaMaquinaria"></div>
-</div>
+<div class="full"> <h3>Maquinaria</h3>
+
+<div class="custom-select"> <div class="custom-select-box" id="selectBoxMaquinaria"> Seleccionar maquinaria </div> <div class="custom-select-options" id="optionsMaquinaria"></div> </div>
+
+<div id="listaMaquinaria"></div> </div>
 
 <!-- BOTÓN -->
 <div class="full">
@@ -280,428 +290,76 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-  // ================= ELEMENTOS =================
+  // =========================================================
+  // ELEMENTOS
+  // =========================================================
+
+  // OBRA
   const boxObra = document.getElementById("selectBoxObra");
   const optObra = document.getElementById("optionsObra");
   const inputObra = document.getElementById("inputObra");
 
+  // OBREROS
   const boxObrero = document.getElementById("selectBoxObrero");
   const optObrero = document.getElementById("optionsObrero");
+  const listaObreros = document.getElementById("listaObreros");
+  const horarios = document.getElementById("contenedorHorarios");
 
+  //TAREAS
+  const contenedorTareas = document.getElementById("contenedorTareas");
+  let tareasSeleccionadas = {};
+
+  // MATERIALES
+  const selectMaterial = document.getElementById("customSelectMaterial");
   const boxMaterial = document.getElementById("selectBoxMaterial");
-  const optMaterial = document.getElementById("optionsMaterial");
+  const optionsMaterial = document.getElementById("optionsMaterial");
+  const listMaterial = document.getElementById("listMaterial");
+  const searchMaterial = document.getElementById("buscarMaterial");
 
+  // HERRAMIENTAS
+  const selectHerramienta = document.getElementById("customSelectHerramienta");
   const boxHerr = document.getElementById("selectBoxHerramienta");
-  const optHerr = document.getElementById("optionsHerramienta");
+  const optionsHerr = document.getElementById("optionsHerramienta");
+  const listHerramienta = document.getElementById("listHerramienta");
+  const searchHerramienta = document.getElementById("searchHerramienta");
 
+  // MAQUINARIA
   const boxMaquinaria = document.getElementById("selectBoxMaquinaria");
   const optMaquinaria = document.getElementById("optionsMaquinaria");
   const listaMaquinaria = document.getElementById("listaMaquinaria");
 
-  const lista = document.getElementById("listaObreros");
-  const horarios = document.getElementById("contenedorHorarios");
-
+  // FORMULARIO
   const form = document.getElementById("asistenciaForm");
   const feedback = document.getElementById("feedback");
   const btnGuardar = form.querySelector("button[type='submit']");
 
+  // =========================================================
+  // VARIABLES
+  // =========================================================
+
   let obrerosSeleccionados = [];
   let maquinariaSeleccionada = [];
 
-  // ================= FETCH =================
-  fetch("../api/datos_asistencia.php")
-    .then(res => res.json())
-    .then(data => {
+  let materialesDisponibles = [];
+  let herramientasDisponibles = [];
 
-      // ===== OBRAS =====
-      data.obras.forEach(o => {
-        const div = document.createElement("div");
-        div.textContent = o.nombre;
+  // =========================================================
+  // FEEDBACK
+  // =========================================================
 
-        div.onclick = () => {
-          boxObra.textContent = o.nombre;
-          inputObra.value = o.id_obra;
-          optObra.style.display = "none";
-        };
-
-        optObra.appendChild(div);
-      });
-
-      // ===== OBREROS =====
-      data.obreros.forEach(o => {
-        const div = document.createElement("div");
-        div.textContent = o.nombre + " " + o.apellido;
-
-        div.onclick = () => {
-
-          const id = o.id_obrero;
-          const nombre = o.nombre + " " + o.apellido;
-
-          if (obrerosSeleccionados.includes(id)) return;
-
-          obrerosSeleccionados.push(id);
-
-          boxObrero.textContent = nombre;
-          optObrero.style.display = "none";
-
-          const item = document.createElement("div");
-          item.classList.add("obrero-item");
-          item.id = "obrero-" + id;
-
-          item.innerHTML = `
-            <span class="obrero-name">${nombre}</span>
-            <div class="obrero-actions">
-              <button type="button" class="btn-delete" onclick="eliminarObrero('${id}')">X</button>
-            </div>
-            <input type="hidden" name="obreros[]" value="${id}">
-          `;
-
-          lista.appendChild(item);
-
-          const fila = document.createElement("div");
-          fila.classList.add("worker-row");
-          fila.id = "horario-" + id;
-
-          fila.innerHTML = `
-            <strong>${nombre}</strong>
-            <div><label>Entrada</label><input type="time" name="hora_entrada[${id}]" required></div>
-            <div><label>Salida</label><input type="time" name="hora_salida[${id}]" required></div>
-          `;
-
-          horarios.appendChild(fila);
-        };
-
-        optObrero.appendChild(div);
-      });
-
-       /* ==============================
-           MATERIALES
-        ============================== */
-
-        optMaterial.innerHTML = "";
-
-        if (Array.isArray(data.materiales)) {
-
-            data.materiales.forEach(m => {
-
-                if (!m.nombre) return;
-
-                const nombre = m.nombre.trim();
-
-                if (!nombre) return;
-
-                const div = document.createElement("div");
-
-                div.textContent = nombre;
-
-                div.className = "select-option";
-
-                div.addEventListener("click", function (e) {
-
-                    e.stopPropagation();
-
-                    boxMaterial.textContent = nombre;
-
-                    optMaterial.style.display = "none";
-                });
-
-                optMaterial.appendChild(div);
-            });
-        }
-
-
-        /* ==============================
-           HERRAMIENTAS
-        ============================== */
-
-        optHerr.innerHTML = "";
-
-        if (Array.isArray(data.herramientas)) {
-
-            data.herramientas.forEach(h => {
-
-                if (!h.nombre) return;
-
-                const nombre = h.nombre.trim();
-
-                if (!nombre) return;
-
-                const div = document.createElement("div");
-
-                div.textContent = nombre;
-
-                div.className = "select-option";
-
-                div.addEventListener("click", function (e) {
-
-                    e.stopPropagation();
-
-                    boxHerr.textContent = nombre;
-
-                    optHerr.style.display = "none";
-                });
-
-                optHerr.appendChild(div);
-            });
-        }
-
-    })
-    .catch(error => {
-
-        console.error(
-            "Error cargando materiales/herramientas:",
-            error
-        );
-
-    });
-
-    /* =========================================
-   ABRIR MATERIAL
-========================================= */
-
-boxMaterial.addEventListener("click", function (e) {
-
-    e.stopPropagation();
-
-    // Cerrar herramienta
-    optHerr.style.display = "none";
-
-    // Alternar material
-    if (optMaterial.style.display === "block") {
-        optMaterial.style.display = "none";
-    } else {
-        optMaterial.style.display = "block";
-    }
-});
-
-
-/* =========================================
-   ABRIR HERRAMIENTA
-========================================= */
-
-boxHerr.addEventListener("click", function (e) {
-
-    e.stopPropagation();
-
-    // Cerrar material
-    optMaterial.style.display = "none";
-
-    // Alternar herramienta
-    if (optHerr.style.display === "block") {
-        optHerr.style.display = "none";
-    } else {
-        optHerr.style.display = "block";
-    }
-});
-
-
-/* =========================================
-   NO CERRAR AL HACER CLICK DENTRO
-========================================= */
-
-optMaterial.addEventListener("click", function (e) {
-    e.stopPropagation();
-});
-
-optHerr.addEventListener("click", function (e) {
-    e.stopPropagation();
-});
-
-
-/* =========================================
-   CERRAR AL HACER CLICK AFUERA
-========================================= */
-
-document.addEventListener("click", function () {
-
-    optMaterial.style.display = "none";
-    optHerr.style.display = "none";
-
-});
-
-      // ===== MAQUINARIA =====
-data.maquinaria.forEach(m => {
-  const div = document.createElement("div");
-  div.textContent = m.nombre + (m.marca ? " (" + m.marca + ")" : "");
-
-  div.onclick = () => {
-
-    const id = m.id_maquinaria;
-
-    if (maquinariaSeleccionada.includes(id)) return;
-
-    maquinariaSeleccionada.push(id);
-
-    boxMaquinaria.textContent = m.nombre + (m.marca ? " (" + m.marca + ")" : "");
-    optMaquinaria.style.display = "none";
-
-    const item = document.createElement("div");
-    item.classList.add("item-box");
-    item.id = "maquinaria-" + id;
-
-    item.innerHTML = `
-<div class="item-box">
-
-    <span class="obrero-name">
-        ${m.nombre}${m.marca ? " (" + m.marca + ")" : ""}
-    </span>
-
-    <div class="smart-box" style="margin-top:10px">
-
-        <div>
-            <label>Hora de salida</label>
-            <input
-                type="time"
-                name="retiro_maquinaria[${id}]"
-                required>
-        </div>
-
-        <div>
-            <label>Hora de devolución</label>
-            <input
-                type="time"
-                name="devolucion_maquinaria[${id}]"
-                required>
-        </div>
-
-    </div>
-
-    <!-- COMBUSTIBLE -->
-    <div class="smart-box" style="margin-top:10px; border-top:1px dashed #ccc; padding-top:10px;">
-        <div>
-            <label>Litros Combustible</label>
-            <input
-                type="number"
-                step="0.01"
-                name="litros[${id}]"
-                placeholder="Ej: 50.5"
-                min="0">
-        </div>
-        <div>
-            <label>Tipo Combustible</label>
-            <select name="nombre_combustible[${id}]">
-                <option value="Diesel">Diesel</option>
-                <option value="Nafta">Nafta</option>
-            </select>
-        </div>
-        <div>
-            <label>Precio Total ($)</label>
-            <input
-                type="number"
-                step="0.01"
-                name="precio_total[${id}]"
-                placeholder="Ej: 2500"
-                min="0">
-        </div>
-    </div>
-
-    <div class="item-actions">
-        <button
-            type="button"
-            class="btn-delete"
-            onclick="eliminarMaquinaria('${id}')">
-            X
-        </button>
-    </div>
-
-    <input
-        type="hidden"
-        name="maquinaria[]"
-        value="${id}">
-</div>
-`;
-
-    listaMaquinaria.appendChild(item);
-  };
-
-  optMaquinaria.appendChild(div);
-});
-
-    })
-    .catch(err => {
-      console.error("Error al cargar datos de asistencia:", err);
-      mostrarFeedback("No se pudieron cargar los datos iniciales. Revisá la conexión.", "error");
-    });
-
-  // ================= OPEN / CLOSE =================
-  function toggle(box, opt) {
-    box.addEventListener("click", () => {
-      opt.style.display = opt.style.display === "block" ? "none" : "block";
-    });
-  }
-
-  toggle(boxObra, optObra);
-  toggle(boxObrero, optObrero);
-  toggle(boxMaterial, optMaterial);
-  toggle(boxHerr, optHerr);
-  toggle(boxMaquinaria, optMaquinaria);
-
-  // cerrar afuera
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest(".custom-select")) {
-      document.querySelectorAll(".custom-select-options")
-        .forEach(o => o.style.display = "none");
-    }
-  });
-
-  // ================= ELIMINAR OBRERO =================
-  window.eliminarObrero = (id) => {
-    obrerosSeleccionados = obrerosSeleccionados.filter(o => o !== id);
-    document.getElementById("obrero-" + id)?.remove();
-    document.getElementById("horario-" + id)?.remove();
-  };
-
-  // ================= ELIMINAR MAQUINARIA =================
-  window.eliminarMaquinaria = (id) => {
-    maquinariaSeleccionada = maquinariaSeleccionada.filter(m => m !== Number(id));
-    document.getElementById("maquinaria-" + id)?.remove();
-  };
-
-  // ================= AGREGAR MATERIAL =================
-  document.getElementById("btnMaterial").addEventListener("click", () => {
-    const nombreSelect = boxMaterial.textContent.trim();
-    const nombreNuevo = document.getElementById("nuevoMaterial").value.trim();
-    const nombre = nombreNuevo || (nombreSelect !== "Seleccionar material" ? nombreSelect : "");
-    const cantidad = document.getElementById("cantidadMaterial").value;
-    const costo = document.getElementById("costoMaterial").value;
-
-    if (!nombre) { mostrarFeedback("Seleccioná o escribí un material.", "warning"); return; }
-    if (!cantidad || cantidad <= 0) { mostrarFeedback("Ingresá una cantidad válida.", "warning"); return; }
-
-    const item = document.createElement("div");
-    item.classList.add("obrero-item");
-    item.innerHTML = `<span class="obrero-name">${nombre} - Cant: ${cantidad} - Costo: ${costo || 0}</span><div class="obrero-actions"><button type="button" class="btn-delete">X</button></div><input type="hidden" name="material_nombre[]" value="${nombre}"><input type="hidden" name="material_cantidad[]" value="${cantidad}"><input type="hidden" name="material_costo[]" value="${costo || 0}">`;
-    item.querySelector(".btn-delete").addEventListener("click", () => item.remove());
-    document.getElementById("listaMateriales").appendChild(item);
-    document.getElementById("nuevoMaterial").value = "";
-    document.getElementById("cantidadMaterial").value = "";
-    document.getElementById("costoMaterial").value = "";
-    boxMaterial.textContent = "Seleccionar material";
-  });
-
-  // ================= AGREGAR HERRAMIENTA =================
-  document.getElementById("btnHerramienta").addEventListener("click", () => {
-    const nombreSelect = boxHerr.textContent.trim();
-    const nombreNuevo = document.getElementById("nuevaHerramienta").value.trim();
-    const nombre = nombreNuevo || (nombreSelect !== "Seleccionar herramienta" ? nombreSelect : "");
-    const cantidad = document.getElementById("cantidadHerramienta").value;
-
-    if (!nombre) { mostrarFeedback("Seleccioná o escribí una herramienta.", "warning"); return; }
-    if (!cantidad || cantidad <= 0) { mostrarFeedback("Ingresá una cantidad válida.", "warning"); return; }
-
-    const item = document.createElement("div");
-    item.classList.add("obrero-item");
-    item.innerHTML = `<span class="obrero-name">${nombre} - Cant: ${cantidad}</span><div class="obrero-actions"><button type="button" class="btn-delete">X</button></div><input type="hidden" name="herramienta_nombre[]" value="${nombre}"><input type="hidden" name="herramienta_cantidad[]" value="${cantidad}">`;
-    item.querySelector(".btn-delete").addEventListener("click", () => item.remove());
-    document.getElementById("listaHerramientas").appendChild(item);
-    document.getElementById("nuevaHerramienta").value = "";
-    document.getElementById("cantidadHerramienta").value = "";
-    boxHerr.textContent = "Seleccionar herramienta";
-  });
-
-  // ================= MOSTRAR FEEDBACK =================
   function mostrarFeedback(mensaje, tipo) {
-    feedback.innerHTML = `<i class="fas ${tipo === "error" ? "fa-circle-exclamation" : tipo === "success" ? "fa-circle-check" : "fa-triangle-exclamation"}"></i><span>${mensaje}</span>`;
+
+    feedback.innerHTML = `
+      <i class="fas ${
+        tipo === "error"
+          ? "fa-circle-exclamation"
+          : tipo === "success"
+            ? "fa-circle-check"
+            : "fa-triangle-exclamation"
+      }"></i>
+      <span>${mensaje}</span>
+    `;
+
     feedback.className = `feedback-msg ${tipo}`;
   }
 
@@ -709,344 +367,603 @@ data.maquinaria.forEach(m => {
     feedback.classList.add("hidden");
   }
 
-// ================= LIMPIAR FORMULARIO =================
-  function limpiarFormulario() {
+  // =========================================================
+  // CERRAR TODOS LOS SELECTS
+  // =========================================================
 
-  // Limpiar campos normales
-  form.reset();
+  function cerrarTodosLosSelects() {
 
-  // Restablecer selects personalizados
-  boxObra.textContent = "Seleccionar obra";
-  inputObra.value = "";
-
-  boxObrero.textContent = "Seleccionar obrero";
-  boxMaterial.textContent = "Seleccionar material";
-  boxHerr.textContent = "Seleccionar herramienta";
-  boxMaquinaria.textContent = "Seleccionar maquinaria";
-
-  // Limpiar listas generadas
-  lista.innerHTML = "";
-  horarios.innerHTML = "";
-  document.getElementById("listaMateriales").innerHTML = "";
-  document.getElementById("listaHerramientas").innerHTML = "";
-  listaMaquinaria.innerHTML = "";
-
-  // Vaciar selecciones
-  obrerosSeleccionados = [];
-  maquinariaSeleccionada = [];
-
-  // Limpiar cajas auxiliares
-  document.getElementById("nuevoMaterial").value = "";
-  document.getElementById("cantidadMaterial").value = "";
-  document.getElementById("costoMaterial").value = "";
-
-  document.getElementById("nuevaHerramienta").value = "";
-  document.getElementById("cantidadHerramienta").value = "";
-
-  // Cerrar desplegables
-  optObra.style.display = "none";
-  optObrero.style.display = "none";
-  optMaterial.style.display = "none";
-  optHerr.style.display = "none";
-  optMaquinaria.style.display = "none";
-}
-
-  // ================= SUBMIT CON FETCH =================
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    ocultarFeedback();
-
-    const idObra = parseInt(inputObra.value, 10);
-    const fecha = form.querySelector("input[name='fecha']").value.trim();
-    const finaliza = form.querySelector("select[name='finaliza']").value;
-
-    if (!idObra) {
-      mostrarFeedback("Seleccioná una obra.", "error");
-      return;
-    }
-    if (!fecha) {
-      mostrarFeedback("Seleccioná una fecha.", "error");
-      return;
-    }
-    if (!obrerosSeleccionados.length) {
-      mostrarFeedback("Seleccioná al menos un obrero.", "error");
-      return;
-    }
-
-    btnGuardar.disabled = true;
-    btnGuardar.textContent = "Guardando...";
-
-    try {
-      const csrfResp = await fetch("../api/csrf.php", { credentials: "include" });
-      const csrfData = await csrfResp.json();
-      const csrfToken = csrfData.token || "";
-
-      const formData = new FormData();
-      formData.append("id_obra", String(idObra));
-      formData.append("fecha", fecha);
-      formData.append("finaliza", finaliza);
-
-      obrerosSeleccionados.forEach(id => {
-        formData.append("obreros[]", String(id));
-        const entrada = form.querySelector(`input[name="hora_entrada[${id}]"]`);
-        const salida = form.querySelector(`input[name="hora_salida[${id}]"]`);
-        formData.append(`hora_entrada[${id}]`, entrada ? entrada.value : "");
-        formData.append(`hora_salida[${id}]`, salida ? salida.value : "");
-      });
-
-      const listaEl = document.getElementById("listaMateriales");
-      listaEl.querySelectorAll("input[name='material_nombre[]']").forEach(inp => formData.append("material_nombre[]", inp.value));
-      listaEl.querySelectorAll("input[name='material_cantidad[]']").forEach(inp => formData.append("material_cantidad[]", inp.value));
-      listaEl.querySelectorAll("input[name='material_costo[]']").forEach(inp => formData.append("material_costo[]", inp.value));
-
-      const listaHerr = document.getElementById("listaHerramientas");
-      listaHerr.querySelectorAll("input[name='herramienta_nombre[]']").forEach(inp => formData.append("herramienta_nombre[]", inp.value));
-      listaHerr.querySelectorAll("input[name='herramienta_cantidad[]']").forEach(inp => formData.append("herramienta_cantidad[]", inp.value));
-
-      maquinariaSeleccionada.forEach(id => {
-        formData.append("maquinaria[]", String(id));
-        const salida = form.querySelector(`input[name="retiro_maquinaria[${id}]"]`);
-        const devolucion = form.querySelector(`input[name="devolucion_maquinaria[${id}]"]`);
-        const litros = form.querySelector(`input[name="litros[${id}]"]`);
-        const nombreComb = form.querySelector(`select[name="nombre_combustible[${id}]"]`);
-        const precioTot = form.querySelector(`input[name="precio_total[${id}]"]`);
-
-        formData.append(`retiro_maquinaria[${id}]`, salida ? salida.value : "");
-        formData.append(`devolucion_maquinaria[${id}]`, devolucion ? devolucion.value : "");
-        if (litros && parseFloat(litros.value) > 0) {
-          formData.append(`litros[${id}]`, litros.value);
-          formData.append(`nombre_combustible[${id}]`, nombreComb ? nombreComb.value : "Diesel");
-          formData.append(`precio_total[${id}]`, precioTot ? precioTot.value : "0");
-        }
-      });
-
-      const response = await fetch("../api/guardar_asistencia.php", {
-        method: "POST",
-        headers: { "X-CSRF-Token": csrfToken },
-        credentials: "include",
-        body: formData,
-      });
-
-      const text = await response.text();
-      let result;
-      try { result = JSON.parse(text); } catch { result = { error: text }; }
-
-      if (!response.ok || !result.success) {
-        mostrarFeedback(result.error || "Error al guardar la asistencia.", "error");
-        return;
-      }
-
-      mostrarFeedback(result.message || "Asistencia guardada correctamente.", "success");
-
-      // Resetear formulario
-      limpiarFormulario();
-
-    } catch (err) {
-      console.error(err);
-      mostrarFeedback(err.message || "No se pudo guardar la asistencia. Revisá los datos.", "error");
-    } finally {
-      btnGuardar.disabled = false;
-      btnGuardar.textContent = "Guardar";
-    }
-  });
-
-/* =========================================
-   SELECT PERSONALIZADO - MATERIALES
-========================================= */
-
-const selectMaterial = document.getElementById("customSelectMaterial");
-const boxMaterial = document.getElementById("selectBoxMaterial");
-const optionsMaterial = document.getElementById("optionsMaterial");
-const listMaterial = document.getElementById("listMaterial");
-const searchMaterial = document.getElementById("searchMaterial");
-
-
-/* =========================================
-   SELECT PERSONALIZADO - HERRAMIENTAS
-========================================= */
-
-const selectHerramienta = document.getElementById("customSelectHerramienta");
-const boxHerr = document.getElementById("selectBoxHerramienta");
-const optionsHerr = document.getElementById("optionsHerramienta");
-const listHerramienta = document.getElementById("listHerramienta");
-const searchHerramienta = document.getElementById("searchHerramienta");
-
-
-/* =========================================
-   ABRIR / CERRAR MATERIAL
-========================================= */
-
-boxMaterial.addEventListener("click", (e) => {
-
-    e.stopPropagation();
-
-    const abierto = optionsMaterial.style.display === "block";
-
-    cerrarTodosLosSelects();
-
-    if (!abierto) {
-        optionsMaterial.style.display = "block";
-
-        searchMaterial.value = "";
-        filtrarOpciones(
-            listMaterial,
-            "",
-            "No se encontraron materiales."
-        );
-
-        setTimeout(() => {
-            searchMaterial.focus();
-        }, 50);
-    }
-});
-
-
-/* =========================================
-   ABRIR / CERRAR HERRAMIENTA
-========================================= */
-
-boxHerr.addEventListener("click", (e) => {
-
-    e.stopPropagation();
-
-    const abierto = optionsHerr.style.display === "block";
-
-    cerrarTodosLosSelects();
-
-    if (!abierto) {
-        optionsHerr.style.display = "block";
-
-        searchHerramienta.value = "";
-
-        filtrarOpciones(
-            listHerramienta,
-            "",
-            "No se encontraron herramientas."
-        );
-
-        setTimeout(() => {
-            searchHerramienta.focus();
-        }, 50);
-    }
-});
-
-
-/* =========================================
-   CERRAR TODOS
-========================================= */
-
-function cerrarTodosLosSelects() {
-
-    optionsMaterial.style.display = "none";
-    optionsHerr.style.display = "none";
-}
-
-
-/* =========================================
-   CERRAR AL HACER CLICK AFUERA
-========================================= */
-
-document.addEventListener("click", () => {
-    cerrarTodosLosSelects();
-});
-
-
-optionsMaterial.addEventListener("click", (e) => {
-    e.stopPropagation();
-});
-
-optionsHerr.addEventListener("click", (e) => {
-    e.stopPropagation();
-});
-
-
-/* =========================================
-   BUSCAR MATERIAL
-========================================= */
-
-searchMaterial.addEventListener("input", () => {
-
-    const texto = searchMaterial.value.trim().toLowerCase();
-
-    filtrarOpciones(
-        listMaterial,
-        texto,
-        "No se encontraron materiales."
-    );
-});
-
-
-/* =========================================
-   BUSCAR HERRAMIENTA
-========================================= */
-
-searchHerramienta.addEventListener("input", () => {
-
-    const texto = searchHerramienta.value.trim().toLowerCase();
-
-    filtrarOpciones(
-        listHerramienta,
-        texto,
-        "No se encontraron herramientas."
-    );
-});
-
-
-/* =========================================
-   FILTRAR OPCIONES
-========================================= */
-
-function filtrarOpciones(lista, texto, mensaje) {
-
-    const opciones = lista.querySelectorAll(
-        ".custom-select-option"
-    );
-
-    let encontrados = 0;
-
-    opciones.forEach(opcion => {
-
-        const nombre = opcion.dataset.nombre.toLowerCase();
-
-        if (nombre.includes(texto)) {
-
-            opcion.style.display = "block";
-            encontrados++;
-
-        } else {
-
-            opcion.style.display = "none";
-        }
+    document.querySelectorAll(".custom-select-options").forEach(option => {
+      option.style.display = "none";
     });
 
-    let vacio = lista.querySelector(".custom-select-empty");
+  }
 
-    if (encontrados === 0) {
+  // =========================================================
+  // TOGGLE SELECT
+  // =========================================================
 
-        if (!vacio) {
+  function toggleSelect(box, options) {
 
-            vacio = document.createElement("div");
+    if (!box || !options) return;
 
-            vacio.className = "custom-select-empty";
-            vacio.textContent = mensaje;
+    box.addEventListener("click", (e) => {
 
-            lista.appendChild(vacio);
-        }
+      e.stopPropagation();
 
-        vacio.style.display = "block";
+      const estabaAbierto = options.style.display === "block";
 
-    } else if (vacio) {
+      cerrarTodosLosSelects();
 
-        vacio.style.display = "none";
+      if (!estabaAbierto) {
+        options.style.display = "block";
+      }
+
+    });
+  }
+
+  // =========================================================
+  // CERRAR SELECTS AL HACER CLICK AFUERA
+  // =========================================================
+
+  document.addEventListener("click", () => {
+    cerrarTodosLosSelects();
+  });
+
+  document.querySelectorAll(".custom-select-options").forEach(options => {
+
+    options.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+
+  });
+
+  // =========================================================
+  // SELECT OBRA
+  // =========================================================
+
+  function cargarObras(obras) {
+
+    optObra.innerHTML = "";
+
+    if (!Array.isArray(obras) || obras.length === 0) {
+
+      const vacio = document.createElement("div");
+      vacio.textContent = "No hay obras disponibles.";
+      vacio.className = "custom-select-empty";
+
+      optObra.appendChild(vacio);
+      return;
     }
+
+    obras.forEach(o => {
+
+      const div = document.createElement("div");
+
+      div.textContent = o.nombre;
+      div.className = "custom-select-option";
+
+      div.onclick = async () => {
+
+boxObra.textContent = o.nombre;
+inputObra.value = o.id_obra;
+optObra.style.display = "none";
+
+// Limpiar tareas anteriores
+contenedorTareas.innerHTML = `
+    <div class="tareas-vacio">
+        Cargando tareas...
+    </div>
+`;
+
+tareasSeleccionadas = {};
+
+try {
+
+    const response = await fetch(
+        `../api/datos_asistencia.php?id_obra=${encodeURIComponent(o.id_obra)}`,
+        {
+            credentials: "include"
+        }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.error || "No se pudieron cargar las tareas.");
+    }
+
+    mostrarTareas(data.tareas || []);
+
+} catch (error) {
+
+    console.error("Error cargando tareas:", error);
+
+    contenedorTareas.innerHTML = `
+        <div class="tareas-error">
+            No se pudieron cargar las tareas de esta obra.
+        </div>
+    `;
+}
+
+};
+
+
+      optObra.appendChild(div);
+
+    });
+  }
+
+  function mostrarTareas(tareas) {
+
+contenedorTareas.innerHTML = "";
+
+if (!Array.isArray(tareas) || tareas.length === 0) {
+
+    contenedorTareas.innerHTML = `
+        <div class="tareas-vacio">
+            Esta obra no tiene tareas registradas.
+        </div>
+    `;
+
+    return;
+}
+
+tareas.forEach(tarea => {
+
+    const id = Number(tarea.id_tarea);
+
+    const estadoInicial =
+        tarea.estado === "Completada"
+            ? "Completada"
+            : "Pendiente";
+
+    tareasSeleccionadas[id] = estadoInicial;
+
+    const completada = estadoInicial === "Completada";
+
+    const card = document.createElement("div");
+
+    card.className =
+        `tarea-card ${completada ? "completada" : ""}`;
+
+    card.id = `tarea-${id}`;
+
+    card.innerHTML = `
+
+        <div class="tarea-info">
+
+            <div class="tarea-icon">
+                <i class="fas ${
+                    completada
+                        ? "fa-check"
+                        : "fa-list-check"
+                }"></i>
+            </div>
+
+            <span class="tarea-nombre">
+                ${escapeHtml(tarea.descripcion)}
+            </span>
+
+        </div>
+
+        <button
+            type="button"
+            class="btn-tarea ${
+                completada
+                    ? "completada"
+                    : "pendiente"
+            }"
+            data-id="${id}"
+        >
+            ${
+                completada
+                    ? "Marcar pendiente"
+                    : "Marcar completada"
+            }
+        </button>
+    `;
+
+    const boton = card.querySelector(".btn-tarea");
+
+    boton.addEventListener("click", () => {
+
+        alternarTarea(
+            id,
+            card,
+            boton
+        );
+
+    });
+
+    contenedorTareas.appendChild(card);
+});
+
+}
+
+function alternarTarea(id, card, boton) {
+
+const actualmenteCompletada =
+    tareasSeleccionadas[id] === "Completada";
+
+if (actualmenteCompletada) {
+
+    // Volver a pendiente
+    tareasSeleccionadas[id] = "Pendiente";
+
+    card.classList.remove("completada");
+
+    boton.classList.remove("completada");
+    boton.classList.add("pendiente");
+
+    boton.textContent = "Marcar completada";
+
+    const icono = card.querySelector(".tarea-icon i");
+
+    icono.className = "fas fa-list-check";
+
+} else {
+
+    // Marcar como completada
+    tareasSeleccionadas[id] = "Completada";
+
+    card.classList.add("completada");
+
+    boton.classList.remove("pendiente");
+    boton.classList.add("completada");
+
+    boton.textContent = "Marcar pendiente";
+
+    const icono = card.querySelector(".tarea-icon i");
+
+    icono.className = "fas fa-check";
+}
+
 }
 
 
-/* =========================================
-   CREAR OPCIÓN
-========================================= */
+  // =========================================================
+  // SELECT OBREROS
+  // =========================================================
 
-function crearOpcion(nombre, tipo) {
+  function cargarObreros(obreros) {
+
+    optObrero.innerHTML = "";
+
+    if (!Array.isArray(obreros) || obreros.length === 0) {
+
+      const vacio = document.createElement("div");
+
+      vacio.textContent = "No hay obreros disponibles.";
+      vacio.className = "custom-select-empty";
+
+      optObrero.appendChild(vacio);
+      return;
+    }
+
+    obreros.forEach(o => {
+
+      const div = document.createElement("div");
+
+      const nombre = `${o.nombre} ${o.apellido}`.trim();
+
+      div.textContent = nombre;
+      div.className = "custom-select-option";
+
+      div.addEventListener("click", (e) => {
+
+        e.stopPropagation();
+
+        const id = String(o.id_obrero);
+
+        if (obrerosSeleccionados.includes(id)) {
+          mostrarFeedback("Ese obrero ya fue seleccionado.", "warning");
+          return;
+        }
+
+        obrerosSeleccionados.push(id);
+
+        boxObrero.textContent = nombre;
+
+        optObrero.style.display = "none";
+
+        // ============================================
+        // ITEM OBRERO
+        // ============================================
+
+        const item = document.createElement("div");
+
+        item.classList.add("obrero-item");
+        item.id = "obrero-" + id;
+
+        item.innerHTML = `
+          <span class="obrero-name">${nombre}</span>
+
+          <div class="obrero-actions">
+            <button
+              type="button"
+              class="btn-delete"
+              onclick="eliminarObrero('${id}')">
+              X
+            </button>
+          </div>
+
+          <input
+            type="hidden"
+            name="obreros[]"
+            value="${id}">
+        `;
+
+        listaObreros.appendChild(item);
+
+        // ============================================
+        // HORARIOS DEL OBRERO
+        // ============================================
+
+        const fila = document.createElement("div");
+
+        fila.classList.add("worker-row");
+        fila.id = "horario-" + id;
+
+        fila.innerHTML = `
+          <strong>${nombre}</strong>
+
+          <div>
+            <label>Entrada</label>
+            <input
+              type="time"
+              name="hora_entrada[${id}]"
+              required>
+          </div>
+
+          <div>
+            <label>Salida</label>
+            <input
+              type="time"
+              name="hora_salida[${id}]"
+              required>
+          </div>
+        `;
+
+        horarios.appendChild(fila);
+
+      });
+
+      optObrero.appendChild(div);
+
+    });
+  }
+
+  // =========================================================
+  // SELECT MAQUINARIA
+  // =========================================================
+
+  function cargarMaquinaria(maquinarias) {
+
+    optMaquinaria.innerHTML = "";
+
+    if (!Array.isArray(maquinarias) || maquinarias.length === 0) {
+
+      const vacio = document.createElement("div");
+
+      vacio.textContent = "No hay maquinaria disponible.";
+      vacio.className = "custom-select-empty";
+
+      optMaquinaria.appendChild(vacio);
+      return;
+    }
+
+    maquinarias.forEach(m => {
+
+      const div = document.createElement("div");
+
+      const id = String(m.id_maquinaria);
+
+      const nombreMaquinaria =
+        m.nombre + (m.marca ? ` (${m.marca})` : "");
+
+      div.textContent = nombreMaquinaria;
+      div.className = "custom-select-option";
+
+      div.addEventListener("click", (e) => {
+
+        e.stopPropagation();
+
+        if (maquinariaSeleccionada.includes(id)) {
+
+          mostrarFeedback(
+            "Esa maquinaria ya fue seleccionada.",
+            "warning"
+          );
+
+          return;
+        }
+
+        maquinariaSeleccionada.push(id);
+
+        boxMaquinaria.textContent = nombreMaquinaria;
+
+        optMaquinaria.style.display = "none";
+
+        // ============================================
+        // CONTENEDOR DE MAQUINARIA
+        // ============================================
+
+        const item = document.createElement("div");
+
+        item.classList.add("item-box");
+        item.id = "maquinaria-" + id;
+
+        item.innerHTML = `
+          <div class="item-box">
+
+            <span class="obrero-name">
+              ${nombreMaquinaria}
+            </span>
+
+            <!-- HORARIOS -->
+            <div
+              class="smart-box"
+              style="margin-top:10px">
+
+              <div>
+                <label>Hora de salida</label>
+
+                <input
+                  type="time"
+                  name="retiro_maquinaria[${id}]"
+                  required>
+              </div>
+
+              <div>
+                <label>Hora de devolución</label>
+
+                <input
+                  type="time"
+                  name="devolucion_maquinaria[${id}]"
+                  required>
+              </div>
+
+            </div>
+
+            <!-- COMBUSTIBLE -->
+            <div
+              class="smart-box"
+              style="
+                margin-top:10px;
+                border-top:1px dashed #ccc;
+                padding-top:10px;
+              ">
+
+              <div>
+                <label>Litros Combustible</label>
+
+                <input
+                  type="number"
+                  step="0.01"
+                  name="litros[${id}]"
+                  placeholder="Ej: 50.5"
+                  min="0">
+              </div>
+
+              <div>
+                <label>Tipo Combustible</label>
+
+                <select
+                  name="nombre_combustible[${id}]">
+
+                  <option value="Diesel">
+                    Diesel
+                  </option>
+
+                  <option value="Nafta">
+                    Nafta
+                  </option>
+
+                </select>
+              </div>
+
+              <div>
+                <label>Precio Total ($)</label>
+
+                <input
+                  type="number"
+                  step="0.01"
+                  name="precio_total[${id}]"
+                  placeholder="Ej: 2500"
+                  min="0">
+              </div>
+
+            </div>
+
+            <!-- ELIMINAR -->
+            <div class="item-actions">
+
+              <button
+                type="button"
+                class="btn-delete"
+                onclick="eliminarMaquinaria('${id}')">
+                X
+              </button>
+
+            </div>
+
+            <input
+              type="hidden"
+              name="maquinaria[]"
+              value="${id}">
+
+          </div>
+        `;
+
+        listaMaquinaria.appendChild(item);
+
+      });
+
+      optMaquinaria.appendChild(div);
+
+    });
+  }
+
+  // =========================================================
+  // SELECT MATERIAL
+  // =========================================================
+
+  function cargarMateriales(materiales) {
+
+    materialesDisponibles = Array.isArray(materiales)
+      ? materiales
+      : [];
+
+    listMaterial.innerHTML = "";
+
+    materialesDisponibles.forEach(m => {
+
+      if (!m.nombre) return;
+
+      const nombre = m.nombre.trim();
+
+      if (!nombre) return;
+
+      const opcion = crearOpcion(nombre, "material");
+
+      listMaterial.appendChild(opcion);
+
+    });
+  }
+
+  // =========================================================
+  // SELECT HERRAMIENTAS
+  // =========================================================
+
+  function cargarHerramientas(herramientas) {
+
+    herramientasDisponibles = Array.isArray(herramientas)
+      ? herramientas
+      : [];
+
+    listHerramienta.innerHTML = "";
+
+    herramientasDisponibles.forEach(h => {
+
+      if (!h.nombre) return;
+
+      const nombre = h.nombre.trim();
+
+      if (!nombre) return;
+
+      const opcion = crearOpcion(nombre, "herramienta");
+
+      listHerramienta.appendChild(opcion);
+
+    });
+  }
+
+  // =========================================================
+  // CREAR OPCIÓN MATERIAL / HERRAMIENTA
+  // =========================================================
+
+  function crearOpcion(nombre, tipo) {
 
     const div = document.createElement("div");
 
@@ -1058,26 +975,1080 @@ function crearOpcion(nombre, tipo) {
 
     div.addEventListener("click", (e) => {
 
-        e.stopPropagation();
+      e.stopPropagation();
 
-        if (tipo === "material") {
+      if (tipo === "material") {
 
-            boxMaterial.textContent = nombre;
-            optionsMaterial.style.display = "none";
-            searchMaterial.value = "";
+        boxMaterial.textContent = nombre;
 
-        } else {
+        optionsMaterial.style.display = "none";
 
-            boxHerr.textContent = nombre;
-            optionsHerr.style.display = "none";
-            searchHerramienta.value = "";
-        }
+        searchMaterial.value = "";
+
+      } else {
+
+        boxHerr.textContent = nombre;
+
+        optionsHerr.style.display = "none";
+
+        searchHerramienta.value = "";
+
+      }
+
     });
 
     return div;
+  }
+
+  // =========================================================
+  // FILTRAR OPCIONES
+  // =========================================================
+
+  function filtrarOpciones(lista, texto, mensaje) {
+
+    if (!lista) return;
+
+    const opciones = lista.querySelectorAll(".custom-select-option");
+
+    let encontrados = 0;
+
+    opciones.forEach(opcion => {
+
+      const nombre =
+        (opcion.dataset.nombre || opcion.textContent || "")
+          .toLowerCase();
+
+      if (nombre.includes(texto)) {
+
+        opcion.style.display = "block";
+        encontrados++;
+
+      } else {
+
+        opcion.style.display = "none";
+
+      }
+
+    });
+
+    let vacio =
+      lista.querySelector(".custom-select-empty");
+
+    if (encontrados === 0) {
+
+      if (!vacio) {
+
+        vacio = document.createElement("div");
+
+        vacio.className = "custom-select-empty";
+        vacio.textContent = mensaje;
+
+        lista.appendChild(vacio);
+
+      }
+
+      vacio.style.display = "block";
+
+    } else if (vacio) {
+
+      vacio.style.display = "none";
+
+    }
+
+  }
+
+  // =========================================================
+  // ABRIR MATERIAL
+  // =========================================================
+
+  if (boxMaterial) {
+
+    boxMaterial.addEventListener("click", (e) => {
+
+      e.stopPropagation();
+
+      const abierto =
+        optionsMaterial.style.display === "block";
+
+      cerrarTodosLosSelects();
+
+      if (!abierto) {
+
+        optionsMaterial.style.display = "block";
+
+        searchMaterial.value = "";
+
+        filtrarOpciones(
+          listMaterial,
+          "",
+          "No se encontraron materiales."
+        );
+
+        setTimeout(() => {
+
+          if (searchMaterial) {
+            searchMaterial.focus();
+          }
+
+        }, 50);
+
+      }
+
+    });
+
+  }
+
+  // =========================================================
+  // ABRIR HERRAMIENTA
+  // =========================================================
+
+  if (boxHerr) {
+
+    boxHerr.addEventListener("click", (e) => {
+
+      e.stopPropagation();
+
+      const abierto =
+        optionsHerr.style.display === "block";
+
+      cerrarTodosLosSelects();
+
+      if (!abierto) {
+
+        optionsHerr.style.display = "block";
+
+        searchHerramienta.value = "";
+
+        filtrarOpciones(
+          listHerramienta,
+          "",
+          "No se encontraron herramientas."
+        );
+
+        setTimeout(() => {
+
+          if (searchHerramienta) {
+            searchHerramienta.focus();
+          }
+
+        }, 50);
+
+      }
+
+    });
+
+  }
+  function escapeHtml(text) {
+
+  const div = document.createElement("div");
+
+div.textContent = text ?? "";
+
+return div.innerHTML;
+
 }
 
+
+  // =========================================================
+  // BÚSQUEDA MATERIAL
+  // =========================================================
+
+  if (searchMaterial) {
+
+    searchMaterial.addEventListener("input", () => {
+
+      const texto =
+        searchMaterial.value
+          .trim()
+          .toLowerCase();
+
+      filtrarOpciones(
+        listMaterial,
+        texto,
+        "No se encontraron materiales."
+      );
+
+    });
+
+  }
+
+  // =========================================================
+  // BÚSQUEDA HERRAMIENTA
+  // =========================================================
+
+  if (searchHerramienta) {
+
+    searchHerramienta.addEventListener("input", () => {
+
+      const texto =
+        searchHerramienta.value
+          .trim()
+          .toLowerCase();
+
+      filtrarOpciones(
+        listHerramienta,
+        texto,
+        "No se encontraron herramientas."
+      );
+
+    });
+
+  }
+
+  // =========================================================
+  // ABRIR SELECTS NORMALES
+  // =========================================================
+
+  toggleSelect(boxObra, optObra);
+  toggleSelect(boxObrero, optObrero);
+  toggleSelect(boxMaquinaria, optMaquinaria);
+
+  // =========================================================
+  // CARGAR DATOS INICIALES
+  // =========================================================
+
+  fetch("../api/datos_asistencia.php", {
+    method: "GET",
+    credentials: "include"
+  })
+    .then(async res => {
+
+      const text = await res.text();
+
+      let data;
+
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+
+        console.error("Respuesta inválida:", text);
+
+        throw new Error(
+          "El servidor devolvió una respuesta inválida."
+        );
+
+      }
+
+      if (!res.ok) {
+
+        throw new Error(
+          data.error || "No se pudieron cargar los datos."
+        );
+
+      }
+
+      return data;
+
+    })
+    .then(data => {
+
+      // =====================================================
+      // OBRAS
+      // =====================================================
+
+      cargarObras(data.obras);
+
+      // =====================================================
+      // OBREROS
+      // =====================================================
+
+      cargarObreros(data.obreros);
+
+      // =====================================================
+      // MATERIALES
+      // =====================================================
+
+      cargarMateriales(data.materiales);
+
+      // =====================================================
+      // HERRAMIENTAS
+      // =====================================================
+
+      cargarHerramientas(data.herramientas);
+
+      // =====================================================
+      // MAQUINARIA
+      // =====================================================
+
+      cargarMaquinaria(data.maquinaria);
+
+    })
+    .catch(error => {
+
+      console.error(
+        "Error al cargar datos de asistencia:",
+        error
+      );
+
+      mostrarFeedback(
+        error.message ||
+        "No se pudieron cargar los datos iniciales. Revisá la conexión.",
+        "error"
+      );
+
+    });
+
+  // =========================================================
+  // ELIMINAR OBRERO
+  // =========================================================
+
+  window.eliminarObrero = (id) => {
+
+    id = String(id);
+
+    obrerosSeleccionados =
+      obrerosSeleccionados.filter(
+        o => String(o) !== id
+      );
+
+    const obrero =
+      document.getElementById("obrero-" + id);
+
+    const horario =
+      document.getElementById("horario-" + id);
+
+    if (obrero) {
+      obrero.remove();
+    }
+
+    if (horario) {
+      horario.remove();
+    }
+
+    boxObrero.textContent =
+      obrerosSeleccionados.length > 0
+        ? `${obrerosSeleccionados.length} obrero(s) seleccionado(s)`
+        : "Seleccionar obrero";
+
+  };
+
+  // =========================================================
+  // ELIMINAR MAQUINARIA
+  // =========================================================
+
+  window.eliminarMaquinaria = (id) => {
+
+    id = String(id);
+
+    maquinariaSeleccionada =
+      maquinariaSeleccionada.filter(
+        m => String(m) !== id
+      );
+
+    const maquinaria =
+      document.getElementById("maquinaria-" + id);
+
+    if (maquinaria) {
+      maquinaria.remove();
+    }
+
+    boxMaquinaria.textContent =
+      maquinariaSeleccionada.length > 0
+        ? `${maquinariaSeleccionada.length} maquinaria(s) seleccionada(s)`
+        : "Seleccionar maquinaria";
+
+  };
+
+  // =========================================================
+  // AGREGAR MATERIAL
+  // =========================================================
+
+  document
+    .getElementById("btnMaterial")
+    .addEventListener("click", () => {
+
+      const nombreSelect =
+        boxMaterial.textContent.trim();
+
+      const nombreNuevo =
+        document
+          .getElementById("nuevoMaterial")
+          .value
+          .trim();
+
+      const nombre =
+        nombreNuevo ||
+        (
+          nombreSelect !== "Seleccionar material"
+            ? nombreSelect
+            : ""
+        );
+
+      const cantidad =
+        document
+          .getElementById("cantidadMaterial")
+          .value;
+
+      const costo =
+        document
+          .getElementById("costoMaterial")
+          .value;
+
+      // VALIDAR NOMBRE
+      if (!nombre) {
+
+        mostrarFeedback(
+          "Seleccioná o escribí un material.",
+          "warning"
+        );
+
+        return;
+      }
+
+      // VALIDAR CANTIDAD
+      if (!cantidad || parseFloat(cantidad) <= 0) {
+
+        mostrarFeedback(
+          "Ingresá una cantidad válida.",
+          "warning"
+        );
+
+        return;
+      }
+
+      // CREAR ITEM
+      const item =
+        document.createElement("div");
+
+      item.classList.add("obrero-item");
+
+      item.innerHTML = `
+        <span class="obrero-name">
+          ${nombre} - Cant: ${cantidad} - Costo: ${costo || 0}
+        </span>
+
+        <div class="obrero-actions">
+          <button
+            type="button"
+            class="btn-delete">
+            X
+          </button>
+        </div>
+
+        <input
+          type="hidden"
+          name="material_nombre[]"
+          value="${nombre}">
+
+        <input
+          type="hidden"
+          name="material_cantidad[]"
+          value="${cantidad}">
+
+        <input
+          type="hidden"
+          name="material_costo[]"
+          value="${costo || 0}">
+      `;
+
+      item
+        .querySelector(".btn-delete")
+        .addEventListener("click", () => {
+          item.remove();
+        });
+
+      document
+        .getElementById("listaMateriales")
+        .appendChild(item);
+
+      // LIMPIAR
+      document.getElementById("nuevoMaterial").value = "";
+      document.getElementById("cantidadMaterial").value = "";
+      document.getElementById("costoMaterial").value = "";
+
+      boxMaterial.textContent =
+        "Seleccionar material";
+
+    });
+
+  // =========================================================
+  // AGREGAR HERRAMIENTA
+  // =========================================================
+
+  document
+    .getElementById("btnHerramienta")
+    .addEventListener("click", () => {
+
+      const nombreSelect =
+        boxHerr.textContent.trim();
+
+      const nombreNuevo =
+        document
+          .getElementById("nuevaHerramienta")
+          .value
+          .trim();
+
+      const nombre =
+        nombreNuevo ||
+        (
+          nombreSelect !== "Seleccionar herramienta"
+            ? nombreSelect
+            : ""
+        );
+
+      const cantidad =
+        document
+          .getElementById("cantidadHerramienta")
+          .value;
+
+      // VALIDAR NOMBRE
+      if (!nombre) {
+
+        mostrarFeedback(
+          "Seleccioná o escribí una herramienta.",
+          "warning"
+        );
+
+        return;
+      }
+
+      // VALIDAR CANTIDAD
+      if (!cantidad || parseFloat(cantidad) <= 0) {
+
+        mostrarFeedback(
+          "Ingresá una cantidad válida.",
+          "warning"
+        );
+
+        return;
+      }
+
+      // CREAR ITEM
+      const item =
+        document.createElement("div");
+
+      item.classList.add("obrero-item");
+
+      item.innerHTML = `
+        <span class="obrero-name">
+          ${nombre} - Cant: ${cantidad}
+        </span>
+
+        <div class="obrero-actions">
+          <button
+            type="button"
+            class="btn-delete">
+            X
+          </button>
+        </div>
+
+        <input
+          type="hidden"
+          name="herramienta_nombre[]"
+          value="${nombre}">
+
+        <input
+          type="hidden"
+          name="herramienta_cantidad[]"
+          value="${cantidad}">
+      `;
+
+      item
+        .querySelector(".btn-delete")
+        .addEventListener("click", () => {
+          item.remove();
+        });
+
+      document
+        .getElementById("listaHerramientas")
+        .appendChild(item);
+
+      // LIMPIAR
+      document.getElementById("nuevaHerramienta").value = "";
+      document.getElementById("cantidadHerramienta").value = "";
+
+      boxHerr.textContent =
+        "Seleccionar herramienta";
+
+    });
+
+  // =========================================================
+  // LIMPIAR FORMULARIO
+  // =========================================================
+
+  function limpiarFormulario() {
+
+    // FORMULARIO
+    form.reset();
+
+    // OBRA
+    boxObra.textContent = "Seleccionar obra";
+    inputObra.value = "";
+
+    // ==========================================
+    // LIMPIAR TAREAS
+    // ==========================================
+    tareasSeleccionadas = {};
+
+    contenedorTareas.innerHTML = `
+        <div class="tareas-vacio">
+            Seleccioná una obra para ver sus tareas.
+        </div>
+    `;
+
+    // OBRERO
+    boxObrero.textContent = "Seleccionar obrero";
+
+    // MATERIAL
+    boxMaterial.textContent = "Seleccionar material";
+
+    // HERRAMIENTA
+    boxHerr.textContent = "Seleccionar herramienta";
+
+    // MAQUINARIA
+    boxMaquinaria.textContent = "Seleccionar maquinaria";
+
+    // LISTAS
+    listaObreros.innerHTML = "";
+    horarios.innerHTML = "";
+
+    document
+      .getElementById("listaMateriales")
+      .innerHTML = "";
+
+    document
+      .getElementById("listaHerramientas")
+      .innerHTML = "";
+
+    listaMaquinaria.innerHTML = "";
+
+    // SELECCIONES
+    obrerosSeleccionados = [];
+    maquinariaSeleccionada = [];
+
+    // CAMPOS MATERIAL
+    document.getElementById("nuevoMaterial").value = "";
+    document.getElementById("cantidadMaterial").value = "";
+    document.getElementById("costoMaterial").value = "";
+
+    // CAMPOS HERRAMIENTA
+    document.getElementById("nuevaHerramienta").value = "";
+    document.getElementById("cantidadHerramienta").value = "";
+
+    // CERRAR SELECTS
+    cerrarTodosLosSelects();
+
+  }
+
+  // =========================================================
+  // SUBMIT
+  // =========================================================
+
+  form.addEventListener("submit", async (event) => {
+
+    event.preventDefault();
+
+    ocultarFeedback();
+
+    // =======================================================
+    // DATOS PRINCIPALES
+    // =======================================================
+
+    const idObra =
+      parseInt(inputObra.value, 10);
+
+    const fecha =
+      form
+        .querySelector("input[name='fecha']")
+        .value
+        .trim();
+
+    const finaliza =
+      form
+        .querySelector("select[name='finaliza']")
+        .value;
+
+    // =======================================================
+    // VALIDACIONES
+    // =======================================================
+
+    if (!idObra) {
+
+      mostrarFeedback(
+        "Seleccioná una obra.",
+        "error"
+      );
+
+      return;
+    }
+
+    if (!fecha) {
+
+      mostrarFeedback(
+        "Seleccioná una fecha.",
+        "error"
+      );
+
+      return;
+    }
+
+    if (!obrerosSeleccionados.length) {
+
+      mostrarFeedback(
+        "Seleccioná al menos un obrero.",
+        "error"
+      );
+
+      return;
+    }
+
+    // =======================================================
+    // DESACTIVAR BOTÓN
+    // =======================================================
+
+    btnGuardar.disabled = true;
+    btnGuardar.textContent = "Guardando...";
+
+    try {
+
+      // =====================================================
+      // CSRF
+      // =====================================================
+
+      const csrfResp =
+        await fetch("../api/csrf.php", {
+          credentials: "include"
+        });
+
+      const csrfData =
+        await csrfResp.json();
+
+      const csrfToken =
+        csrfData.token || "";
+
+      // =====================================================
+// FORMDATA
+// =====================================================
+
+const formData = new FormData();
+
+formData.append(
+  "id_obra",
+  String(idObra)
+);
+
+formData.append(
+  "fecha",
+  fecha
+);
+
+formData.append(
+  "finaliza",
+  finaliza
+);
+
+// =====================================================
+// TAREAS
+// =====================================================
+
+Object.entries(tareasSeleccionadas).forEach(
+  ([idTarea, estado]) => {
+
+    formData.append(
+      `tarea_estado[${idTarea}]`,
+      estado
+    );
+
+  }
+);
+
+      // =====================================================
+      // OBREROS + HORARIOS
+      // =====================================================
+
+      obrerosSeleccionados.forEach(id => {
+
+        formData.append(
+          "obreros[]",
+          String(id)
+        );
+
+        const entrada =
+          form.querySelector(
+            `input[name="hora_entrada[${id}]"]`
+          );
+
+        const salida =
+          form.querySelector(
+            `input[name="hora_salida[${id}]"]`
+          );
+
+        formData.append(
+          `hora_entrada[${id}]`,
+          entrada ? entrada.value : ""
+        );
+
+        formData.append(
+          `hora_salida[${id}]`,
+          salida ? salida.value : ""
+        );
+
+      });
+
+      // =====================================================
+      // MATERIALES
+      // =====================================================
+
+      const listaMateriales =
+        document.getElementById("listaMateriales");
+
+      listaMateriales
+        .querySelectorAll(
+          "input[name='material_nombre[]']"
+        )
+        .forEach(input => {
+
+          formData.append(
+            "material_nombre[]",
+            input.value
+          );
+
+        });
+
+      listaMateriales
+        .querySelectorAll(
+          "input[name='material_cantidad[]']"
+        )
+        .forEach(input => {
+
+          formData.append(
+            "material_cantidad[]",
+            input.value
+          );
+
+        });
+
+      listaMateriales
+        .querySelectorAll(
+          "input[name='material_costo[]']"
+        )
+        .forEach(input => {
+
+          formData.append(
+            "material_costo[]",
+            input.value
+          );
+
+        });
+
+      // =====================================================
+      // HERRAMIENTAS
+      // =====================================================
+
+      const listaHerramientas =
+        document.getElementById("listaHerramientas");
+
+      listaHerramientas
+        .querySelectorAll(
+          "input[name='herramienta_nombre[]']"
+        )
+        .forEach(input => {
+
+          formData.append(
+            "herramienta_nombre[]",
+            input.value
+          );
+
+        });
+
+      listaHerramientas
+        .querySelectorAll(
+          "input[name='herramienta_cantidad[]']"
+        )
+        .forEach(input => {
+
+          formData.append(
+            "herramienta_cantidad[]",
+            input.value
+          );
+
+        });
+
+      // =====================================================
+      // MAQUINARIA + HORARIOS + COMBUSTIBLE
+      // =====================================================
+
+      maquinariaSeleccionada.forEach(id => {
+
+        // ID MAQUINARIA
+        formData.append(
+          "maquinaria[]",
+          String(id)
+        );
+
+        // HORARIO SALIDA
+        const salida =
+          form.querySelector(
+            `input[name="retiro_maquinaria[${id}]"]`
+          );
+
+        // HORARIO DEVOLUCIÓN
+        const devolucion =
+          form.querySelector(
+            `input[name="devolucion_maquinaria[${id}]"]`
+          );
+
+        formData.append(
+          `retiro_maquinaria[${id}]`,
+          salida ? salida.value : ""
+        );
+
+        formData.append(
+          `devolucion_maquinaria[${id}]`,
+          devolucion ? devolucion.value : ""
+        );
+
+        // =================================================
+        // COMBUSTIBLE
+        // =================================================
+
+        const litros =
+          form.querySelector(
+            `input[name="litros[${id}]"]`
+          );
+
+        const nombreCombustible =
+          form.querySelector(
+            `select[name="nombre_combustible[${id}]"]`
+          );
+
+        const precioTotal =
+          form.querySelector(
+            `input[name="precio_total[${id}]"]`
+          );
+
+        const valorLitros =
+          litros ? parseFloat(litros.value) : 0;
+
+        // Solo enviar combustible si se ingresaron litros
+        if (
+          litros &&
+          !isNaN(valorLitros) &&
+          valorLitros > 0
+        ) {
+
+          formData.append(
+            `litros[${id}]`,
+            litros.value
+          );
+
+          formData.append(
+            `nombre_combustible[${id}]`,
+            nombreCombustible
+              ? nombreCombustible.value
+              : "Diesel"
+          );
+
+          formData.append(
+            `precio_total[${id}]`,
+            precioTotal
+              ? precioTotal.value || "0"
+              : "0"
+          );
+
+        }
+
+      });
+
+      // =====================================================
+      // ENVIAR AL PHP
+      // =====================================================
+
+      const response =
+        await fetch(
+          "../api/guardar_asistencia.php",
+          {
+            method: "POST",
+
+            headers: {
+              "X-CSRF-Token": csrfToken
+            },
+
+            credentials: "include",
+
+            body: formData
+          }
+        );
+
+      // =====================================================
+      // LEER RESPUESTA
+      // =====================================================
+
+      const text =
+        await response.text();
+
+      let result;
+
+      try {
+
+        result = JSON.parse(text);
+
+      } catch {
+
+        result = {
+          error: text
+        };
+
+      }
+
+      // =====================================================
+      // ERROR
+      // =====================================================
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+
+        mostrarFeedback(
+          result.error ||
+          "Error al guardar la asistencia.",
+          "error"
+        );
+
+        return;
+      }
+
+      // =====================================================
+      // ÉXITO
+      // =====================================================
+
+      mostrarFeedback(
+        result.message ||
+        "Asistencia guardada correctamente.",
+        "success"
+      );
+
+      limpiarFormulario();
+
+      // =====================================================
+      // LIMPIAR
+      // =====================================================
+
+      limpiarFormulario();
+
+    } catch (err) {
+
+      console.error(err);
+
+      mostrarFeedback(
+        err.message ||
+        "No se pudo guardar la asistencia. Revisá los datos.",
+        "error"
+      );
+
+    } finally {
+
+      btnGuardar.disabled = false;
+      btnGuardar.textContent = "Guardar";
+
+    }
+
+  });
+
+});
 </script>
+
 
 </body>
 </html>
