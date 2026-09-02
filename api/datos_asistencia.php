@@ -54,37 +54,73 @@ try {
 
     // ================= MATERIALES =================
     $searchMaterial = trim((string) ($_GET['search_material'] ?? ''));
-    $matSql = 'SELECT DISTINCT nombre FROM recursos WHERE es_material = 1';
-    $matParams = [];
 
-    if ($searchMaterial !== '') {
-        $matSql .= ' AND nombre LIKE ?';
-        $matParams = [$searchMaterial . '%'];
-    }
+$matSql = "
+    SELECT DISTINCT TRIM(nombre) AS nombre
+    FROM recursos
+    WHERE es_material = 1
+      AND nombre IS NOT NULL
+      AND TRIM(nombre) <> ''
+";
 
-    $stmt = $pdo->prepare($matSql);
-    foreach ($matParams as $index => $value) {
-        $stmt->bindValue($index + 1, $value, PDO::PARAM_STR);
-    }
-    $stmt->execute();
-    $materiales = $stmt->fetchAll();
+$matParams = [];
+
+if ($searchMaterial !== '') {
+    $matSql .= " AND TRIM(nombre) LIKE ?";
+    $matParams[] = '%' . $searchMaterial . '%';
+}
+
+$matSql .= " ORDER BY nombre ASC";
+
+$stmt = $pdo->prepare($matSql);
+
+foreach ($matParams as $index => $value) {
+    $stmt->bindValue(
+        $index + 1,
+        $value,
+        PDO::PARAM_STR
+    );
+}
+
+$stmt->execute();
+
+$materiales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // ================= HERRAMIENTAS =================
-    $searchHerramienta = trim((string) ($_GET['search_herramienta'] ?? ''));
-    $herrSql = 'SELECT DISTINCT nombre FROM recursos WHERE es_material = 0';
-    $herrParams = [];
+    $searchHerramienta = trim(
+    (string) ($_GET['search_herramienta'] ?? '')
+);
 
-    if ($searchHerramienta !== '') {
-        $herrSql .= ' AND nombre LIKE ?';
-        $herrParams = [$searchHerramienta . '%'];
-    }
+$herrSql = "
+    SELECT DISTINCT TRIM(nombre) AS nombre
+    FROM recursos
+    WHERE es_material = 0
+      AND nombre IS NOT NULL
+      AND TRIM(nombre) <> ''
+";
 
-    $stmt = $pdo->prepare($herrSql);
-    foreach ($herrParams as $index => $value) {
-        $stmt->bindValue($index + 1, $value, PDO::PARAM_STR);
-    }
-    $stmt->execute();
-    $herramientas = $stmt->fetchAll();
+$herrParams = [];
+
+if ($searchHerramienta !== '') {
+    $herrSql .= " AND TRIM(nombre) LIKE ?";
+    $herrParams[] = '%' . $searchHerramienta . '%';
+}
+
+$herrSql .= " ORDER BY nombre ASC";
+
+$stmt = $pdo->prepare($herrSql);
+
+foreach ($herrParams as $index => $value) {
+    $stmt->bindValue(
+        $index + 1,
+        $value,
+        PDO::PARAM_STR
+    );
+}
+
+$stmt->execute();
+
+$herramientas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // ================= MAQUINARIA =================
     $searchMaq = trim((string) ($_GET['search_maquinaria'] ?? ''));

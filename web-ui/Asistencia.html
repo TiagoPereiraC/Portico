@@ -147,45 +147,112 @@
 
 <!-- MATERIALES -->
 <div class="full">
-<h3>Materiales</h3>
+    <h3>Materiales</h3>
 
-<div class="smart-box">
-  <div class="custom-select">
-    <div class="custom-select-box" id="selectBoxMaterial">Seleccionar material</div>
-    <div class="custom-select-options" id="optionsMaterial"></div>
-  </div>
+    <div class="smart-box">
+        <div class="custom-select" id="customSelectMaterial">
 
-  <input type="text" id="nuevoMaterial" placeholder="Nuevo material">
-</div>
+            <div class="custom-select-box" id="selectBoxMaterial">
+                Seleccionar material
+            </div>
 
-<div class="smart-box">
-<input type="number" id="cantidadMaterial" placeholder="Cantidad">
-<input type="number" id="costoMaterial" placeholder="Costo">
-</div>
+            <div class="custom-select-options" id="optionsMaterial">
 
-<button class="btn" type="button" id="btnMaterial">Agregar</button>
+                <div class="custom-select-search">
+                    <input
+                        type="text"
+                        id="buscarMaterial"
+                        placeholder="Buscar material..."
+                        autocomplete="off"
+                    >
+                </div>
 
-<div id="listaMateriales"></div>
+                <div class="custom-select-list" id="listMaterial">
+                </div>
+
+            </div>
+        </div>
+
+        <input
+            type="text"
+            id="nuevoMaterial"
+            placeholder="Nuevo material"
+        >
+    </div>
+
+    <div class="smart-box">
+        <input
+            type="number"
+            id="cantidadMaterial"
+            placeholder="Cantidad"
+            min="0"
+            step="0.01"
+        >
+
+        <input
+            type="number"
+            id="costoMaterial"
+            placeholder="Costo"
+            min="0"
+            step="0.01"
+        >
+    </div>
+
+    <button class="btn" type="button" id="btnMaterial">
+        Agregar
+    </button>
+
+    <div id="listaMateriales"></div>
 </div>
 
 <!-- HERRAMIENTAS -->
 <div class="full">
-<h3>Herramientas</h3>
+    <h3>Herramientas</h3>
 
-<div class="smart-box">
-  <div class="custom-select">
-    <div class="custom-select-box" id="selectBoxHerramienta">Seleccionar herramienta</div>
-    <div class="custom-select-options" id="optionsHerramienta"></div>
-  </div>
+    <div class="smart-box">
+        <div class="custom-select" id="customSelectHerramienta">
 
-  <input type="text" id="nuevaHerramienta" placeholder="Nueva herramienta">
-</div>
+            <div class="custom-select-box" id="selectBoxHerramienta">
+                Seleccionar herramienta
+            </div>
 
-<input type="number" id="cantidadHerramienta" placeholder="Cantidad">
+            <div class="custom-select-options" id="optionsHerramienta">
 
-<button class="btn" type="button" id="btnHerramienta">Agregar</button>
+                <div class="custom-select-search">
+                    <input
+                        type="text"
+                        id="searchHerramienta"
+                        placeholder="Buscar herramienta..."
+                        autocomplete="off"
+                    >
+                </div>
 
-<div id="listaHerramientas"></div>
+                <div class="custom-select-list" id="listHerramienta">
+                </div>
+
+            </div>
+        </div>
+
+        <input
+            type="text"
+            id="nuevaHerramienta"
+            placeholder="Nueva herramienta"
+        >
+    </div>
+
+    <input
+        type="number"
+        id="cantidadHerramienta"
+        placeholder="Cantidad"
+        min="0"
+        step="0.01"
+    >
+
+    <button class="btn" type="button" id="btnHerramienta">
+        Agregar
+    </button>
+
+    <div id="listaHerramientas"></div>
 </div>
 
 <!-- MAQUINARIA -->
@@ -307,31 +374,150 @@ document.addEventListener("DOMContentLoaded", () => {
         optObrero.appendChild(div);
       });
 
-      // ===== MATERIALES =====
-      data.materiales.forEach(m => {
-        const div = document.createElement("div");
-        div.textContent = m.nombre;
+       /* ==============================
+           MATERIALES
+        ============================== */
 
-        div.onclick = () => {
-          boxMaterial.textContent = m.nombre;
-          optMaterial.style.display = "none";
-        };
+        optMaterial.innerHTML = "";
 
-        optMaterial.appendChild(div);
-      });
+        if (Array.isArray(data.materiales)) {
 
-      // ===== HERRAMIENTAS =====
-      data.herramientas.forEach(h => {
-        const div = document.createElement("div");
-        div.textContent = h.nombre;
+            data.materiales.forEach(m => {
 
-        div.onclick = () => {
-          boxHerr.textContent = h.nombre;
-          optHerr.style.display = "none";
-        };
+                if (!m.nombre) return;
 
-        optHerr.appendChild(div);
-      });
+                const nombre = m.nombre.trim();
+
+                if (!nombre) return;
+
+                const div = document.createElement("div");
+
+                div.textContent = nombre;
+
+                div.className = "select-option";
+
+                div.addEventListener("click", function (e) {
+
+                    e.stopPropagation();
+
+                    boxMaterial.textContent = nombre;
+
+                    optMaterial.style.display = "none";
+                });
+
+                optMaterial.appendChild(div);
+            });
+        }
+
+
+        /* ==============================
+           HERRAMIENTAS
+        ============================== */
+
+        optHerr.innerHTML = "";
+
+        if (Array.isArray(data.herramientas)) {
+
+            data.herramientas.forEach(h => {
+
+                if (!h.nombre) return;
+
+                const nombre = h.nombre.trim();
+
+                if (!nombre) return;
+
+                const div = document.createElement("div");
+
+                div.textContent = nombre;
+
+                div.className = "select-option";
+
+                div.addEventListener("click", function (e) {
+
+                    e.stopPropagation();
+
+                    boxHerr.textContent = nombre;
+
+                    optHerr.style.display = "none";
+                });
+
+                optHerr.appendChild(div);
+            });
+        }
+
+    })
+    .catch(error => {
+
+        console.error(
+            "Error cargando materiales/herramientas:",
+            error
+        );
+
+    });
+
+    /* =========================================
+   ABRIR MATERIAL
+========================================= */
+
+boxMaterial.addEventListener("click", function (e) {
+
+    e.stopPropagation();
+
+    // Cerrar herramienta
+    optHerr.style.display = "none";
+
+    // Alternar material
+    if (optMaterial.style.display === "block") {
+        optMaterial.style.display = "none";
+    } else {
+        optMaterial.style.display = "block";
+    }
+});
+
+
+/* =========================================
+   ABRIR HERRAMIENTA
+========================================= */
+
+boxHerr.addEventListener("click", function (e) {
+
+    e.stopPropagation();
+
+    // Cerrar material
+    optMaterial.style.display = "none";
+
+    // Alternar herramienta
+    if (optHerr.style.display === "block") {
+        optHerr.style.display = "none";
+    } else {
+        optHerr.style.display = "block";
+    }
+});
+
+
+/* =========================================
+   NO CERRAR AL HACER CLICK DENTRO
+========================================= */
+
+optMaterial.addEventListener("click", function (e) {
+    e.stopPropagation();
+});
+
+optHerr.addEventListener("click", function (e) {
+    e.stopPropagation();
+});
+
+
+/* =========================================
+   CERRAR AL HACER CLICK AFUERA
+========================================= */
+
+document.addEventListener("click", function () {
+
+    optMaterial.style.display = "none";
+    optHerr.style.display = "none";
+
+});
 
       // ===== MAQUINARIA =====
 data.maquinaria.forEach(m => {
@@ -664,7 +850,233 @@ data.maquinaria.forEach(m => {
     }
   });
 
+/* =========================================
+   SELECT PERSONALIZADO - MATERIALES
+========================================= */
+
+const selectMaterial = document.getElementById("customSelectMaterial");
+const boxMaterial = document.getElementById("selectBoxMaterial");
+const optionsMaterial = document.getElementById("optionsMaterial");
+const listMaterial = document.getElementById("listMaterial");
+const searchMaterial = document.getElementById("searchMaterial");
+
+
+/* =========================================
+   SELECT PERSONALIZADO - HERRAMIENTAS
+========================================= */
+
+const selectHerramienta = document.getElementById("customSelectHerramienta");
+const boxHerr = document.getElementById("selectBoxHerramienta");
+const optionsHerr = document.getElementById("optionsHerramienta");
+const listHerramienta = document.getElementById("listHerramienta");
+const searchHerramienta = document.getElementById("searchHerramienta");
+
+
+/* =========================================
+   ABRIR / CERRAR MATERIAL
+========================================= */
+
+boxMaterial.addEventListener("click", (e) => {
+
+    e.stopPropagation();
+
+    const abierto = optionsMaterial.style.display === "block";
+
+    cerrarTodosLosSelects();
+
+    if (!abierto) {
+        optionsMaterial.style.display = "block";
+
+        searchMaterial.value = "";
+        filtrarOpciones(
+            listMaterial,
+            "",
+            "No se encontraron materiales."
+        );
+
+        setTimeout(() => {
+            searchMaterial.focus();
+        }, 50);
+    }
 });
+
+
+/* =========================================
+   ABRIR / CERRAR HERRAMIENTA
+========================================= */
+
+boxHerr.addEventListener("click", (e) => {
+
+    e.stopPropagation();
+
+    const abierto = optionsHerr.style.display === "block";
+
+    cerrarTodosLosSelects();
+
+    if (!abierto) {
+        optionsHerr.style.display = "block";
+
+        searchHerramienta.value = "";
+
+        filtrarOpciones(
+            listHerramienta,
+            "",
+            "No se encontraron herramientas."
+        );
+
+        setTimeout(() => {
+            searchHerramienta.focus();
+        }, 50);
+    }
+});
+
+
+/* =========================================
+   CERRAR TODOS
+========================================= */
+
+function cerrarTodosLosSelects() {
+
+    optionsMaterial.style.display = "none";
+    optionsHerr.style.display = "none";
+}
+
+
+/* =========================================
+   CERRAR AL HACER CLICK AFUERA
+========================================= */
+
+document.addEventListener("click", () => {
+    cerrarTodosLosSelects();
+});
+
+
+optionsMaterial.addEventListener("click", (e) => {
+    e.stopPropagation();
+});
+
+optionsHerr.addEventListener("click", (e) => {
+    e.stopPropagation();
+});
+
+
+/* =========================================
+   BUSCAR MATERIAL
+========================================= */
+
+searchMaterial.addEventListener("input", () => {
+
+    const texto = searchMaterial.value.trim().toLowerCase();
+
+    filtrarOpciones(
+        listMaterial,
+        texto,
+        "No se encontraron materiales."
+    );
+});
+
+
+/* =========================================
+   BUSCAR HERRAMIENTA
+========================================= */
+
+searchHerramienta.addEventListener("input", () => {
+
+    const texto = searchHerramienta.value.trim().toLowerCase();
+
+    filtrarOpciones(
+        listHerramienta,
+        texto,
+        "No se encontraron herramientas."
+    );
+});
+
+
+/* =========================================
+   FILTRAR OPCIONES
+========================================= */
+
+function filtrarOpciones(lista, texto, mensaje) {
+
+    const opciones = lista.querySelectorAll(
+        ".custom-select-option"
+    );
+
+    let encontrados = 0;
+
+    opciones.forEach(opcion => {
+
+        const nombre = opcion.dataset.nombre.toLowerCase();
+
+        if (nombre.includes(texto)) {
+
+            opcion.style.display = "block";
+            encontrados++;
+
+        } else {
+
+            opcion.style.display = "none";
+        }
+    });
+
+    let vacio = lista.querySelector(".custom-select-empty");
+
+    if (encontrados === 0) {
+
+        if (!vacio) {
+
+            vacio = document.createElement("div");
+
+            vacio.className = "custom-select-empty";
+            vacio.textContent = mensaje;
+
+            lista.appendChild(vacio);
+        }
+
+        vacio.style.display = "block";
+
+    } else if (vacio) {
+
+        vacio.style.display = "none";
+    }
+}
+
+
+/* =========================================
+   CREAR OPCIÓN
+========================================= */
+
+function crearOpcion(nombre, tipo) {
+
+    const div = document.createElement("div");
+
+    div.className = "custom-select-option";
+
+    div.dataset.nombre = nombre;
+
+    div.textContent = nombre;
+
+    div.addEventListener("click", (e) => {
+
+        e.stopPropagation();
+
+        if (tipo === "material") {
+
+            boxMaterial.textContent = nombre;
+            optionsMaterial.style.display = "none";
+            searchMaterial.value = "";
+
+        } else {
+
+            boxHerr.textContent = nombre;
+            optionsHerr.style.display = "none";
+            searchHerramienta.value = "";
+        }
+    });
+
+    return div;
+}
+
 </script>
 
 </body>

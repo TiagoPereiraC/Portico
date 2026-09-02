@@ -223,6 +223,78 @@ obraForm.addEventListener("submit", async (event) => {
   }
 });
 
+// =========================================================
+// COMPLETAR ACTIVIDAD DESDE EL DETALLE DE LA OBRA
+// =========================================================
+
+document.addEventListener("click", (event) => {
+  const button = event.target.closest(
+    "button[data-task-action='complete']"
+  );
+
+  if (!button) {
+    return;
+  }
+
+  const idTarea = Number.parseInt(
+    button.dataset.tareaId,
+    10
+  );
+
+  const idObra = Number.parseInt(
+    button.dataset.obraId,
+    10
+  );
+
+  if (!idTarea || !idObra) {
+    setFeedback(
+      "No se pudo identificar la actividad.",
+      "error"
+    );
+    return;
+  }
+
+  abrirConfirmacion({
+    title: "Completar actividad",
+
+    message:
+      "¿Estás seguro de que querés marcar esta actividad como completada?",
+
+    acceptLabel: "Completar",
+
+    onAccept: async () => {
+      try {
+        if (apiBase && !csrfToken) {
+          csrfToken = await obtenerCsrf();
+        }
+
+        const data = await completarTarea(idTarea);
+
+        setFeedback(
+          data.message ||
+            "Actividad marcada como completada correctamente.",
+          "success"
+        );
+
+        // Volver a cargar el detalle de la obra
+        await cargarDetalleObra(idObra);
+
+        // Actualizar también la lista de obras
+        await cargarObras();
+
+      } catch (error) {
+        console.error(error);
+
+        setFeedback(
+          error.message ||
+            "No se pudo completar la actividad.",
+          "error"
+        );
+      }
+    },
+  });
+});
+
 document.addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-action]");
   if (!button) {
@@ -1245,7 +1317,6 @@ function renderDetalle(data) {
   }
 
   // =========================================================
-  // =========================================================
   // ACTIVIDADES DEL CONTRATO
   // =========================================================
 
@@ -1354,26 +1425,40 @@ function renderDetalle(data) {
       detailTareasPendientesEmpty.classList.add("hidden");
 
       detailTareasPendientesBody.innerHTML =
-        tareasPendientes
-          .map((tarea) => {
-            const importe = Number(tarea.importe || 0);
+  tareasPendientes
+    .map((tarea) => {
+      const importe = Number(tarea.importe || 0);
 
-            return `
-              <tr>
-                <td>
-                  ${escapeHtml(tarea.descripcion || "—")}
-                </td>
+      return `
+        <tr>
+          <td>
+            ${escapeHtml(tarea.descripcion || "—")}
+          </td>
 
-                <td>
-                  $ ${importe.toLocaleString("es-UY", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </td>
-              </tr>
-            `;
-          })
-          .join("");
+          <td>
+            $ ${importe.toLocaleString("es-UY", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </td>
+
+          <td>
+            <button
+              type="button"
+              class="action-btn complete-task-detail"
+              data-task-action="complete"
+              data-tarea-id="${tarea.id_tarea}"
+              data-obra-id="${obra.id_obra}"
+              title="Marcar actividad como completada"
+            >
+            <i class="fas fa-check"></i>
+              Completar
+            </button>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
     } else {
       detailTareasPendientesWrap.classList.add("hidden");
       detailTareasPendientesEmpty.classList.remove("hidden");
@@ -1794,6 +1879,49 @@ async function cambiarEstadoObra(idObra, activo) {
     "obras_cambiar_estado",
     { id_obra: idObra, activo: activo },
     "obras_cambiar_estado_response",
+  );
+}
+
+
+async function completarTarea(idTarea) {
+  if (apiBase) {
+    const response = await fetch(`${apiBase}/Obras.php`, {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken,
+      },
+
+      credentials: "include",
+
+      body: JSON.stringify({
+        accion: "completar_tarea",
+        id_tarea: idTarea,
+      }),
+    });
+
+    const data = await parseJsonResponse(
+      response,
+      "No se pudo completar la actividad."
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+          "No se pudo completar la actividad."
+      );
+    }
+
+    return data;
+  }
+
+  return sendDesktopRequest(
+    "obras_completar_tarea",
+    {
+      id_tarea: idTarea,
+    },
+    "obras_completar_tarea_response"
   );
 }
 

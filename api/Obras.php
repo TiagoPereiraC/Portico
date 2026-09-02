@@ -45,24 +45,59 @@ try {
             break;
 
         case 'POST':
-            validarCsrf();
-            $body = leerJson();
-            if (($body['accion'] ?? '') === 'cambiar_estado') {
-                if (!$esAdmin) {
-                    http_response_code(403);
-                    echo json_encode(['error' => 'No tenés permisos para gestionar obras.']);
-                    exit;
-                }
-                responderCambioEstado($pdo, $body);
-                break;
-            }
-            if (!$esAdmin) {
-                http_response_code(403);
-                echo json_encode(['error' => 'No tenés permisos para gestionar obras.']);
-                exit;
-            }
-            responderGuardado($pdo, $body);
-            break;
+    validarCsrf();
+    $body = leerJson();
+
+    // =====================================================
+    // CAMBIAR ESTADO DE LA OBRA
+    // =====================================================
+
+    if (($body['accion'] ?? '') === 'cambiar_estado') {
+
+        if (!$esAdmin) {
+            http_response_code(403);
+            echo json_encode([
+                'error' => 'No tenés permisos para gestionar obras.'
+            ]);
+            exit;
+        }
+
+        responderCambioEstado($pdo, $body);
+        break;
+    }
+
+    // =====================================================
+    // COMPLETAR ACTIVIDAD DEL CONTRATO
+    // =====================================================
+
+    if (($body['accion'] ?? '') === 'completar_tarea') {
+
+        if (!$esAdmin) {
+            http_response_code(403);
+            echo json_encode([
+                'error' => 'No tenés permisos para gestionar obras.'
+            ]);
+            exit;
+        }
+
+        responderCompletarTarea($pdo, $body);
+        break;
+    }
+
+    // =====================================================
+    // GUARDAR / EDITAR OBRA
+    // =====================================================
+
+    if (!$esAdmin) {
+        http_response_code(403);
+        echo json_encode([
+            'error' => 'No tenés permisos para gestionar obras.'
+        ]);
+        exit;
+    }
+
+    responderGuardado($pdo, $body);
+    break;
 
         case 'DELETE':
             if (!$esAdmin) {
@@ -247,6 +282,107 @@ function responderCambioEstado(PDO $pdo, array $body): void
     echo json_encode([
         'success' => true,
         'message' => 'Estado de la obra actualizado correctamente.',
+    ]);
+}
+
+function responderCompletarTarea(PDO $pdo, array $body): void
+{
+    $idTarea = isset($body['id_tarea'])
+        ? (int) $body['id_tarea']
+        : 0;
+
+    if ($idTarea <= 0) {
+        throw new InvalidArgumentException(
+            'Debés indicar una actividad válida.'
+        );
+    }
+
+    // =====================================================
+    // VERIFICAR QUE LA ACTIVIDAD EXISTA
+    // Y OBTENER LA OBRA A LA QUE PERTENECE
+    // =====================================================
+
+    $stmt = $pdo->prepare(
+        'SELECT
+            ct.id_tarea,
+            ct.id_contrato,
+            ct.descripcion,
+            ct.estado,
+            c.id_obra
+         FROM contrato_tareas ct
+         INNER JOIN contratos c
+             ON c.id_contrato = ct.id_contrato
+         WHERE ct.id_tarea = ?
+         LIMIT 1'
+    );
+
+    $stmt->execute([$idTarea]);
+
+    $tarea = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$tarea) {
+        throw new RuntimeException(
+            'La actividad indicada no existe.'
+        );
+    }
+
+    // =====================================================
+    // SI YA ESTÁ COMPLETADA, NO HACER NADA
+    // =====================================================
+
+    if (
+        strtolower((string) $tarea['estado']) === 'completada'
+    ) {
+        echo json_encode([
+            'success' => true,
+            'message' => 'La actividad ya estaba completada.'
+        ]);
+        return;
+    }
+
+    // =====================================================
+    // MARCAR COMO COMPLETADA
+    // =====================================================
+
+    $stmt = $pdo->prepare(
+        'UPDATE contrato_tareas
+         SET estado = ?,
+             fecha_completada = CURDATE()
+         WHERE id_tarea = ?'
+    );
+
+    $stmt->execute([
+        'Completada',
+        $idTarea
+    ]);
+
+    // =====================================================
+    // AUDITORÍA
+    // =====================================================
+
+    registrarAuditoria(
+        $pdo,
+        'completar_tarea',
+        'contrato_tareas',
+        $idTarea,
+        [
+            'id_obra' => (int) $tarea['id_obra'],
+            'descripcion' => $tarea['descripcion'],
+            'estado_anterior' => $tarea['estado'],
+            'estado_nuevo' => 'Completada'
+        ]
+    );
+
+    // =====================================================
+    // RESPUESTA AL JAVASCRIPT
+    // =====================================================
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Actividad marcada como completada correctamente.',
+        'id_tarea' => $idTarea,
+        'estado' => 'Completada',
+        'fecha_completada' => date('Y-m-d')
     ]);
 }
 
@@ -737,26 +873,61 @@ function extraerContrato(array $body): ?array
 
 function guardarContrato(PDO $pdo, int $idObra, array $contrato): int
 {
-    // Eliminar el contrato anterior.
-    // Sus tareas también se eliminan por ON DELETE CASCADE.
-    $pdo->prepare(
-        'DELETE FROM contratos WHERE id_obra = ?'
-    )->execute([$idObra]);
+    $stmt = $pdo->prepare(
+        'SELECT id_contrato
+         FROM contratos
+         WHERE id_obra = ?
+         LIMIT 1'
+    );
+
+    $stmt->execute([$idObra]);
+    $contratoExistente = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($contratoExistente) {
+        $idContrato = (int) $contratoExistente['id_contrato'];
+
+        $stmt = $pdo->prepare(
+            'UPDATE contratos
+             SET numero_contrato = ?,
+                 descripcion = ?,
+                 fecha_inicio = ?,
+                 fecha_fin = ?,
+                 importe_total = ?
+             WHERE id_contrato = ?'
+        );
+
+        $stmt->execute([
+            $contrato['numero_contrato'] ?? null,
+            $contrato['descripcion'] ?? null,
+            $contrato['fecha_inicio'] ?? null,
+            $contrato['fecha_fin'] ?? null,
+            $contrato['importe_total'] ?? 0,
+            $idContrato
+        ]);
+
+        return $idContrato;
+    }
 
     $stmt = $pdo->prepare(
         'INSERT INTO contratos (
             id_obra,
-            archivo,
-            nombre_archivo,
-            fecha_subida
-        )
-        VALUES (?, ?, ?, CURDATE())'
+            numero_contrato,
+            descripcion,
+            fecha_inicio,
+            fecha_fin,
+            importe_total
+         )
+         VALUES (?, ?, ?, ?, ?, ?)'
     );
 
-    $stmt->bindValue(1, $idObra, PDO::PARAM_INT);
-    $stmt->bindValue(2, $contrato['archivo'], PDO::PARAM_LOB);
-    $stmt->bindValue(3, $contrato['nombre_archivo']);
-    $stmt->execute();
+    $stmt->execute([
+        $idObra,
+        $contrato['numero_contrato'] ?? null,
+        $contrato['descripcion'] ?? null,
+        $contrato['fecha_inicio'] ?? null,
+        $contrato['fecha_fin'] ?? null,
+        $contrato['importe_total'] ?? 0
+    ]);
 
     return (int) $pdo->lastInsertId();
 }
@@ -869,39 +1040,121 @@ function validarTareas(mixed $tareas): array
 
 function guardarTareas(PDO $pdo, int $idContrato, array $tareas): void
 {
-    // Al editar, reemplazamos las actividades actuales
-    // por las que vienen del formulario.
-    $stmt = $pdo->prepare(
-        'DELETE FROM contrato_tareas
-         WHERE id_contrato = ?'
-    );
-
-    $stmt->execute([$idContrato]);
-
-    if (empty($tareas)) {
-        return;
-    }
-
-    $stmt = $pdo->prepare(
-        'INSERT INTO contrato_tareas (
-            id_contrato,
-            id_tarea_origen,
-            descripcion,
-            importe,
-            estado,
-            fecha_completada
-        )
-        VALUES (?, ?, ?, ?, ?, ?)'
-    );
-
     foreach ($tareas as $tarea) {
+
+        $idTarea = isset($tarea['id_tarea'])
+            ? (int) $tarea['id_tarea']
+            : 0;
+
+        $descripcion = trim(
+            (string) ($tarea['descripcion'] ?? '')
+        );
+
+        $importe = isset($tarea['importe'])
+            ? (float) $tarea['importe']
+            : 0;
+
+        $estado = trim(
+            (string) ($tarea['estado'] ?? 'Pendiente')
+        );
+
+        $fechaCompletada = !empty($tarea['fecha_completada'])
+            ? $tarea['fecha_completada']
+            : null;
+
+        if ($descripcion === '') {
+            continue;
+        }
+
+        /*
+         * Si la tarea ya existe, se actualiza.
+         * Esto permite conservar su id_tarea.
+         */
+        if ($idTarea > 0) {
+
+            $stmt = $pdo->prepare(
+                'SELECT id_tarea, estado, fecha_completada
+                 FROM contrato_tareas
+                 WHERE id_tarea = ?
+                   AND id_contrato = ?
+                 LIMIT 1'
+            );
+
+            $stmt->execute([
+                $idTarea,
+                $idContrato
+            ]);
+
+            $tareaExistente = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($tareaExistente) {
+
+                /*
+                 * Si ya estaba completada, no permitimos
+                 * que un guardado normal la vuelva a Pendiente.
+                 */
+                if (
+                    strtolower(
+                        (string) $tareaExistente['estado']
+                    ) === 'completada'
+                ) {
+                    $estado = 'Completada';
+
+                    $fechaCompletada =
+                        $tareaExistente['fecha_completada']
+                        ?: $fechaCompletada;
+                }
+
+                $stmt = $pdo->prepare(
+                    'UPDATE contrato_tareas
+                     SET descripcion = ?,
+                         importe = ?,
+                         estado = ?,
+                         fecha_completada = ?
+                     WHERE id_tarea = ?
+                       AND id_contrato = ?'
+                );
+
+                $stmt->execute([
+                    $descripcion,
+                    $importe,
+                    $estado,
+                    $fechaCompletada,
+                    $idTarea,
+                    $idContrato
+                ]);
+
+                continue;
+            }
+        }
+
+        /*
+         * La tarea no existe: se crea.
+         */
+        $idTareaOrigen = isset($tarea['id_tarea_origen'])
+            && $tarea['id_tarea_origen'] !== null
+            ? (int) $tarea['id_tarea_origen']
+            : null;
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO contrato_tareas (
+                id_contrato,
+                id_tarea_origen,
+                descripcion,
+                importe,
+                estado,
+                fecha_completada
+             )
+             VALUES (?, ?, ?, ?, ?, ?)'
+        );
+
         $stmt->execute([
             $idContrato,
-            $tarea['id_tarea_origen'],
-            $tarea['descripcion'],
-            $tarea['importe'],
-            $tarea['estado'],
-            $tarea['fecha_completada'],
+            $idTareaOrigen,
+            $descripcion,
+            $importe,
+            $estado,
+            $fechaCompletada
         ]);
     }
 }

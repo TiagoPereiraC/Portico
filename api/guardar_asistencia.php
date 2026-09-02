@@ -262,23 +262,6 @@ function guardarCombustible(PDO $pdo, string $fecha, int $id_obra): void
         return;
     }
 
-    // Asegurar que la tabla existe si no fue creada previamente
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS combustible (
-            id_combustible INT(11) NOT NULL AUTO_INCREMENT,
-            nombre_combustible VARCHAR(50) NOT NULL DEFAULT 'Diesel',
-            litros DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-            precio_unitario DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-            precio_total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-            fecha DATE NOT NULL,
-            id_obra INT(11) NOT NULL,
-            id_maquinaria INT(11) NOT NULL,
-            PRIMARY KEY (id_combustible),
-            KEY fk_combustible_obra (id_obra),
-            KEY fk_combustible_maquinaria (id_maquinaria)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-    ");
-
     $stmt = $pdo->prepare("
         INSERT INTO combustible
         (nombre_combustible, litros, precio_unitario, precio_total, fecha, id_obra, id_maquinaria)
@@ -287,6 +270,7 @@ function guardarCombustible(PDO $pdo, string $fecha, int $id_obra): void
 
     foreach ($_POST['litros'] as $id_maquinaria => $litros) {
         $litros = (float) $litros;
+
         if ($litros <= 0) {
             continue;
         }
@@ -295,11 +279,12 @@ function guardarCombustible(PDO $pdo, string $fecha, int $id_obra): void
             ? trim((string) $_POST['nombre_combustible'][$id_maquinaria])
             : 'Diesel';
 
-        $precio_total = isset($_POST['precio_total'][$id_maquinaria]) && is_numeric($_POST['precio_total'][$id_maquinaria])
+        $precio_total = isset($_POST['precio_total'][$id_maquinaria])
+            && is_numeric($_POST['precio_total'][$id_maquinaria])
             ? (float) $_POST['precio_total'][$id_maquinaria]
             : 0.0;
 
-        $precio_unitario = ($litros > 0) ? round($precio_total / $litros, 2) : 0.0;
+        $precio_unitario = round($precio_total / $litros, 2);
 
         $stmt->execute([
             $nombre_combustible,

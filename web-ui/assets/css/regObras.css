@@ -1669,3 +1669,30 @@ tbody tr:hover {
         grid-template-columns: 1fr;
     }
 }
+
+.complete-task-detail {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+    padding: 2px 50px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.1;
+    transition: all 0.2s ease;
+}
+
+.complete-task-detail:hover {
+    background: #c8e6c9;
+    border-color: #81c784;
+    color: #1b5e20;
+}
+
+.complete-task-detail i {
+    font-size: 11px;
+}
