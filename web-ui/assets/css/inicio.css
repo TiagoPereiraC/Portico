@@ -124,7 +124,7 @@ nav.main-top-nav {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #ffffff;
+    border: 2px solid #c9c9c9;
     box-shadow: 0 2px 5px rgba(220, 38, 38, 0.4);
     animation: pulseBadge 2s infinite;
 }
@@ -139,7 +139,7 @@ nav.main-top-nav {
     position: absolute;
     top: calc(100% + 12px);
     right: 0;
-    width: 380px;
+    width: 500px;
     max-width: calc(100vw - 32px);
     background: #ffffff;
     border: 1px solid #e2e8f0;
