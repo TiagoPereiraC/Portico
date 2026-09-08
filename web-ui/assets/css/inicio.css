@@ -35,8 +35,8 @@
 
 body {
     font-family: "Inter", sans-serif;
-    background-color: #f4f6f9;
-    color: var(--text-dark);
+    background-color: var(--bg);
+    color: var(--text-subtle);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -414,14 +414,14 @@ nav.dashboard-nav-tabs {
 .header-left .welcome-title {
     font-size: 26px;
     font-weight: 800;
-    color: #0f172a;
+    color: #FFFFFF;
     letter-spacing: -0.5px;
     margin-bottom: 4px;
 }
 
 .header-left .welcome-subtitle {
     font-size: 14px;
-    color: #64748b;
+    color: #FFFFFF;
     font-weight: 400;
 }
 
@@ -742,7 +742,6 @@ nav.dashboard-nav-tabs {
     padding: 20px 24px 24px 24px;
     border-top: 1px solid #f1f5f9;
     background: #fafafa;
-}
 }
 
 .alert-empty-notice {
