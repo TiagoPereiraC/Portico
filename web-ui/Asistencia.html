@@ -786,117 +786,101 @@ if (actualmenteCompletada) {
         optMaquinaria.style.display = "none";
 
         // ============================================
-        // CONTENEDOR DE MAQUINARIA
+        // CONTENEDOR DE MAQUINARIA + COMBUSTIBLE
         // ============================================
 
         const item = document.createElement("div");
-
         item.classList.add("item-box");
         item.id = "maquinaria-" + id;
 
         item.innerHTML = `
-          <div class="item-box">
-
-            <span class="obrero-name">
-              ${nombreMaquinaria}
-            </span>
-
-            <!-- HORARIOS -->
-            <div
-              class="smart-box"
-              style="margin-top:10px">
-
-              <div>
-                <label>Hora de salida</label>
-
-                <input
-                  type="time"
-                  name="retiro_maquinaria[${id}]"
-                  required>
-              </div>
-
-              <div>
-                <label>Hora de devolución</label>
-
-                <input
-                  type="time"
-                  name="devolucion_maquinaria[${id}]"
-                  required>
-              </div>
-
-            </div>
-
-            <!-- COMBUSTIBLE -->
-            <div
-              class="smart-box"
-              style="
-                margin-top:10px;
-                border-top:1px dashed #ccc;
-                padding-top:10px;
-              ">
-
-              <div>
-                <label>Litros Combustible</label>
-
-                <input
-                  type="number"
-                  step="0.01"
-                  name="litros[${id}]"
-                  placeholder="Ej: 50.5"
-                  min="0">
-              </div>
-
-              <div>
-                <label>Tipo Combustible</label>
-
-                <select
-                  name="nombre_combustible[${id}]">
-
-                  <option value="Diesel">
-                    Diesel
-                  </option>
-
-                  <option value="Nafta">
-                    Nafta
-                  </option>
-
-                </select>
-              </div>
-
-              <div>
-                <label>Precio Total ($)</label>
-
-                <input
-                  type="number"
-                  step="0.01"
-                  name="precio_total[${id}]"
-                  placeholder="Ej: 2500"
-                  min="0">
-              </div>
-
-            </div>
-
-            <!-- ELIMINAR -->
-            <div class="item-actions">
-
-              <button
-                type="button"
-                class="btn-delete"
-                onclick="eliminarMaquinaria('${id}')">
-                X
-              </button>
-
-            </div>
-
-            <input
-              type="hidden"
-              name="maquinaria[]"
-              value="${id}">
-
+          <div class="item-header">
+            <span class="maq-nombre">🚜 ${nombreMaquinaria}</span>
+            <button type="button" class="btn-delete" onclick="eliminarMaquinaria('${id}')" title="Eliminar maquinaria">✕</button>
           </div>
+
+          <!-- Horarios de uso -->
+          <div class="maq-grid">
+            <div>
+              <label>Hora de salida</label>
+              <input type="time" name="retiro_maquinaria[${id}]" required>
+            </div>
+            <div>
+              <label>Hora de devolución</label>
+              <input type="time" name="devolucion_maquinaria[${id}]" required>
+            </div>
+          </div>
+
+          <!-- Consumo y Costo de Combustible -->
+          <div class="combustible-subtitle">⛽ Consumo y Gasto de Combustible</div>
+          <div class="maq-grid">
+            <div>
+              <label>Litros cargados</label>
+              <input type="number" step="0.01" min="0" 
+                     class="litros-cargados" 
+                     name="litros_cargados[${id}]" 
+                     placeholder="Ej: 50.0">
+            </div>
+            <div>
+              <label>Litros al regreso</label>
+              <input type="number" step="0.01" min="0" 
+                     class="litros-regreso" 
+                     name="litros_regreso[${id}]" 
+                     placeholder="Ej: 15.0">
+            </div>
+            <div>
+              <label>🔒 Litros consumidos (calculado)</label>
+              <input type="number" step="0.01" min="0"
+                     class="field-calculated litros-consumidos" 
+                     name="litros[${id}]" readonly value="0.00">
+            </div>
+            <div>
+              <label>Tipo de combustible</label>
+              <select name="nombre_combustible[${id}]">
+                <option value="Diesel">Diésel</option>
+                <option value="Nafta">Nafta</option>
+              </select>
+            </div>
+            <div>
+              <label>Precio por litro ($)</label>
+              <input type="number" step="0.01" min="0" 
+                     class="precio-litro" 
+                     name="precio_litro[${id}]" 
+                     placeholder="Ej: 1180.00">
+            </div>
+            <div>
+              <label>🔒 Costo total ($) (calculado)</label>
+              <input type="number" step="0.01" min="0"
+                     class="field-calculated costo-total" 
+                     name="precio_total[${id}]" readonly value="0.00">
+            </div>
+          </div>
+
+          <input type="hidden" name="maquinaria[]" value="${id}">
         `;
 
         listaMaquinaria.appendChild(item);
+
+        // ---- LÓGICA DE CÁLCULO EN VIVO PARA ESTA MÁQUINA ----
+        const cargados = item.querySelector('.litros-cargados');
+        const regreso = item.querySelector('.litros-regreso');
+        const consumidos = item.querySelector('.litros-consumidos');
+        const precio = item.querySelector('.precio-litro');
+        const total = item.querySelector('.costo-total');
+
+        function calcularCombustible() {
+          const c = parseFloat(cargados.value) || 0;
+          const r = parseFloat(regreso.value) || 0;
+          const p = parseFloat(precio.value) || 0;
+          let consumed = c - r;
+          if (consumed < 0) consumed = 0;
+          consumidos.value = consumed.toFixed(2);
+          total.value = (consumed * p).toFixed(2);
+        }
+
+        cargados.addEventListener('input', calcularCombustible);
+        regreso.addEventListener('input', calcularCombustible);
+        precio.addEventListener('input', calcularCombustible);
 
       });
 

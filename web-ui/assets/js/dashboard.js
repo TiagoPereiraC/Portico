@@ -1,12 +1,70 @@
 document.addEventListener("DOMContentLoaded", () => {
     inicializarFecha();
+    inicializarDropdownNotificaciones();
+    inicializarColapsableAnaliticas();
     inicializarTabsAlertas();
     cargarMetricasDashboard();
 });
 
+function inicializarDropdownNotificaciones() {
+    const btn = document.getElementById("btnNotifications");
+    const dropdown = document.getElementById("notificationsDropdown");
+    const wrapper = document.getElementById("notificationsWrapper");
+
+    if (!btn || !dropdown) return;
+
+    btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const estaAbierto = dropdown.style.display === "block";
+        dropdown.style.display = estaAbierto ? "none" : "block";
+    });
+
+    document.addEventListener("click", (e) => {
+        if (wrapper && !wrapper.contains(e.target)) {
+            dropdown.style.display = "none";
+        }
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && dropdown.style.display === "block") {
+            dropdown.style.display = "none";
+        }
+    });
+}
+
+function inicializarColapsableAnaliticas() {
+    const btn = document.getElementById("btnToggleAnalytics");
+    const content = document.getElementById("analyticsContent");
+    const text = document.getElementById("toggleAnalyticsText");
+    const chevron = document.getElementById("toggleAnalyticsChevron");
+
+    if (!btn || !content) return;
+
+    btn.addEventListener("click", () => {
+        const estaOculto = content.style.display === "none" || content.style.display === "";
+        if (estaOculto) {
+            content.style.display = "block";
+            if (text) text.textContent = "Ocultar gráficos";
+            if (chevron) chevron.classList.add("is-rotated");
+            btn.setAttribute("aria-expanded", "true");
+
+            // Redimensionar gráficos para evitar distorsión tras desplegar
+            setTimeout(() => {
+                if (chartCargosInstance) chartCargosInstance.resize();
+                if (chartHorasInstance) chartHorasInstance.resize();
+            }, 50);
+        } else {
+            content.style.display = "none";
+            if (text) text.textContent = "Desplegar gráficos";
+            if (chevron) chevron.classList.remove("is-rotated");
+            btn.setAttribute("aria-expanded", "false");
+        }
+    });
+}
+
 function inicializarTabsAlertas() {
-    const btnMaq = document.getElementById("tabAlertasMaq");
-    const btnObr = document.getElementById("tabAlertasObr");
+    const btnMaq = document.getElementById("tabNotifMaq") || document.getElementById("tabAlertasMaq");
+    const btnObr = document.getElementById("tabNotifObr") || document.getElementById("tabAlertasObr");
 
     if (btnMaq) {
         btnMaq.addEventListener("click", () => cambiarTabAlertas("maquinaria"));
@@ -16,22 +74,18 @@ function inicializarTabsAlertas() {
     }
 }
 
-// Paleta de colores de Pórtico para gráficos
+// Paleta ejecutiva moderna para gráficos (libre de saturación en rojo)
 const COLORES_PORTICO = [
-    "#954043",
-    "#ffb300",
-    "#e5ff00",
-    "#ff0000",
-    "#8e3a84",
-    "#00f825",
-    "#00ffe1",
-    "#475569",
-    "#7b88ff",
-    "#f990f5",
-    "#50783e",
-    "#7b00ff",
-    "#004a00",  
-
+    "#3b82f6", // Azul profesional
+    "#10b981", // Verde esmeralda
+    "#f59e0b", // Ámbar suave
+    "#6366f1", // Índigo
+    "#0d9488", // Turquesa / cerceta
+    "#8b5cf6", // Violeta suave
+    "#64748b", // Pizarra
+    "#ec4899", // Rosa suave
+    "#06b6d4", // Cyan
+    "#84cc16"  // Lima suave
 ];
 
 let chartCargosInstance = null;
@@ -231,15 +285,15 @@ function renderizarResumenOperativo(kpis) {
 
 function cambiarTabAlertas(tipo) {
     tabAlertaActual = tipo;
-    const btnMaq = document.getElementById("tabAlertasMaq");
-    const btnObr = document.getElementById("tabAlertasObr");
+    const btnMaq = document.getElementById("tabNotifMaq") || document.getElementById("tabAlertasMaq");
+    const btnObr = document.getElementById("tabNotifObr") || document.getElementById("tabAlertasObr");
 
     if (tipo === "maquinaria") {
-        if (btnMaq) btnMaq.className = "tab-btn active";
-        if (btnObr) btnObr.className = "tab-btn";
+        if (btnMaq) btnMaq.classList.add("active");
+        if (btnObr) btnObr.classList.remove("active");
     } else {
-        if (btnMaq) btnMaq.className = "tab-btn";
-        if (btnObr) btnObr.className = "tab-btn active";
+        if (btnMaq) btnMaq.classList.remove("active");
+        if (btnObr) btnObr.classList.add("active");
     }
 
     renderizarAlertas();
@@ -325,8 +379,8 @@ function renderizarGraficoHoras(obras) {
                 datasets: [{
                     label: "Horas Trabajadas",
                     data: valores,
-                    backgroundColor: "#b54747",
-                    hoverBackgroundColor: "#954043",
+                    backgroundColor: "#3b82f6",
+                    hoverBackgroundColor: "#2563eb",
                     borderRadius: 6
                 }]
             },
@@ -368,12 +422,30 @@ function renderizarGraficoHoras(obras) {
 }
 
 function renderizarAlertas() {
-    const container = document.getElementById("alertsList");
+    const container = document.getElementById("notifListBody") || document.getElementById("alertsList");
+    const badge = document.getElementById("notificationsBadge");
+    const countTag = document.getElementById("notifCountTag");
+
+    const totalAlertas = (alertasMaquinariaCache?.length || 0) + (alertasContratosCache?.length || 0);
+
+    if (badge) {
+        if (totalAlertas > 0) {
+            badge.textContent = totalAlertas > 99 ? "99+" : String(totalAlertas);
+            badge.style.display = "inline-flex";
+        } else {
+            badge.style.display = "none";
+        }
+    }
+
+    if (countTag) {
+        countTag.textContent = `${totalAlertas} alerta${totalAlertas === 1 ? "" : "s"}`;
+    }
+
     if (!container) return;
 
     const lista = (tabAlertaActual === "maquinaria") ? alertasMaquinariaCache : alertasContratosCache;
 
-    if (!lista.length) {
+    if (!lista || !lista.length) {
         const mensajeVacio = (tabAlertaActual === "maquinaria")
             ? "Todos los certificados y documentación técnica de maquinaria se encuentran al día."
             : "Todos los contratos de personal se encuentran vigentes y al día.";

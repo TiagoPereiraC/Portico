@@ -20,9 +20,39 @@
                     alt="Pórtico Construcciones y Servicios"
                 />
             </div>
-            <div class="user-pill">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <span class="user-pill-name">Admin</span>
+            <div class="nav-user-actions">
+                <!-- Botón de Notificaciones con Campana y Badge -->
+                <div class="notifications-wrapper" id="notificationsWrapper">
+                    <button type="button" class="notifications-btn" id="btnNotifications" aria-label="Notificaciones del sistema" title="Ver alertas de vencimiento">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                        <span class="notifications-badge" id="notificationsBadge" style="display: none;">0</span>
+                    </button>
+
+                    <!-- Menú Desplegable Flotante de Notificaciones -->
+                    <div class="notifications-dropdown" id="notificationsDropdown" style="display: none;">
+                        <div class="notif-dropdown-header">
+                            <div class="notif-header-title">
+                                <h4>Alertas y Vencimientos</h4>
+                                <span class="notif-count-tag" id="notifCountTag">0 alertas</span>
+                            </div>
+                            <div class="notif-tabs">
+                                <button type="button" class="notif-tab active" id="tabNotifMaq">Maquinaria</button>
+                                <button type="button" class="notif-tab" id="tabNotifObr">Contratos Obreros</button>
+                            </div>
+                        </div>
+                        <div class="notif-list-body" id="notifListBody">
+                            <p class="empty-hint">Cargando alertas del sistema...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="user-pill">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span class="user-pill-name">Admin</span>
+                </div>
             </div>
         </nav>
 
@@ -32,7 +62,8 @@
                 <a href="PanelInicio.html" class="nav-tab-item active">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                     <span>Panel</span>
-                                <a href="Obras.html" class="nav-tab-item">
+                </a>
+                <a href="Obras.html" class="nav-tab-item">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1 8 8 0 0 0-16 0"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15h16"/></svg>
                     <span>Obras</span>
                 </a>
@@ -90,12 +121,12 @@
                 </div>
             </header>
 
-            <!-- Fila de 4 KPI Cards -->
+            <!-- Fila de 4 KPI Cards Principales (Limpio y Despejado) -->
             <section class="kpi-grid">
                 <div class="kpi-card">
                     <div class="kpi-top">
                         <span class="kpi-label">Obras & Proyectos</span>
-                        <div class="kpi-icon-wrap icon-burgundy">
+                        <div class="kpi-icon-wrap icon-blue">
                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1 8 8 0 0 0-16 0"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15h16"/></svg>
                         </div>
                     </div>
@@ -112,7 +143,7 @@
                 <div class="kpi-card">
                     <div class="kpi-top">
                         <span class="kpi-label">Personal en Obra</span>
-                        <div class="kpi-icon-wrap icon-rose">
+                        <div class="kpi-icon-wrap icon-emerald">
                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         </div>
                     </div>
@@ -121,7 +152,7 @@
                         <span class="kpi-badge" id="kpiObrerosTotal">-- registrados</span>
                     </div>
                     <div class="kpi-footer">
-                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" id="kpiObrerosBar" style="width: 0%;"></div></div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill fill-emerald" id="kpiObrerosBar" style="width: 0%;"></div></div>
                         <span class="kpi-hint" id="kpiObrerosAlertasHint">Cuadrillas operativas</span>
                     </div>
                 </div>
@@ -144,36 +175,25 @@
 
                 <div class="kpi-card">
                     <div class="kpi-top">
-                        <span class="kpi-label">Combustible & Insumos</span>
-                        <div class="kpi-icon-wrap icon-slate">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v20"/><path d="M7 2h10a2 2 0 0 1 2 2v18H3"/><path d="M19 10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2"/><circle cx="11" cy="7" r="2"/><line x1="7" y1="14" x2="15" y2="14"/></svg>
+                        <span class="kpi-label">Horas Mano de Obra</span>
+                        <div class="kpi-icon-wrap icon-indigo">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         </div>
                     </div>
                     <div class="kpi-value-row">
-                        <span class="kpi-value" id="kpiCombustibleLitros">-- L</span>
-                        <span class="kpi-badge badge-success" id="kpiCombustibleGasto">$ 0</span>
+                        <span class="kpi-value" id="subKpiHoras">-- hrs</span>
+                        <span class="kpi-badge badge-info" id="subKpiRegistros">-- registros</span>
                     </div>
                     <div class="kpi-footer">
-                        <span class="kpi-hint" id="kpiCombustibleDetalle">Diesel: 0L | Nafta: 0L</span>
+                        <span class="kpi-hint">Horas cumplidas por obreros en partes de asistencia</span>
                     </div>
                 </div>
             </section>
 
-            <!-- Resumen Operativo y de Contratos -->
+            <!-- Fila Secundaria Compacta (Resumen Operativo) -->
             <section class="operational-summary-grid">
                 <div class="summary-metric-card">
-                    <div class="metric-icon-small icon-theme-burgundy">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    </div>
-                    <div class="metric-info">
-                        <span class="metric-title">Horas Trabajadas Acumuladas</span>
-                        <strong class="metric-number" id="subKpiHoras">-- hrs</strong>
-                        <span class="metric-sub" id="subKpiRegistros">-- registros de asistencia</span>
-                    </div>
-                </div>
-
-                <div class="summary-metric-card">
-                    <div class="metric-icon-small icon-theme-emerald">
+                    <div class="metric-icon-small icon-theme-teal">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                     </div>
                     <div class="metric-info">
@@ -185,67 +205,70 @@
 
                 <div class="summary-metric-card">
                     <div class="metric-icon-small icon-theme-amber">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v20"/><path d="M7 2h10a2 2 0 0 1 2 2v18H3"/><path d="M19 10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2"/><circle cx="11" cy="7" r="2"/><line x1="7" y1="14" x2="15" y2="14"/></svg>
                     </div>
                     <div class="metric-info">
-                        <span class="metric-title">Recursos Asignados en Obras</span>
-                        <strong class="metric-number" id="subKpiRecursos">-- items</strong>
-                        <span class="metric-sub" id="subKpiRecursosDetalle">Materiales y herramientas</span>
+                        <span class="metric-title">Combustible & Insumos</span>
+                        <strong class="metric-number" id="kpiCombustibleLitros">-- L</strong>
+                        <span class="metric-sub" id="kpiCombustibleGasto">$ 0 · <span id="kpiCombustibleDetalle">Diesel: 0L | Nafta: 0L</span></span>
                     </div>
                 </div>
             </section>
 
-            <!-- Contenido de Analíticas y Gráficos (Limpio y Equilibrado) -->
-            <div class="dashboard-analytics-grid">
-                <!-- Gráfico: Distribución de Personal -->
-                <div class="chart-card">
-                    <div class="card-head-row">
-                        <div class="card-title-wrap">
-                            <h3>Distribución de Personal por Cargo</h3>
-                            <p>Especialidades y oficios activos en cuadrillas</p>
+            <!-- Sección Desplegable de Gráficos y Analíticas (No satura la pantalla) -->
+            <section class="analytics-collapsible-card" id="analyticsSection">
+                <div class="collapsible-header" id="btnToggleAnalytics" role="button" tabindex="0" aria-expanded="false" aria-controls="analyticsContent">
+                    <div class="collapsible-header-left">
+                        <div class="collapsible-icon-wrap">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                         </div>
-                        <a href="RegistrarObrero.html" class="link-action">
-                            Ver obreros <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                        </a>
+                        <div class="collapsible-title-wrap">
+                            <h3>Gráficos y Estadísticas Visuales</h3>
+                            <p>Especialidades de cuadrillas y distribución de horas por proyecto</p>
+                        </div>
                     </div>
-                    <div class="chart-wrapper">
-                        <canvas id="chartCargos"></canvas>
+                    <div class="collapsible-badge">
+                        <span id="toggleAnalyticsText">Desplegar gráficos</span>
+                        <svg class="chevron-arrow" id="toggleAnalyticsChevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                 </div>
 
-                <!-- Gráfico: Top Obras -->
-                <div class="chart-card">
-                    <div class="card-head-row">
-                        <div class="card-title-wrap">
-                            <h3>Obras con Mayor Actividad</h3>
-                            <p>Horas de trabajo acumuladas por proyecto</p>
+                <div class="collapsible-content" id="analyticsContent" style="display: none;">
+                    <div class="dashboard-analytics-grid">
+                        <!-- Gráfico: Distribución de Personal -->
+                        <div class="chart-card">
+                            <div class="card-head-row">
+                                <div class="card-title-wrap">
+                                    <h3>Distribución de Personal por Cargo</h3>
+                                    <p>Especialidades activas en cuadrillas</p>
+                                </div>
+                                <a href="RegistrarObrero.html" class="link-action">
+                                    Ver obreros <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                                </a>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="chartCargos"></canvas>
+                            </div>
                         </div>
-                        <a href="Obras.html" class="link-action">
-                            Ver obras <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                        </a>
-                    </div>
-                    <div class="chart-wrapper chart-wrapper-bar">
-                        <canvas id="chartHorasObras"></canvas>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Widget de Alertas Operativas y Vencimientos -->
-            <div class="alerts-widget-card" id="alertsWidget">
-                <div class="card-head-row">
-                    <div class="card-title-wrap">
-                        <h3>Alertas Operativas y Vencimientos</h3>
-                        <p>Estado de documentación técnica de maquinaria y contratos de personal</p>
-                    </div>
-                    <div class="alert-tabs-switch">
-                        <button type="button" class="tab-btn active" id="tabAlertasMaq">Maquinaria</button>
-                        <button type="button" class="tab-btn" id="tabAlertasObr">Contratos Obreros</button>
+                        <!-- Gráfico: Top Obras -->
+                        <div class="chart-card">
+                            <div class="card-head-row">
+                                <div class="card-title-wrap">
+                                    <h3>Obras con Mayor Actividad</h3>
+                                    <p>Horas de mano de obra acumuladas por proyecto</p>
+                                </div>
+                                <a href="Obras.html" class="link-action">
+                                    Ver obras <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                                </a>
+                            </div>
+                            <div class="chart-wrapper chart-wrapper-bar">
+                                <canvas id="chartHorasObras"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="alerts-list-wrap" id="alertsList">
-                    <p class="empty-hint">Cargando alertas del sistema...</p>
-                </div>
-            </div>
+            </section>
         </main>
 
         <script src="assets/js/dashboard.js"></script>

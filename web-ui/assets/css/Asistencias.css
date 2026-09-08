@@ -540,43 +540,114 @@ textarea {
     background: #f1f1f1;
 }
 
-/* Distribución de maquinaria */
+/* Distribución de maquinaria y consumo de combustible integrado */
 #listaMaquinaria .item-box {
   position: relative;
-  padding: 12px;
-  margin-top: 10px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-#listaMaquinaria .obrero-name {
-  display: block;
-  margin-bottom: 8px;
-}
-
-#listaMaquinaria .smart-box {
+#listaMaquinaria .item-header {
   display: flex;
-  gap: 12px;
-  align-items: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
-#listaMaquinaria .smart-box > div {
-  flex: 1;
+#listaMaquinaria .item-header .maq-nombre {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #1e293b;
 }
 
-#listaMaquinaria label {
+#listaMaquinaria .item-header .btn-delete {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: 0.2s;
+}
+
+#listaMaquinaria .item-header .btn-delete:hover {
+  background: #fecaca;
+}
+
+.maq-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 18px;
+  margin-top: 6px;
+}
+
+.maq-grid .full-width {
+  grid-column: 1 / -1;
+}
+
+.maq-grid label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #374151;
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
-#listaMaquinaria input,
-#listaMaquinaria select {
+.maq-grid input,
+.maq-grid select {
   width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background: #fff;
   box-sizing: border-box;
 }
 
-#listaMaquinaria .item-actions {
+.maq-grid input:focus,
+.maq-grid select:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.maq-grid .field-calculated {
+  background: #eef2f6 !important;
+  color: #1e293b;
+  font-weight: 600;
+  cursor: not-allowed;
+  border: 1px solid #cbd5e1;
+}
+
+.maq-grid .field-calculated:focus {
+  outline: none;
+  border-color: #cbd5e1;
+}
+
+.combustible-subtitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #b45309;
+  margin: 14px 0 8px 0;
   display: flex;
-  justify-content: flex-end;
-  margin-top: 8px;
+  align-items: center;
+  gap: 6px;
+  border-top: 1px dashed #d1d5db;
+  padding-top: 12px;
+}
+
+@media (max-width: 600px) {
+  .maq-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ==============================
