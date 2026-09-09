@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS asistencia_maquinaria (
     id_maquinaria INT NOT NULL,
     fecha DATE NOT NULL,
     hora_salida TIME NOT NULL,
-    hora_devolucion TIME NOT NULL,
+    hora_devolucion TIME NULL,
 
     INDEX idx_asistencia_maq_obra (id_obra),
     INDEX idx_asistencia_maq_maq (id_maquinaria),
@@ -111,10 +111,20 @@ CREATE TABLE IF NOT EXISTS contratos (
     archivo LONGBLOB NOT NULL,
     nombre_archivo VARCHAR(255),
     fecha_subida DATE NOT NULL,
+    id_contrato_origen INT NULL,
+    estado ENUM('Activo','Cerrado') NOT NULL DEFAULT 'Activo',
+    fecha_cierre DATE NULL,
+    monto_total DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    monto_liquidado DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    importe_final DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    motivo_cierre ENUM('Nuevo contrato','Finalizacion de obra') NULL,
 
     INDEX idx_contratos_obra (id_obra),
+    INDEX idx_contratos_origen (id_contrato_origen),
     CONSTRAINT fk_contratos_obra FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
-        ON UPDATE CASCADE ON DELETE CASCADE
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_contratos_origen FOREIGN KEY (id_contrato_origen) REFERENCES contratos(id_contrato)
+        ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS contrato_tareas (
@@ -177,18 +187,56 @@ CREATE TABLE IF NOT EXISTS combustible (
     nombre_combustible VARCHAR(100) NOT NULL,
     litros DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     precio_unitario DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    precio_total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    precio_total DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     fecha DATE NOT NULL,
     id_obra INT NOT NULL,
     id_maquinaria INT NULL,
+    id_factura INT NULL,
 
     INDEX idx_combustible_fecha (fecha),
     INDEX idx_combustible_obra (id_obra),
     INDEX idx_combustible_maquinaria (id_maquinaria),
+    INDEX idx_combustible_factura (id_factura),
     CONSTRAINT fk_combustible_obra FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_combustible_maquinaria FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
         ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS costos_generales (
+    id_costo_general INT AUTO_INCREMENT PRIMARY KEY,
+    concepto VARCHAR(150) NOT NULL,
+    categoria ENUM('Fijo','Variable') NOT NULL,
+    periodo DATE NOT NULL,
+    monto DECIMAL(12,2) NOT NULL,
+    fecha_registro DATE NOT NULL,
+    id_usuario INT NOT NULL,
+
+    INDEX idx_costos_generales_usuario (id_usuario),
+    CONSTRAINT fk_costos_generales_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS partes_diarios (
+    id_parte INT AUTO_INCREMENT PRIMARY KEY,
+    id_obra INT NOT NULL,
+    id_maquinaria INT NOT NULL,
+    id_usuario INT NOT NULL,
+    fecha DATE NOT NULL,
+    horas_trabajadas DECIMAL(5,2) DEFAULT 0.00,
+    horas_paradas DECIMAL(5,2) DEFAULT 0.00,
+    litros_combustible DECIMAL(10,2) DEFAULT 0.00,
+    observaciones TEXT,
+
+    INDEX idx_partes_obra (id_obra),
+    INDEX idx_partes_maquinaria (id_maquinaria),
+    INDEX idx_partes_usuario (id_usuario),
+    CONSTRAINT fk_partes_obra FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_partes_maquinaria FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_partes_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS intentos_login (

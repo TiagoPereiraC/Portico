@@ -546,8 +546,8 @@ textarea {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  padding: 16px;
-  margin-top: 14px;
+  padding: 20px;
+  margin-top: 18px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -555,9 +555,10 @@ textarea {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 #listaMaquinaria .item-header .maq-nombre {
@@ -571,7 +572,7 @@ textarea {
   color: #b91c1c;
   border: none;
   border-radius: 6px;
-  padding: 4px 12px;
+  padding: 7px 12px;
   cursor: pointer;
   font-weight: 600;
   font-size: 0.85rem;
@@ -584,9 +585,13 @@ textarea {
 
 .maq-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px 18px;
-  margin-top: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 22px;
+  margin-top: 8px;
+}
+
+.maq-grid > div {
+  min-width: 0;
 }
 
 .maq-grid .full-width {
@@ -598,25 +603,29 @@ textarea {
   font-weight: 500;
   color: #374151;
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 7px;
 }
 
 .maq-grid input,
 .maq-grid select {
   width: 100%;
-  padding: 8px 10px;
+  height: 42px;
+  padding: 9px 12px;
   border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.95rem;
+  font-family: inherit;
   background: #fff;
+  color: #1f2937;
   box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .maq-grid input:focus,
 .maq-grid select:focus {
-  outline: 2px solid #2563eb;
-  outline-offset: 1px;
-  border-color: transparent;
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
 }
 
 .maq-grid .field-calculated {
@@ -624,29 +633,34 @@ textarea {
   color: #1e293b;
   font-weight: 600;
   cursor: not-allowed;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #d1d5db;
 }
 
 .maq-grid .field-calculated:focus {
   outline: none;
-  border-color: #cbd5e1;
+  border-color: #d1d5db;
+  box-shadow: none;
 }
 
 .combustible-subtitle {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #b45309;
-  margin: 14px 0 8px 0;
+  color: #374151;
+  margin: 24px 0 18px 0;
   display: flex;
   align-items: center;
   gap: 6px;
-  border-top: 1px dashed #d1d5db;
-  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 20px;
 }
 
 @media (max-width: 600px) {
   .maq-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  #listaMaquinaria .item-box {
+    padding: 16px;
   }
 }
 
