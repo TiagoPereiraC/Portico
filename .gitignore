@@ -31,7 +31,15 @@ TestResults/
 # Herramientas / scripts temporales de dev
 tools/
 
+# SQL Dumps temporales y descargas de phpMyAdmin
+portico (*).sql
+portico.sql
+*.sql.bak
+portico (*).zip
+portico.zip
+
 # OS
 Thumbs.db
 desktop.ini
 .DS_Store
+
