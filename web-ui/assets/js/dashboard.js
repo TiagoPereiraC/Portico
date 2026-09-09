@@ -3,8 +3,76 @@ document.addEventListener("DOMContentLoaded", () => {
     inicializarDropdownNotificaciones();
     inicializarColapsableAnaliticas();
     inicializarTabsAlertas();
+    inicializarMarcarLeidas();
     cargarMetricasDashboard();
 });
+
+function sendDesktopRequest(type, payload, responseType) {
+    return new Promise((resolve, reject) => {
+        if (!window.chrome?.webview) {
+            reject(new Error("No se detectó el entorno de escritorio."));
+            return;
+        }
+
+        const requestId = `${type}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        const timer = setTimeout(() => {
+            window.chrome.webview.removeEventListener("message", onMessage);
+            reject(new Error("Tiempo de espera agotado."));
+        }, 12000);
+
+        function onMessage(event) {
+            let data = event.data;
+            if (typeof data === "string") {
+                try {
+                    data = JSON.parse(data);
+                } catch {
+                    return;
+                }
+            }
+            if (!data || data.requestId !== requestId) return;
+
+            window.chrome.webview.removeEventListener("message", onMessage);
+            clearTimeout(timer);
+
+            if (data.success) {
+                resolve(data);
+            } else {
+                reject(new Error(data.error || "Error al procesar la solicitud."));
+            }
+        }
+
+        window.chrome.webview.addEventListener("message", onMessage);
+        window.chrome.webview.postMessage(JSON.stringify({ type, requestId, ...payload }));
+    });
+}
+
+let resizeTimer = null;
+window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(redimensionarGraficos, 150);
+});
+
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+        setTimeout(redimensionarGraficos, 100);
+    }
+});
+
+function redimensionarGraficos() {
+    const content = document.getElementById("analyticsContent");
+    if (!content || content.style.display === "none") return;
+
+    if (chartCargosInstance) {
+        const isWide = window.innerWidth >= 1400;
+        if (chartCargosInstance.options.plugins?.legend) {
+            chartCargosInstance.options.plugins.legend.position = isWide ? "right" : "bottom";
+        }
+        chartCargosInstance.resize();
+    }
+    if (chartHorasInstance) {
+        chartHorasInstance.resize();
+    }
+}
 
 function inicializarDropdownNotificaciones() {
     const btn = document.getElementById("btnNotifications");
@@ -48,11 +116,9 @@ function inicializarColapsableAnaliticas() {
             if (chevron) chevron.classList.add("is-rotated");
             btn.setAttribute("aria-expanded", "true");
 
-            // Redimensionar gráficos para evitar distorsión tras desplegar
-            setTimeout(() => {
-                if (chartCargosInstance) chartCargosInstance.resize();
-                if (chartHorasInstance) chartHorasInstance.resize();
-            }, 50);
+            requestAnimationFrame(() => {
+                redimensionarGraficos();
+            });
         } else {
             content.style.display = "none";
             if (text) text.textContent = "Desplegar gráficos";
@@ -330,10 +396,10 @@ function renderizarGraficoCargos(cargos) {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: "right",
+                        position: window.innerWidth >= 1400 ? "right" : "bottom",
                         labels: {
                             boxWidth: 12,
-                            padding: 12,
+                            padding: 10,
                             font: { family: "Inter", size: 11, weight: "500" },
                             color: "#475569"
                         }
@@ -426,7 +492,9 @@ function renderizarAlertas() {
     const badge = document.getElementById("notificationsBadge");
     const countTag = document.getElementById("notifCountTag");
 
-    const totalAlertas = (alertasMaquinariaCache?.length || 0) + (alertasContratosCache?.length || 0);
+    const noLeidasMaq = alertasMaquinariaCache.filter(a => !a.leido).length;
+    const noLeidasObr = alertasContratosCache.filter(a => !a.leido).length;
+    const totalAlertas = noLeidasMaq + noLeidasObr;
 
     if (badge) {
         if (totalAlertas > 0) {
@@ -482,8 +550,18 @@ function renderizarAlertas() {
             ? `DNI: ${escapeHtml(a.documento || "S/D")} · Vencimiento contrato: ${escapeHtml(a.fecha_vencimiento || "")}`
             : `${escapeHtml(a.nombre_archivo || "Certificado técnico")} · Vencimiento: ${escapeHtml(a.fecha_vencimiento || "")}`;
 
+        const idRef = a.tipo_alerta === "obrero" ? a.id_contrato_obrero : a.id_certificado;
+        const estaLeida = Boolean(a.leido);
+
+        const readActionHtml = estaLeida
+            ? `<span class="alert-badge-tag leido">Leída</span>`
+            : `<button type="button" class="btn-mark-single-read" data-tipo="${a.tipo_alerta}" data-id="${idRef}" title="Marcar como leída">
+                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                 <span>Leída</span>
+               </button>`;
+
         return `
-            <div class="alert-row">
+            <div class="alert-row ${estaLeida ? 'is-read' : ''}">
                 <div class="alert-left">
                     <svg class="alert-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     <div>
@@ -491,10 +569,90 @@ function renderizarAlertas() {
                         <div class="alert-item-subtitle">${subtitulo}</div>
                     </div>
                 </div>
-                <span class="alert-badge-tag ${badgeClass}">${badgeText}</span>
+                <div class="alert-actions">
+                    <span class="alert-badge-tag ${badgeClass}">${badgeText}</span>
+                    ${readActionHtml}
+                </div>
             </div>
         `;
     }).join("");
+}
+
+function inicializarMarcarLeidas() {
+    const btnTodas = document.getElementById("btnMarcarTodasLeidas");
+    if (btnTodas) {
+        btnTodas.addEventListener("click", (e) => {
+            e.stopPropagation();
+            marcarTodasNotificacionesLeidas();
+        });
+    }
+
+    const container = document.getElementById("notifListBody");
+    if (container) {
+        container.addEventListener("click", (e) => {
+            const btn = e.target.closest(".btn-mark-single-read");
+            if (!btn) return;
+            e.stopPropagation();
+            const tipo = btn.dataset.tipo;
+            const id = Number(btn.dataset.id);
+            if (tipo && id) {
+                marcarNotificacionLeida(tipo, id);
+            }
+        });
+    }
+}
+
+async function marcarNotificacionLeida(tipo, idReferencia) {
+    if (tipo === "maquinaria") {
+        const item = alertasMaquinariaCache.find(x => Number(x.id_certificado) === idReferencia);
+        if (item) item.leido = 1;
+    } else if (tipo === "obrero") {
+        const item = alertasContratosCache.find(x => Number(x.id_contrato_obrero) === idReferencia);
+        if (item) item.leido = 1;
+    }
+    renderizarAlertas();
+
+    try {
+        if (window.chrome && window.chrome.webview) {
+            await sendDesktopRequest("notificacion_marcar_leida", { tipo, id_referencia: idReferencia }, "notificacion_marcar_leida_response");
+        } else {
+            const apiBase = window.location.origin.includes("localhost") || window.location.origin.includes("127.0.0.1")
+                ? "/api"
+                : "api";
+            await fetch(`${apiBase}/marcar_notificacion.php`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ tipo, id_referencia: idReferencia })
+            });
+        }
+    } catch (err) {
+        console.error("Error al marcar notificación como leída:", err);
+    }
+}
+
+async function marcarTodasNotificacionesLeidas() {
+    alertasMaquinariaCache.forEach(x => x.leido = 1);
+    alertasContratosCache.forEach(x => x.leido = 1);
+    renderizarAlertas();
+
+    try {
+        if (window.chrome && window.chrome.webview) {
+            await sendDesktopRequest("notificacion_marcar_leida", { tipo: "todas" }, "notificacion_marcar_leida_response");
+        } else {
+            const apiBase = window.location.origin.includes("localhost") || window.location.origin.includes("127.0.0.1")
+                ? "/api"
+                : "api";
+            await fetch(`${apiBase}/marcar_notificacion.php`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ tipo: "todas" })
+            });
+        }
+    } catch (err) {
+        console.error("Error al marcar todas las notificaciones como leídas:", err);
+    }
 }
 
 function escapeHtml(str) {

@@ -77,10 +77,20 @@
         doLogout();
     });
 
-    if (!isHttp) {
-        // En modo escritorio, el control de sesión suele ser manejado por la app contenedora
-        // pero mantenemos la visibilidad la cual será controlada por el cargador de la app
-        document.documentElement.style.visibility = 'visible';
+    const isDesktop = Boolean(window.chrome?.webview) || window.location.hostname === 'portico.desktop' || !isHttp;
+
+    if (isDesktop) {
+        const rol = sessionStorage.getItem('rol');
+        const nombre = sessionStorage.getItem('nombre') || 'Usuario';
+        if (!rol) {
+            if (!window.location.pathname.endsWith('Login.html')) {
+                window.location.replace('Login.html');
+            }
+            return;
+        }
+        if (applySession(rol, nombre)) {
+            document.documentElement.style.visibility = 'visible';
+        }
         return;
     }
 

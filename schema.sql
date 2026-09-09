@@ -219,4 +219,15 @@ CREATE TABLE IF NOT EXISTS auditoria_logs (
         ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS notificaciones_leidas (
+    id_usuario INT NOT NULL,
+    tipo VARCHAR(20) NOT NULL,
+    id_referencia INT NOT NULL,
+    fecha_leido DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_usuario, tipo, id_referencia),
+    INDEX idx_notif_usuario (id_usuario),
+    CONSTRAINT fk_notif_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

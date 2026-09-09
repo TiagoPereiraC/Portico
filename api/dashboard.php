@@ -154,26 +154,50 @@ try {
     } catch (Throwable $e) {
     }
 
-    // 8. Alertas de certificados técnicos de maquinaria
-    $stmtAlertasCert = $pdo->query('
+    $idUsuarioActual = (int)($_SESSION['user_id'] ?? 0);
+
+    // Asegurar tabla de notificaciones leídas por usuario
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS notificaciones_leidas (
+            id_usuario INT NOT NULL,
+            tipo VARCHAR(20) NOT NULL,
+            id_referencia INT NOT NULL,
+            fecha_leido DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id_usuario, tipo, id_referencia),
+            INDEX idx_notif_usuario (id_usuario)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    // 8. Alertas de certificados técnicos de maquinaria (excluyendo leídas por este usuario)
+    $stmtAlertasCert = $pdo->prepare('
         SELECT 
             COUNT(*) AS total_alertas_cert,
-            SUM(CASE WHEN fecha_vencimiento < CURDATE() THEN 1 ELSE 0 END) AS cert_vencidos,
-            SUM(CASE WHEN fecha_vencimiento >= CURDATE() AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) AS cert_por_vencer
-        FROM certificado
-        WHERE fecha_vencimiento IS NOT NULL AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            SUM(CASE WHEN c.fecha_vencimiento < CURDATE() THEN 1 ELSE 0 END) AS cert_vencidos,
+            SUM(CASE WHEN c.fecha_vencimiento >= CURDATE() AND c.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) AS cert_por_vencer
+        FROM certificado c
+        LEFT JOIN notificaciones_leidas nl 
+            ON nl.id_usuario = ? AND nl.tipo = "maquinaria" AND nl.id_referencia = c.id_certificado
+        WHERE c.fecha_vencimiento IS NOT NULL 
+          AND c.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+          AND nl.id_referencia IS NULL
     ');
+    $stmtAlertasCert->execute([$idUsuarioActual]);
     $resAlertasCert = $stmtAlertasCert->fetch() ?: ['total_alertas_cert' => 0, 'cert_vencidos' => 0, 'cert_por_vencer' => 0];
 
-    // 9. Alertas de contratos de obreros
-    $stmtAlertasContratos = $pdo->query('
+    // 9. Alertas de contratos de obreros (excluyendo leídas por este usuario)
+    $stmtAlertasContratos = $pdo->prepare('
         SELECT 
             COUNT(*) AS total_alertas_contratos,
-            SUM(CASE WHEN fecha_vencimiento < CURDATE() THEN 1 ELSE 0 END) AS contratos_vencidos,
-            SUM(CASE WHEN fecha_vencimiento >= CURDATE() AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) AS contratos_por_vencer
-        FROM contrato_obrero
-        WHERE fecha_vencimiento IS NOT NULL AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            SUM(CASE WHEN co.fecha_vencimiento < CURDATE() THEN 1 ELSE 0 END) AS contratos_vencidos,
+            SUM(CASE WHEN co.fecha_vencimiento >= CURDATE() AND co.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) AS contratos_por_vencer
+        FROM contrato_obrero co
+        LEFT JOIN notificaciones_leidas nl 
+            ON nl.id_usuario = ? AND nl.tipo = "obrero" AND nl.id_referencia = co.id_contrato_obrero
+        WHERE co.fecha_vencimiento IS NOT NULL 
+          AND co.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+          AND nl.id_referencia IS NULL
     ');
+    $stmtAlertasContratos->execute([$idUsuarioActual]);
     $resAlertasContratos = $stmtAlertasContratos->fetch() ?: ['total_alertas_contratos' => 0, 'contratos_vencidos' => 0, 'contratos_por_vencer' => 0];
 
     // 10. Gráfico: Distribución de obreros por cargo
@@ -198,34 +222,42 @@ try {
     ');
     $horasPorObra = $stmtHorasObras->fetchAll();
 
-    // 12. Próximos vencimientos de certificados de maquinaria (Top 5)
-    $stmtVencimientos = $pdo->query('
+    // 12. Próximos vencimientos de certificados de maquinaria con estado de lectura por usuario
+    $stmtVencimientos = $pdo->prepare('
         SELECT c.id_certificado, c.nombre_archivo, c.fecha_vencimiento,
                m.nombre AS nombre_maquinaria, m.marca,
                DATEDIFF(c.fecha_vencimiento, CURDATE()) AS dias_restantes,
-               "maquinaria" AS tipo_alerta
+               "maquinaria" AS tipo_alerta,
+               CASE WHEN nl.id_referencia IS NOT NULL THEN 1 ELSE 0 END AS leido
         FROM certificado c
         JOIN maquinaria m ON c.id_maquinaria = m.id_maquinaria
+        LEFT JOIN notificaciones_leidas nl
+            ON nl.id_usuario = ? AND nl.tipo = "maquinaria" AND nl.id_referencia = c.id_certificado
         WHERE c.fecha_vencimiento IS NOT NULL
           AND c.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-        ORDER BY c.fecha_vencimiento ASC
-        LIMIT 5
+        ORDER BY leido ASC, c.fecha_vencimiento ASC
+        LIMIT 10
     ');
+    $stmtVencimientos->execute([$idUsuarioActual]);
     $alertasRecientes = $stmtVencimientos->fetchAll();
 
-    // 13. Próximos vencimientos de contratos de obreros (Top 5)
-    $stmtContratosVenc = $pdo->query('
+    // 13. Próximos vencimientos de contratos de obreros con estado de lectura por usuario
+    $stmtContratosVenc = $pdo->prepare('
         SELECT co.id_contrato_obrero, co.fecha_vencimiento,
-               CONCAT(o.nombre, " ", o.apellido) AS nombre_obrero, o.documento,
+               CONCAT(o.nombre, " ", COALESCE(o.apellido, "")) AS nombre_obrero, o.documento,
                DATEDIFF(co.fecha_vencimiento, CURDATE()) AS dias_restantes,
-               "obrero" AS tipo_alerta
+               "obrero" AS tipo_alerta,
+               CASE WHEN nl.id_referencia IS NOT NULL THEN 1 ELSE 0 END AS leido
         FROM contrato_obrero co
         JOIN obreros o ON co.id_obrero = o.id_obrero
+        LEFT JOIN notificaciones_leidas nl
+            ON nl.id_usuario = ? AND nl.tipo = "obrero" AND nl.id_referencia = co.id_contrato_obrero
         WHERE co.fecha_vencimiento IS NOT NULL
           AND co.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-        ORDER BY co.fecha_vencimiento ASC
-        LIMIT 5
+        ORDER BY leido ASC, co.fecha_vencimiento ASC
+        LIMIT 10
     ');
+    $stmtContratosVenc->execute([$idUsuarioActual]);
     $alertasContratos = $stmtContratosVenc->fetchAll();
 
     echo json_encode([

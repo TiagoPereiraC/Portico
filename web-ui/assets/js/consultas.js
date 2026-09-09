@@ -17,6 +17,71 @@ const paginationPage = document.getElementById('paginationPage');
 const paginationPrev = document.getElementById('paginationPrev');
 const paginationNext = document.getElementById('paginationNext');
 
+const ITEMS_POR_PAGINA = 10;
+let paginaActual = 1;
+let totalPaginas = 1;
+let totalRegistros = 0;
+let filtrosActivos = null;
+
+if (paginationPrev) {
+    paginationPrev.addEventListener('click', () => cambiarPagina(-1));
+}
+if (paginationNext) {
+    paginationNext.addEventListener('click', () => cambiarPagina(1));
+}
+
+function mostrarFeedback(mensaje, tipo = 'info') {
+    if (!feedback) return;
+    const icono = tipo === 'error' ? 'fa-circle-exclamation' : tipo === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation';
+    feedback.innerHTML = `<i class="fas ${icono}"></i><span>${escapeHtml(mensaje)}</span>`;
+    feedback.className = `feedback-msg ${tipo}`;
+    feedback.classList.remove('hidden');
+}
+
+function ocultarFeedback() {
+    if (!feedback) return;
+    feedback.classList.add('hidden');
+}
+
+function sendDesktopRequest(type, payload, responseType) {
+    return new Promise((resolve, reject) => {
+        if (!window.chrome?.webview) {
+            reject(new Error("No se detectó el entorno de escritorio."));
+            return;
+        }
+
+        const requestId = `${type}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        const timer = setTimeout(() => {
+            window.chrome.webview.removeEventListener("message", onMessage);
+            reject(new Error("Tiempo de espera agotado al consultar datos."));
+        }, 12000);
+
+        function onMessage(event) {
+            let data = event.data;
+            if (typeof data === "string") {
+                try {
+                    data = JSON.parse(data);
+                } catch {
+                    return;
+                }
+            }
+            if (!data || data.requestId !== requestId) return;
+
+            window.chrome.webview.removeEventListener("message", onMessage);
+            clearTimeout(timer);
+
+            if (data.success) {
+                resolve(data);
+            } else {
+                reject(new Error(data.error || "Error al procesar la solicitud en escritorio."));
+            }
+        }
+
+        window.chrome.webview.addEventListener("message", onMessage);
+        window.chrome.webview.postMessage(JSON.stringify({ type, requestId, ...payload }));
+    });
+}
+
 const obreroHiddenInput = document.getElementById('obrero');
 const obreroSearchInput = document.getElementById('obreroSearchInput');
 const obreroDropdown = document.getElementById('obreroDropdown');
@@ -132,14 +197,20 @@ function limpiarSeleccionObrero() {
 async function cargarObreros() {
     try {
         ocultarFeedback();
-        const response = await fetch('../api/obtener_obrero.php');
-        const data = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.error);
+        let obreros = [];
+        if (window.chrome?.webview) {
+            const data = await sendDesktopRequest("obreros_listar", { page: 1, limit: 100 }, "obreros_listar_response");
+            obreros = data.obreros || [];
+        } else {
+            const response = await fetch('../api/obtener_obrero.php');
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.error || "No se pudo cargar la lista de obreros.");
+            }
+            obreros = data.obreros || [];
         }
 
-        obrerosList = data.obreros || [];
+        obrerosList = obreros;
     } catch (error) {
         console.error(error);
         mostrarFeedback('Error cargando la lista de obreros.', 'error');
@@ -147,15 +218,9 @@ async function cargarObreros() {
 }
 
 async function buscarConsultas() {
-
-    const idObrero =
-        document.getElementById('obrero').value;
-
-    const fechaDesde =
-        document.getElementById('fecha_desde').value;
-
-    const fechaHasta =
-        document.getElementById('fecha_hasta').value;
+    const idObrero = document.getElementById('obrero').value;
+    const fechaDesde = document.getElementById('fecha_desde').value;
+    const fechaHasta = document.getElementById('fecha_hasta').value;
 
     if (!idObrero && !fechaDesde && !fechaHasta) {
         mostrarFeedback('Seleccione al menos un obrero o un período.', 'warning');
@@ -176,37 +241,44 @@ async function cargarRegistros() {
     const { idObrero, fechaDesde, fechaHasta } = filtrosActivos;
 
     try {
-
         ocultarFeedback();
+        let data;
 
-        const params = new URLSearchParams({
-            page: String(paginaActual),
-            limit: String(ITEMS_POR_PAGINA),
-            id_obrero: idObrero || '0',
-            fecha_desde: fechaDesde,
-            fecha_hasta: fechaHasta,
-        });
+        if (window.chrome?.webview) {
+            data = await sendDesktopRequest("consultas_buscar", {
+                page: paginaActual,
+                limit: ITEMS_POR_PAGINA,
+                id_obrero: idObrero || 0,
+                fecha_desde: fechaDesde,
+                fecha_hasta: fechaHasta
+            }, "consultas_buscar_response");
+        } else {
+            const params = new URLSearchParams({
+                page: String(paginaActual),
+                limit: String(ITEMS_POR_PAGINA),
+                id_obrero: idObrero || '0',
+                fecha_desde: fechaDesde,
+                fecha_hasta: fechaHasta,
+            });
 
-        const response = await fetch(`../api/consultas.php?${params.toString()}`);
-        const data = await response.json();
+            const response = await fetch(`../api/consultas.php?${params.toString()}`);
+            data = await response.json();
 
-        if (!data.success) {
-            throw new Error(data.error);
+            if (!data.success) {
+                throw new Error(data.error);
+            }
         }
 
-        mostrarResumen(data.resumen);
-        mostrarRegistros(data.registros);
+        mostrarResumen(data.resumen || { total_obras: 0, dias_trabajados: 0, total_horas: 0 });
+        mostrarRegistros(data.registros || []);
 
         totalRegistros = Number(data.total || 0);
         totalPaginas = Math.max(1, Number(data.total_pages || 1));
         paginaActual = Math.min(Math.max(1, Number(data.page || paginaActual)), totalPaginas);
 
         actualizarPaginacion();
-
     } catch (error) {
-
         console.error(error);
-
         mostrarFeedback(error.message || 'Error al buscar consultas.', 'error');
     }
 }

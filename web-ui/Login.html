@@ -60,7 +60,8 @@
                 }
 
                 // Escritorio: sessionStorage es la fuente de verdad
-                if (window.chrome?.webview) {
+                const isDesktop = Boolean(window.chrome?.webview) || window.location.hostname === "portico.desktop";
+                if (isDesktop) {
                     var rol = sessionStorage.getItem("rol");
                     if (rol) {
                         redirectByRol(rol);
@@ -133,12 +134,14 @@
                     }
                     sessionStorage.setItem("rol", data.rol);
                     sessionStorage.setItem("nombre", data.nombre);
-                    // La navegación la hace C#; este fallback solo aplica fuera del escritorio
-                    const destino =
-                        data.rol === "Capataz"
-                            ? "Asistencia.html"
-                            : "PanelInicio.html";
-                    window.location.href = destino;
+                    // La navegación en escritorio la realiza C#; en web navegamos vía JS
+                    if (!window.chrome?.webview) {
+                        const destino =
+                            data.rol === "Capataz"
+                                ? "Asistencia.html"
+                                : "PanelInicio.html";
+                        window.location.href = destino;
+                    }
                 } else {
                     errorEl.textContent = data.error || "Error desconocido";
                     btnLogin.disabled = false;

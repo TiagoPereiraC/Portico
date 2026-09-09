@@ -22,9 +22,11 @@ public sealed class MainWindow : Form
 	public MainWindow()
 	{
 		Text = "Portico Desktop";
+		var workingArea = Screen.PrimaryScreen?.WorkingArea ?? new System.Drawing.Rectangle(0, 0, 1280, 720);
+		Width = Math.Min(1440, (int)(workingArea.Width * 0.9));
+		Height = Math.Min(900, (int)(workingArea.Height * 0.9));
+		MinimumSize = new System.Drawing.Size(1024, 680);
 		StartPosition = FormStartPosition.CenterScreen;
-		Width = 1920;
-		Height = 1080;
 		WindowState = FormWindowState.Maximized;
 
 		var exePath = Application.ExecutablePath;
@@ -47,7 +49,7 @@ public sealed class MainWindow : Form
 			_env = LoadEnv();
 
 			await _webView.EnsureCoreWebView2Async();
-			_webView.ZoomFactor = 1.1d;
+			_webView.ZoomFactor = 1.0d;
 			_webView.CoreWebView2.Settings.AreDevToolsEnabled = false;
 			_webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
 
@@ -191,6 +193,12 @@ public sealed class MainWindow : Form
 				break;
 			case "dashboard_metricas":
 				await HandleDashboardMetricasAsync(root);
+				break;
+			case "notificacion_marcar_leida":
+				await HandleNotificacionMarcarLeidaAsync(root);
+				break;
+			case "consultas_buscar":
+				await HandleConsultasBuscarAsync(root);
 				break;
 			}
 		}
@@ -2992,11 +3000,21 @@ public sealed class MainWindow : Form
 				}
 			}
 
-			// 5. Alertas certificados
+			await EnsureNotificacionesLeidasTableAsync(conn);
+			var userId = _currentUserId ?? 0;
+
+			// 5. Alertas certificados (no leídas por este usuario)
 			int totalAlertasCert = 0, certVencidos = 0, certPorVencer = 0;
-			await using (var cmd = new MySqlCommand("SELECT COUNT(*), SUM(CASE WHEN fecha_vencimiento < CURDATE() THEN 1 ELSE 0 END), SUM(CASE WHEN fecha_vencimiento >= CURDATE() AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) FROM certificado WHERE fecha_vencimiento IS NOT NULL AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)", conn))
-			await using (var reader = await cmd.ExecuteReaderAsync())
+			await using (var cmd = new MySqlCommand(@"
+				SELECT COUNT(*), 
+				       SUM(CASE WHEN c.fecha_vencimiento < CURDATE() THEN 1 ELSE 0 END), 
+				       SUM(CASE WHEN c.fecha_vencimiento >= CURDATE() AND c.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) 
+				FROM certificado c
+				LEFT JOIN notificaciones_leidas nl ON nl.id_usuario = @userId AND nl.tipo = 'maquinaria' AND nl.id_referencia = c.id_certificado
+				WHERE c.fecha_vencimiento IS NOT NULL AND c.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) AND nl.id_referencia IS NULL", conn))
 			{
+				cmd.Parameters.AddWithValue("@userId", userId);
+				await using var reader = await cmd.ExecuteReaderAsync();
 				if (await reader.ReadAsync())
 				{
 					totalAlertasCert = reader.IsDBNull(0) ? 0 : Convert.ToInt32(reader[0]);
@@ -3005,11 +3023,16 @@ public sealed class MainWindow : Form
 				}
 			}
 
-			// 6. Alertas contratos
+			// 6. Alertas contratos (no leídas por este usuario)
 			int totalAlertasContratos = 0;
-			await using (var cmd = new MySqlCommand("SELECT COUNT(*) FROM contrato_obrero WHERE fecha_vencimiento IS NOT NULL AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)", conn))
-			await using (var reader = await cmd.ExecuteReaderAsync())
+			await using (var cmd = new MySqlCommand(@"
+				SELECT COUNT(*) 
+				FROM contrato_obrero co
+				LEFT JOIN notificaciones_leidas nl ON nl.id_usuario = @userId AND nl.tipo = 'obrero' AND nl.id_referencia = co.id_contrato_obrero
+				WHERE co.fecha_vencimiento IS NOT NULL AND co.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) AND nl.id_referencia IS NULL", conn))
 			{
+				cmd.Parameters.AddWithValue("@userId", userId);
+				await using var reader = await cmd.ExecuteReaderAsync();
 				if (await reader.ReadAsync())
 				{
 					totalAlertasContratos = reader.IsDBNull(0) ? 0 : Convert.ToInt32(reader[0]);
@@ -3046,11 +3069,20 @@ public sealed class MainWindow : Form
 				}
 			}
 
-			// 9. Alertas recientes
+			// 9. Alertas recientes (con estado leido por usuario)
 			var alertasRecientes = new List<object>();
-			await using (var cmd = new MySqlCommand("SELECT c.id_certificado, c.nombre_archivo, c.fecha_vencimiento, m.nombre, m.marca, DATEDIFF(c.fecha_vencimiento, CURDATE()) FROM certificado c JOIN maquinaria m ON c.id_maquinaria = m.id_maquinaria WHERE c.fecha_vencimiento IS NOT NULL AND c.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) ORDER BY c.fecha_vencimiento ASC LIMIT 5", conn))
-			await using (var reader = await cmd.ExecuteReaderAsync())
+			await using (var cmd = new MySqlCommand(@"
+				SELECT c.id_certificado, c.nombre_archivo, c.fecha_vencimiento, m.nombre, m.marca, 
+				       DATEDIFF(c.fecha_vencimiento, CURDATE()),
+				       CASE WHEN nl.id_referencia IS NOT NULL THEN 1 ELSE 0 END AS leido
+				FROM certificado c 
+				JOIN maquinaria m ON c.id_maquinaria = m.id_maquinaria 
+				LEFT JOIN notificaciones_leidas nl ON nl.id_usuario = @userId AND nl.tipo = 'maquinaria' AND nl.id_referencia = c.id_certificado
+				WHERE c.fecha_vencimiento IS NOT NULL AND c.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) 
+				ORDER BY leido ASC, c.fecha_vencimiento ASC LIMIT 10", conn))
 			{
+				cmd.Parameters.AddWithValue("@userId", userId);
+				await using var reader = await cmd.ExecuteReaderAsync();
 				while (await reader.ReadAsync())
 				{
 					alertasRecientes.Add(new
@@ -3060,16 +3092,26 @@ public sealed class MainWindow : Form
 						fecha_vencimiento = reader.GetDateTime(2).ToString("yyyy-MM-dd"),
 						nombre_maquinaria = reader.GetString(3),
 						marca = reader.IsDBNull(4) ? "" : reader.GetString(4),
-						dias_restantes = reader.GetInt32(5)
+						dias_restantes = reader.GetInt32(5),
+						leido = reader.GetInt32(6)
 					});
 				}
 			}
 
-			// 10. Alertas contratos recientes (Top 5)
+			// 10. Alertas contratos recientes (con estado leido por usuario)
 			var alertasContratos = new List<object>();
-			await using (var cmd = new MySqlCommand("SELECT co.id_contrato_obrero, co.fecha_vencimiento, CONCAT(o.nombre, ' ', COALESCE(o.apellido, '')) AS nombre_obrero, o.documento, DATEDIFF(co.fecha_vencimiento, CURDATE()) AS dias_restantes, 'obrero' AS tipo_alerta FROM contrato_obrero co JOIN obreros o ON co.id_obrero = o.id_obrero WHERE co.fecha_vencimiento IS NOT NULL AND co.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) ORDER BY co.fecha_vencimiento ASC LIMIT 5", conn))
-			await using (var reader = await cmd.ExecuteReaderAsync())
+			await using (var cmd = new MySqlCommand(@"
+				SELECT co.id_contrato_obrero, co.fecha_vencimiento, CONCAT(o.nombre, ' ', COALESCE(o.apellido, '')) AS nombre_obrero, o.documento, 
+				       DATEDIFF(co.fecha_vencimiento, CURDATE()) AS dias_restantes, 'obrero' AS tipo_alerta,
+				       CASE WHEN nl.id_referencia IS NOT NULL THEN 1 ELSE 0 END AS leido
+				FROM contrato_obrero co 
+				JOIN obreros o ON co.id_obrero = o.id_obrero 
+				LEFT JOIN notificaciones_leidas nl ON nl.id_usuario = @userId AND nl.tipo = 'obrero' AND nl.id_referencia = co.id_contrato_obrero
+				WHERE co.fecha_vencimiento IS NOT NULL AND co.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) 
+				ORDER BY leido ASC, co.fecha_vencimiento ASC LIMIT 10", conn))
 			{
+				cmd.Parameters.AddWithValue("@userId", userId);
+				await using var reader = await cmd.ExecuteReaderAsync();
 				while (await reader.ReadAsync())
 				{
 					alertasContratos.Add(new
@@ -3079,7 +3121,8 @@ public sealed class MainWindow : Form
 						nombre_obrero = reader.GetString(2).Trim(),
 						documento = reader.IsDBNull(3) ? "" : reader.GetString(3),
 						dias_restantes = reader.GetInt32(4),
-						tipo_alerta = "obrero"
+						tipo_alerta = "obrero",
+						leido = reader.GetInt32(6)
 					});
 				}
 			}
@@ -3116,6 +3159,284 @@ public sealed class MainWindow : Form
 		{
 			System.Diagnostics.Debug.WriteLine($"[Dashboard error] {ex}");
 			PostToJs(new { type = responseType, requestId, success = false, error = "Error al obtener métricas del dashboard." });
+		}
+	}
+
+	private static async Task EnsureNotificacionesLeidasTableAsync(MySqlConnection conn)
+	{
+		const string sql = @"
+			CREATE TABLE IF NOT EXISTS notificaciones_leidas (
+				id_usuario INT NOT NULL,
+				tipo VARCHAR(20) NOT NULL,
+				id_referencia INT NOT NULL,
+				fecha_leido DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY (id_usuario, tipo, id_referencia),
+				INDEX idx_notif_usuario (id_usuario)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+		await using var cmd = new MySqlCommand(sql, conn);
+		await cmd.ExecuteNonQueryAsync();
+	}
+
+	private async Task HandleNotificacionMarcarLeidaAsync(JsonElement root)
+	{
+		var requestId = ReadRequestId(root);
+		const string responseType = "notificacion_marcar_leida_response";
+
+		if (!EnsureAutenticado(requestId, responseType))
+			return;
+
+		var userId = _currentUserId ?? 0;
+		if (userId <= 0)
+		{
+			PostToJs(new { type = responseType, requestId, success = false, error = "Sesión no válida." });
+			return;
+		}
+
+		var tipo = root.TryGetProperty("tipo", out var tipoProp) ? tipoProp.GetString()?.Trim() ?? string.Empty : string.Empty;
+		int idReferencia = 0;
+		if (root.TryGetProperty("id_referencia", out var idRefProp))
+		{
+			if (idRefProp.ValueKind == JsonValueKind.Number)
+				idReferencia = idRefProp.GetInt32();
+			else if (idRefProp.ValueKind == JsonValueKind.String && int.TryParse(idRefProp.GetString(), out var parsed))
+				idReferencia = parsed;
+		}
+
+		try
+		{
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+			await EnsureNotificacionesLeidasTableAsync(conn);
+
+			if (tipo == "todas")
+			{
+				const string sqlTodasCert = @"
+					INSERT IGNORE INTO notificaciones_leidas (id_usuario, tipo, id_referencia)
+					SELECT @userId, 'maquinaria', id_certificado
+					FROM certificado
+					WHERE fecha_vencimiento IS NOT NULL AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)";
+				await using (var cmd = new MySqlCommand(sqlTodasCert, conn))
+				{
+					cmd.Parameters.AddWithValue("@userId", userId);
+					await cmd.ExecuteNonQueryAsync();
+				}
+
+				const string sqlTodasObreros = @"
+					INSERT IGNORE INTO notificaciones_leidas (id_usuario, tipo, id_referencia)
+					SELECT @userId, 'obrero', id_contrato_obrero
+					FROM contrato_obrero
+					WHERE fecha_vencimiento IS NOT NULL AND fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)";
+				await using (var cmd = new MySqlCommand(sqlTodasObreros, conn))
+				{
+					cmd.Parameters.AddWithValue("@userId", userId);
+					await cmd.ExecuteNonQueryAsync();
+				}
+
+				PostToJs(new { type = responseType, requestId, success = true, message = "Todas las notificaciones fueron marcadas como leídas." });
+				return;
+			}
+
+			if ((tipo != "maquinaria" && tipo != "obrero") || idReferencia <= 0)
+			{
+				PostToJs(new { type = responseType, requestId, success = false, error = "Parámetros inválidos." });
+				return;
+			}
+
+			const string sqlInsert = @"
+				INSERT IGNORE INTO notificaciones_leidas (id_usuario, tipo, id_referencia)
+				VALUES (@userId, @tipo, @idReferencia)";
+			await using (var cmd = new MySqlCommand(sqlInsert, conn))
+			{
+				cmd.Parameters.AddWithValue("@userId", userId);
+				cmd.Parameters.AddWithValue("@tipo", tipo);
+				cmd.Parameters.AddWithValue("@idReferencia", idReferencia);
+				await cmd.ExecuteNonQueryAsync();
+			}
+
+			PostToJs(new { type = responseType, requestId, success = true, message = "Notificación marcada como leída." });
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[MarcarNotificacion error] {ex}");
+			PostToJs(new { type = responseType, requestId, success = false, error = "Error al actualizar notificación." });
+		}
+	}
+
+	private async Task HandleConsultasBuscarAsync(JsonElement root)
+	{
+		var requestId = ReadRequestId(root);
+		const string responseType = "consultas_buscar_response";
+
+		if (!EnsureAutenticado(requestId, responseType))
+			return;
+
+		int idObrero = 0;
+		if (root.TryGetProperty("id_obrero", out var obreroProp))
+		{
+			if (obreroProp.ValueKind == JsonValueKind.Number)
+				idObrero = obreroProp.GetInt32();
+			else if (obreroProp.ValueKind == JsonValueKind.String && int.TryParse(obreroProp.GetString(), out var parsedObrero))
+				idObrero = parsedObrero;
+		}
+
+		var fechaDesde = root.TryGetProperty("fecha_desde", out var fdProp) ? fdProp.GetString()?.Trim() ?? string.Empty : string.Empty;
+		var fechaHasta = root.TryGetProperty("fecha_hasta", out var fhProp) ? fhProp.GetString()?.Trim() ?? string.Empty : string.Empty;
+
+		int page = 1;
+		if (root.TryGetProperty("page", out var pageProp) && pageProp.TryGetInt32(out var pVal))
+			page = Math.Max(1, pVal);
+
+		int limit = 10;
+		if (root.TryGetProperty("limit", out var limitProp) && limitProp.TryGetInt32(out var lVal))
+			limit = Math.Clamp(lVal, 1, 100);
+
+		var whereClauses = new List<string>();
+		if (idObrero > 0)
+		{
+			whereClauses.Add("r.id_obrero = @idObrero");
+		}
+		if (!string.IsNullOrEmpty(fechaDesde) && !string.IsNullOrEmpty(fechaHasta))
+		{
+			whereClauses.Add("r.fecha BETWEEN @fechaDesde AND @fechaHasta");
+		}
+
+		if (whereClauses.Count == 0)
+		{
+			PostToJs(new { type = responseType, requestId, success = false, error = "Seleccione al menos un obrero o un período." });
+			return;
+		}
+
+		var whereSql = string.Join(" AND ", whereClauses);
+
+		try
+		{
+			await using var conn = new MySqlConnection(BuildConnectionString());
+			await conn.OpenAsync();
+
+			// 1. Resumen
+			int totalObras = 0;
+			int diasTrabajados = 0;
+			double totalHoras = 0;
+
+			var sqlResumen = $@"
+				SELECT
+					COUNT(DISTINCT r.id_obra) AS total_obras,
+					COUNT(*) AS dias_trabajados,
+					COALESCE(SUM(r.horas_trabajadas), 0) AS total_horas
+				FROM registros r
+				WHERE {whereSql}";
+
+			await using (var cmdResumen = new MySqlCommand(sqlResumen, conn))
+			{
+				if (idObrero > 0) cmdResumen.Parameters.AddWithValue("@idObrero", idObrero);
+				if (!string.IsNullOrEmpty(fechaDesde) && !string.IsNullOrEmpty(fechaHasta))
+				{
+					cmdResumen.Parameters.AddWithValue("@fechaDesde", fechaDesde);
+					cmdResumen.Parameters.AddWithValue("@fechaHasta", fechaHasta);
+				}
+
+				await using var reader = await cmdResumen.ExecuteReaderAsync();
+				if (await reader.ReadAsync())
+				{
+					totalObras = reader.IsDBNull(0) ? 0 : Convert.ToInt32(reader[0]);
+					diasTrabajados = reader.IsDBNull(1) ? 0 : Convert.ToInt32(reader[1]);
+					totalHoras = reader.IsDBNull(2) ? 0 : Convert.ToDouble(reader[2]);
+				}
+			}
+
+			// 2. Conteo total de registros
+			int totalRegistros = 0;
+			var sqlCount = $@"
+				SELECT COUNT(*)
+				FROM registros r
+				INNER JOIN obras o ON o.id_obra = r.id_obra
+				WHERE {whereSql}";
+
+			await using (var cmdCount = new MySqlCommand(sqlCount, conn))
+			{
+				if (idObrero > 0) cmdCount.Parameters.AddWithValue("@idObrero", idObrero);
+				if (!string.IsNullOrEmpty(fechaDesde) && !string.IsNullOrEmpty(fechaHasta))
+				{
+					cmdCount.Parameters.AddWithValue("@fechaDesde", fechaDesde);
+					cmdCount.Parameters.AddWithValue("@fechaHasta", fechaHasta);
+				}
+
+				var countObj = await cmdCount.ExecuteScalarAsync();
+				totalRegistros = countObj != null && countObj != DBNull.Value ? Convert.ToInt32(countObj) : 0;
+			}
+
+			int totalPages = Math.Max(1, (int)Math.Ceiling((double)totalRegistros / limit));
+			page = Math.Min(page, totalPages);
+			int offset = (page - 1) * limit;
+
+			// 3. Listado paginado
+			var registros = new List<object>();
+			var sqlListado = $@"
+				SELECT
+					r.fecha,
+					o.nombre AS obra,
+					r.hora_entrada,
+					r.hora_salida,
+					r.horas_trabajadas
+				FROM registros r
+				INNER JOIN obras o ON o.id_obra = r.id_obra
+				WHERE {whereSql}
+				ORDER BY r.fecha DESC
+				LIMIT @limit OFFSET @offset";
+
+			await using (var cmdList = new MySqlCommand(sqlListado, conn))
+			{
+				if (idObrero > 0) cmdList.Parameters.AddWithValue("@idObrero", idObrero);
+				if (!string.IsNullOrEmpty(fechaDesde) && !string.IsNullOrEmpty(fechaHasta))
+				{
+					cmdList.Parameters.AddWithValue("@fechaDesde", fechaDesde);
+					cmdList.Parameters.AddWithValue("@fechaHasta", fechaHasta);
+				}
+				cmdList.Parameters.AddWithValue("@limit", limit);
+				cmdList.Parameters.AddWithValue("@offset", offset);
+
+				await using var reader = await cmdList.ExecuteReaderAsync();
+				while (await reader.ReadAsync())
+				{
+					var fechaStr = reader.IsDBNull(0) ? "" : reader.GetDateTime(0).ToString("yyyy-MM-dd");
+					var obraStr = reader.IsDBNull(1) ? "" : reader.GetString(1);
+					var entradaStr = reader.IsDBNull(2) ? "" : (reader.GetValue(2) is TimeSpan tsIn ? tsIn.ToString(@"hh\:mm") : reader.GetValue(2).ToString() ?? "");
+					var salidaStr = reader.IsDBNull(3) ? "" : (reader.GetValue(3) is TimeSpan tsOut ? tsOut.ToString(@"hh\:mm") : reader.GetValue(3).ToString() ?? "");
+					var horasVal = reader.IsDBNull(4) ? 0d : Convert.ToDouble(reader.GetValue(4));
+
+					registros.Add(new
+					{
+						fecha = fechaStr,
+						obra = obraStr,
+						hora_entrada = entradaStr,
+						hora_salida = salidaStr,
+						horas_trabajadas = horasVal
+					});
+				}
+			}
+
+			PostToJs(new
+			{
+				type = responseType,
+				requestId,
+				success = true,
+				resumen = new
+				{
+					total_obras = totalObras,
+					dias_trabajados = diasTrabajados,
+					total_horas = totalHoras
+				},
+				registros,
+				total = totalRegistros,
+				page,
+				per_page = limit,
+				total_pages = totalPages
+			});
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"[Consultas error] {ex}");
+			PostToJs(new { type = responseType, requestId, success = false, error = "Error al buscar consultas." });
 		}
 	}
 
