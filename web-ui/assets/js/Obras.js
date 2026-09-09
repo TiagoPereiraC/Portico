@@ -84,6 +84,21 @@ const detailMaquinariaBody =
 const detailMaquinariaEmpty =
     document.getElementById("detailMaquinariaEmpty");
 
+const detailCombustibleWrap =
+    document.getElementById("detailCombustibleWrap");
+
+const detailCombustibleBody =
+    document.getElementById("detailCombustibleBody");
+
+const detailCombustibleEmpty =
+    document.getElementById("detailCombustibleEmpty");
+
+const detailCombustibleTotalLitros =
+    document.getElementById("detailCombustibleTotalLitros");
+
+const detailCombustibleTotalCosto =
+    document.getElementById("detailCombustibleTotalCosto");
+
 const detailBtnEdit =
     document.getElementById("detailBtnEdit");
 
@@ -2446,6 +2461,9 @@ function renderDetalle(data) {
     const maquinaria =
         data.maquinaria || [];
 
+    const combustible =
+        data.combustible || [];
+
     const tareas =
         data.tareas || [];
 
@@ -2896,6 +2914,151 @@ function renderDetalle(data) {
         );
 
         detailMaquinariaBody.innerHTML = "";
+    }
+
+
+    // ========================================================
+    // COMBUSTIBLE
+    // ========================================================
+
+    if (combustible.length) {
+
+        if (detailCombustibleWrap) {
+            detailCombustibleWrap.classList.remove(
+                "hidden"
+            );
+        }
+
+        if (detailCombustibleEmpty) {
+            detailCombustibleEmpty.classList.add(
+                "hidden"
+            );
+        }
+
+        let granTotalLitros = 0;
+        let granTotalCosto = 0;
+
+        if (detailCombustibleBody) {
+            detailCombustibleBody.innerHTML =
+                combustible
+                    .map((c) => {
+                        const litros =
+                            Number(
+                                c.litros || 0
+                            );
+
+                        const precioUnitario =
+                            Number(
+                                c.precio_unitario || 0
+                            );
+
+                        const precioTotal =
+                            Number(
+                                c.precio_total || 0
+                            );
+
+                        granTotalLitros += litros;
+                        granTotalCosto += precioTotal;
+
+                        const maqNombre =
+                            c.maquinaria_nombre || "Sin asignar";
+                        const maqMarca =
+                            c.maquinaria_marca
+                                ? ` (${c.maquinaria_marca})`
+                                : "";
+                        const maqTexto =
+                            maqNombre !== "Sin asignar"
+                                ? `${maqNombre}${maqMarca}`
+                                : "General / Sin asignar";
+
+                        return `
+                            <tr>
+                                <td>
+                                    ${formatDate(
+                                        c.fecha
+                                    )}
+                                </td>
+                                <td>
+                                    ${escapeHtml(
+                                        maqTexto
+                                    )}
+                                </td>
+                                <td>
+                                    <span class="badge-combustible">
+                                        ${escapeHtml(
+                                            c.nombre_combustible || "Diesel"
+                                        )}
+                                    </span>
+                                </td>
+                                <td>
+                                    ${litros.toLocaleString(
+                                        "es-UY",
+                                        {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        }
+                                    )} L
+                                </td>
+                                <td>
+                                    ${formatCurrency(
+                                        precioUnitario
+                                    )}
+                                </td>
+                                <td>
+                                    <strong>
+                                        ${formatCurrency(
+                                            precioTotal
+                                        )}
+                                    </strong>
+                                </td>
+                            </tr>
+                        `;
+                    })
+                    .join("");
+        }
+
+        if (detailCombustibleTotalLitros) {
+            detailCombustibleTotalLitros.textContent =
+                `${granTotalLitros.toLocaleString("es-UY", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                })} L`;
+        }
+
+        if (detailCombustibleTotalCosto) {
+            detailCombustibleTotalCosto.textContent =
+                formatCurrency(
+                    granTotalCosto
+                );
+        }
+
+    } else {
+
+        if (detailCombustibleWrap) {
+            detailCombustibleWrap.classList.add(
+                "hidden"
+            );
+        }
+
+        if (detailCombustibleEmpty) {
+            detailCombustibleEmpty.classList.remove(
+                "hidden"
+            );
+        }
+
+        if (detailCombustibleBody) {
+            detailCombustibleBody.innerHTML = "";
+        }
+
+        if (detailCombustibleTotalLitros) {
+            detailCombustibleTotalLitros.textContent =
+                "0,00 L";
+        }
+
+        if (detailCombustibleTotalCosto) {
+            detailCombustibleTotalCosto.textContent =
+                formatCurrency(0);
+        }
     }
 
 

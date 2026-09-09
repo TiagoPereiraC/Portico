@@ -707,6 +707,40 @@ function responderDetalle(PDO $pdo): void
         );
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | COMBUSTIBLE
+    |--------------------------------------------------------------------------
+    */
+
+    $stmt = $pdo->prepare(
+        'SELECT
+            c.id_combustible,
+            c.fecha,
+            c.nombre_combustible,
+            c.litros,
+            c.precio_unitario,
+            c.precio_total,
+            c.id_maquinaria,
+            COALESCE(m.nombre, "Sin asignar") AS maquinaria_nombre,
+            m.marca AS maquinaria_marca
+         FROM combustible c
+         LEFT JOIN maquinaria m
+             ON m.id_maquinaria = c.id_maquinaria
+         WHERE c.id_obra = ?
+         ORDER BY c.fecha DESC, c.id_combustible DESC'
+    );
+
+    $stmt->execute([
+        $idObra
+    ]);
+
+    $combustible =
+        $stmt->fetchAll(
+            PDO::FETCH_ASSOC
+        );
+
+
     echo json_encode([
         'success' => true,
         'obra' => $obra,
@@ -714,6 +748,7 @@ function responderDetalle(PDO $pdo): void
         'herramientas' => $herramientas,
         'obreros' => $obreros,
         'maquinaria' => $maquinaria,
+        'combustible' => $combustible,
         'tareas' => $tareas
     ], JSON_UNESCAPED_UNICODE);
 }

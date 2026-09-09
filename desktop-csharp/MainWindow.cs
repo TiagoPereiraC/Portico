@@ -1420,6 +1420,32 @@ public sealed class MainWindow : Form
 				}
 			}
 
+			var combustible = new List<object>();
+			await using (var cmd = conn.CreateCommand())
+			{
+				cmd.CommandText =
+					"SELECT c.id_combustible, c.fecha, c.nombre_combustible, c.litros, c.precio_unitario, c.precio_total, " +
+					"COALESCE(m.nombre, 'Sin asignar') as maquinaria_nombre, m.marca as maquinaria_marca " +
+					"FROM combustible c LEFT JOIN maquinaria m ON m.id_maquinaria = c.id_maquinaria " +
+					"WHERE c.id_obra = @idObra ORDER BY c.fecha DESC, c.id_combustible DESC";
+				cmd.Parameters.AddWithValue("@idObra", idObra);
+				await using var reader = await cmd.ExecuteReaderAsync();
+				while (await reader.ReadAsync())
+				{
+					combustible.Add(new
+					{
+						id_combustible = reader.GetInt32("id_combustible"),
+						fecha = ReadNullableDate(reader, "fecha"),
+						nombre_combustible = reader.GetString("nombre_combustible"),
+						litros = reader.GetDecimal("litros"),
+						precio_unitario = reader.GetDecimal("precio_unitario"),
+						precio_total = reader.GetDecimal("precio_total"),
+						maquinaria_nombre = reader.GetString("maquinaria_nombre"),
+						maquinaria_marca = ReadNullableString(reader, "maquinaria_marca")
+					});
+				}
+			}
+
 			PostToJs(new
 			{
 				type = "obras_detalle_response",
@@ -1430,6 +1456,7 @@ public sealed class MainWindow : Form
 				herramientas,
 				obreros,
 				maquinaria,
+				combustible,
 				tareas
 			});
 		}
