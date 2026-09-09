@@ -134,6 +134,246 @@
                     </div>
                 </div>
 
+                <!-- ============================================================
+     MODAL NUEVO CONTRATO
+============================================================ -->
+
+<div
+    id="nuevoContratoModal"
+    class="detail-modal hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="nuevoContratoTitle"
+>
+    <div class="detail-panel contrato-modal-panel">
+
+        <div class="detail-header">
+            <div>
+                <h2 id="nuevoContratoTitle">Nuevo contrato</h2>
+                <span
+                    class="detail-contrata"
+                    id="nuevoContratoObraNombre"
+                ></span>
+            </div>
+
+            <button
+                type="button"
+                class="detail-close"
+                id="nuevoContratoClose"
+                aria-label="Cerrar"
+            >
+                <i class="fas fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="detail-body">
+
+            <!-- INFORMACIÓN DEL CONTRATO ANTERIOR -->
+
+            <div class="detail-section">
+                <h3>
+                    <i class="fas fa-file-contract"></i>
+                    Contrato anterior
+                </h3>
+
+                <div class="detail-grid" id="nuevoContratoAnteriorInfo">
+                </div>
+            </div>
+
+
+            <!-- ARCHIVO DEL NUEVO CONTRATO -->
+
+            <div class="detail-section">
+                <h3>
+                    <i class="fas fa-file-arrow-up"></i>
+                    Nuevo archivo de contrato
+                </h3>
+
+                <div class="field file-field">
+
+                    <label for="nuevoContratoArchivo">
+                        Archivo del nuevo contrato
+                    </label>
+
+                    <div class="file-upload-wrap">
+
+                        <label
+                            class="file-upload-btn"
+                            for="nuevoContratoArchivo"
+                        >
+                            <i class="fas fa-cloud-arrow-up"></i>
+                            <span>Seleccionar archivo</span>
+                        </label>
+
+                        <span
+                            class="file-upload-name"
+                            id="nuevoContratoArchivoNombre"
+                        >
+                            Ningún archivo seleccionado
+                        </span>
+
+                        <input
+                            type="file"
+                            id="nuevoContratoArchivo"
+                            accept=".pdf,.doc,.docx"
+                        />
+
+                    </div>
+
+                    <p class="field-note">
+                        Puede cargar el PDF o documento correspondiente
+                        al nuevo contrato.
+                    </p>
+
+                </div>
+            </div>
+
+
+            <!-- ACTIVIDADES PENDIENTES -->
+
+            <div class="detail-section detail-section-full">
+
+                <h3>
+                    <i class="fas fa-clock"></i>
+                    Actividades pendientes del contrato anterior
+                </h3>
+
+                <p class="field-note">
+                    Estas actividades continuarán pendientes en el nuevo
+                    contrato.
+                </p>
+
+                <div
+                    class="detail-table-wrap"
+                    id="nuevoContratoPendientesWrap"
+                >
+
+                    <table class="detail-table">
+
+                        <thead>
+                            <tr>
+                                <th>Actividad</th>
+                                <th>Importe</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="nuevoContratoPendientesBody">
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <p
+                    class="detail-empty"
+                    id="nuevoContratoPendientesEmpty"
+                >
+                    No hay actividades pendientes.
+                </p>
+
+            </div>
+
+
+            <!-- NUEVAS ACTIVIDADES -->
+
+            <div class="detail-section detail-section-full">
+
+                <div class="tasks-header">
+
+                    <div>
+                        <h3>
+                            <i class="fas fa-list-check"></i>
+                            Nuevas actividades
+                        </h3>
+
+                        <p class="field-note">
+                            Agregue nuevas actividades que formarán parte
+                            del nuevo contrato.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        id="btnAgregarNuevaTareaContrato"
+                    >
+                        <i class="fas fa-plus"></i>
+                        Agregar actividad
+                    </button>
+
+                </div>
+
+
+                <div class="tasks-table-wrap">
+
+                    <table class="tasks-table">
+
+                        <thead>
+                            <tr>
+                                <th>Actividad</th>
+                                <th>Importe</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="nuevoContratoNuevasTareasBody">
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <p
+                    class="tasks-empty"
+                    id="nuevoContratoNuevasTareasEmpty"
+                >
+                    No hay nuevas actividades agregadas.
+                </p>
+
+
+                <div class="tasks-total">
+
+                    <strong>
+                        Total del nuevo contrato:
+                    </strong>
+
+                    <span id="nuevoContratoTotal">
+                        $ 0,00
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ACCIONES -->
+
+        <div class="detail-actions">
+
+            <button
+                type="button"
+                class="btn-secondary"
+                id="nuevoContratoCancel"
+            >
+                Cancelar
+            </button>
+
+            <button
+                type="button"
+                class="btn-save"
+                id="nuevoContratoGuardar"
+            >
+                <i class="fas fa-file-circle-plus"></i>
+                Crear nuevo contrato
+            </button>
+
+        </div>
+
+    </div>
+</div>
+
                 <div
                     id="obraDetailModal"
                     class="detail-modal hidden"

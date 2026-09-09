@@ -39,8 +39,16 @@ nav.main-top-nav {
     box-sizing: border-box;
     background-color: #fff;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-    position: relative;
+    position: sticky;
+    top: 0;
     z-index: 100;
+}
+
+@media (min-width: 1428px) {
+    nav.main-top-nav {
+        padding-left: calc((100% - 1380px) / 2 + 24px);
+        padding-right: calc((100% - 1380px) / 2 + 24px);
+    }
 }
 
 .logo-wrap {
@@ -418,7 +426,7 @@ main {
 }
 
 .confirm-box {
-    width: min(100%, 420px);
+    width: min(100%, 480px);
     background: var(--card-bg);
     border-radius: 18px;
     padding: 24px;
@@ -439,14 +447,16 @@ main {
 
 .confirm-actions {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     justify-content: center;
+    flex-wrap: wrap;
 }
 
 .confirm-actions .btn-secondary,
 .confirm-actions .btn-save {
-    min-width: 160px;
-    padding: 10px 20px;
+    flex: 1 1 130px;
+    min-width: 120px;
+    padding: 10px 16px;
     font-size: 14px;
     font-weight: 500;
     margin-top: 0;
@@ -466,6 +476,16 @@ main {
 
 .confirm-actions .btn-secondary:hover {
     background: #888;
+    transform: scale(1.02);
+}
+
+#confirmFinalizeContract {
+    background: #d97706;
+    color: white;
+}
+
+#confirmFinalizeContract:hover {
+    background: #b45309;
     transform: scale(1.02);
 }
 
@@ -786,6 +806,7 @@ main {
 }
 
 table {
+    width: max-content;
     min-width: 100%;
     border-collapse: collapse;
 }
