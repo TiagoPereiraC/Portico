@@ -5,6 +5,25 @@ CREATE DATABASE IF NOT EXISTS portico
     COLLATE utf8mb4_unicode_ci;
 USE portico;
 
+DROP TABLE IF EXISTS notificaciones_leidas;
+DROP TABLE IF EXISTS auditoria_logs;
+DROP TABLE IF EXISTS intentos_login;
+DROP TABLE IF EXISTS partes_diarios;
+DROP TABLE IF EXISTS costos_generales;
+DROP TABLE IF EXISTS combustible;
+DROP TABLE IF EXISTS recursos;
+DROP TABLE IF EXISTS registros;
+DROP TABLE IF EXISTS contrato_tareas;
+DROP TABLE IF EXISTS contratos;
+DROP TABLE IF EXISTS asistencia_maquinaria;
+DROP TABLE IF EXISTS obra_maquinaria;
+DROP TABLE IF EXISTS certificado;
+DROP TABLE IF EXISTS contrato_obrero;
+DROP TABLE IF EXISTS maquinaria;
+DROP TABLE IF EXISTS obreros;
+DROP TABLE IF EXISTS obras;
+DROP TABLE IF EXISTS usuarios;
+
 CREATE TABLE IF NOT EXISTS usuarios (
     id_usuario INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -93,7 +112,7 @@ CREATE TABLE IF NOT EXISTS asistencia_maquinaria (
     id_maquinaria INT NOT NULL,
     fecha DATE NOT NULL,
     hora_salida TIME NOT NULL,
-    hora_devolucion TIME NOT NULL,
+    hora_devolucion TIME NULL,
 
     INDEX idx_asistencia_maq_obra (id_obra),
     INDEX idx_asistencia_maq_maq (id_maquinaria),
@@ -111,10 +130,20 @@ CREATE TABLE IF NOT EXISTS contratos (
     archivo LONGBLOB NOT NULL,
     nombre_archivo VARCHAR(255),
     fecha_subida DATE NOT NULL,
+    id_contrato_origen INT NULL,
+    estado ENUM('Activo','Cerrado') NOT NULL DEFAULT 'Activo',
+    fecha_cierre DATE NULL,
+    monto_total DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    monto_liquidado DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    importe_final DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    motivo_cierre ENUM('Nuevo contrato','Finalizacion de obra') NULL,
 
     INDEX idx_contratos_obra (id_obra),
+    INDEX idx_contratos_origen (id_contrato_origen),
     CONSTRAINT fk_contratos_obra FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
-        ON UPDATE CASCADE ON DELETE CASCADE
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_contratos_origen FOREIGN KEY (id_contrato_origen) REFERENCES contratos(id_contrato)
+        ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS contrato_tareas (
@@ -177,18 +206,56 @@ CREATE TABLE IF NOT EXISTS combustible (
     nombre_combustible VARCHAR(100) NOT NULL,
     litros DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     precio_unitario DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    precio_total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    precio_total DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     fecha DATE NOT NULL,
     id_obra INT NOT NULL,
     id_maquinaria INT NULL,
+    id_factura INT NULL,
 
     INDEX idx_combustible_fecha (fecha),
     INDEX idx_combustible_obra (id_obra),
     INDEX idx_combustible_maquinaria (id_maquinaria),
+    INDEX idx_combustible_factura (id_factura),
     CONSTRAINT fk_combustible_obra FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_combustible_maquinaria FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
         ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS costos_generales (
+    id_costo_general INT AUTO_INCREMENT PRIMARY KEY,
+    concepto VARCHAR(150) NOT NULL,
+    categoria ENUM('Fijo','Variable') NOT NULL,
+    periodo DATE NOT NULL,
+    monto DECIMAL(12,2) NOT NULL,
+    fecha_registro DATE NOT NULL,
+    id_usuario INT NOT NULL,
+
+    INDEX idx_costos_generales_usuario (id_usuario),
+    CONSTRAINT fk_costos_generales_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS partes_diarios (
+    id_parte INT AUTO_INCREMENT PRIMARY KEY,
+    id_obra INT NOT NULL,
+    id_maquinaria INT NOT NULL,
+    id_usuario INT NOT NULL,
+    fecha DATE NOT NULL,
+    horas_trabajadas DECIMAL(5,2) DEFAULT 0.00,
+    horas_paradas DECIMAL(5,2) DEFAULT 0.00,
+    litros_combustible DECIMAL(10,2) DEFAULT 0.00,
+    observaciones TEXT,
+
+    INDEX idx_partes_obra (id_obra),
+    INDEX idx_partes_maquinaria (id_maquinaria),
+    INDEX idx_partes_usuario (id_usuario),
+    CONSTRAINT fk_partes_obra FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_partes_maquinaria FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_partes_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS intentos_login (
@@ -219,9 +286,18 @@ CREATE TABLE IF NOT EXISTS auditoria_logs (
         ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-SET FOREIGN_KEY_CHECKS = 1;
+CREATE TABLE IF NOT EXISTS notificaciones_leidas (
+    id_usuario INT NOT NULL,
+    tipo VARCHAR(20) NOT NULL,
+    id_referencia INT NOT NULL,
+    fecha_leido DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_usuario, tipo, id_referencia),
+    INDEX idx_notif_usuario (id_usuario),
+    CONSTRAINT fk_notif_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+        ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-USE portico;
+SET FOREIGN_KEY_CHECKS = 1;
 
 START TRANSACTION;
 
@@ -356,11 +432,45 @@ FROM obreros o
 WHERE o.id_obrero <= 45
   AND NOT EXISTS (SELECT 1 FROM contrato_obrero WHERE id_obrero = o.id_obrero);
 
--- ===== 5. CONTRATOS OBRAS =====
-INSERT INTO contratos (id_obra, archivo, nombre_archivo, fecha_subida)
-SELECT ob.id_obra, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', CONCAT('contrato_', ob.numero_contrata, '.pdf'), ob.fecha_inicio
-FROM obras ob
-WHERE NOT EXISTS (SELECT 1 FROM contratos WHERE id_obra = ob.id_obra);
+-- ===== 5. CONTRATOS OBRAS (35 contratos 1:1 con obras y montos calculados) =====
+INSERT INTO contratos (id_contrato, id_obra, archivo, nombre_archivo, fecha_subida, id_contrato_origen, estado, fecha_cierre, monto_total, monto_liquidado, importe_final, motivo_cierre) VALUES
+(1, 1, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-001.pdf', '2026-01-10', NULL, 'Activo', NULL, 17650000.00, 5500000.00, 0.00, NULL),
+(2, 2, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-002.pdf', '2026-01-10', NULL, 'Activo', NULL, 32250000.00, 2750000.00, 0.00, NULL),
+(3, 3, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-003.pdf', '2026-01-10', NULL, 'Activo', NULL, 10450000.00, 5700000.00, 0.00, NULL),
+(4, 4, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-004.pdf', '2026-01-10', NULL, 'Activo', NULL, 14350000.00, 4250000.00, 0.00, NULL),
+(5, 5, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-005.pdf', '2026-01-10', NULL, 'Activo', NULL, 10580000.00, 4980000.00, 0.00, NULL),
+(6, 6, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-006.pdf', '2026-01-10', NULL, 'Activo', NULL, 21180000.00, 3630000.00, 0.00, NULL),
+(7, 7, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-007.pdf', '2026-01-10', NULL, 'Activo', NULL, 13380000.00, 3150000.00, 0.00, NULL),
+(8, 8, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-008.pdf', '2026-01-10', NULL, 'Activo', NULL, 23700000.00, 4350000.00, 0.00, NULL),
+(9, 9, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-009.pdf', '2026-01-10', NULL, 'Activo', NULL, 76200000.00, 17000000.00, 0.00, NULL),
+(10, 10, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-010.pdf', '2026-01-10', NULL, 'Activo', NULL, 30620000.00, 4320000.00, 0.00, NULL),
+(11, 11, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-011.pdf', '2026-01-10', NULL, 'Activo', NULL, 37200000.00, 10200000.00, 0.00, NULL),
+(12, 12, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-012.pdf', '2026-01-10', NULL, 'Activo', NULL, 17850000.00, 10150000.00, 0.00, NULL),
+(13, 13, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-013.pdf', '2026-01-10', NULL, 'Activo', NULL, 20380000.00, 7980000.00, 0.00, NULL),
+(14, 14, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-014.pdf', '2026-01-10', NULL, 'Activo', NULL, 12380000.00, 3580000.00, 0.00, NULL),
+(15, 15, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-015.pdf', '2026-01-10', NULL, 'Activo', NULL, 62000000.00, 17700000.00, 0.00, NULL),
+(16, 16, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-016.pdf', '2026-01-10', NULL, 'Activo', NULL, 22200000.00, 10200000.00, 0.00, NULL),
+(17, 17, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-017.pdf', '2026-01-10', NULL, 'Activo', NULL, 49000000.00, 17300000.00, 0.00, NULL),
+(18, 18, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-018.pdf', '2026-01-10', NULL, 'Activo', NULL, 30000000.00, 6600000.00, 0.00, NULL),
+(19, 19, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-019.pdf', '2026-01-10', NULL, 'Activo', NULL, 55700000.00, 5600000.00, 0.00, NULL),
+(20, 20, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-020.pdf', '2026-01-10', NULL, 'Activo', NULL, 26300000.00, 8300000.00, 0.00, NULL),
+(21, 21, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-021.pdf', '2026-01-10', NULL, 'Activo', NULL, 48800000.00, 18900000.00, 0.00, NULL),
+(22, 22, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-022.pdf', '2026-01-10', NULL, 'Activo', NULL, 18150000.00, 3750000.00, 0.00, NULL),
+(23, 23, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-023.pdf', '2026-01-10', NULL, 'Activo', NULL, 19600000.00, 8600000.00, 0.00, NULL),
+(24, 24, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-024.pdf', '2026-01-10', NULL, 'Activo', NULL, 20600000.00, 12200000.00, 0.00, NULL),
+(25, 25, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-025.pdf', '2026-01-10', NULL, 'Activo', NULL, 20000000.00, 7000000.00, 0.00, NULL),
+(26, 26, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-026.pdf', '2026-01-10', NULL, 'Activo', NULL, 12700000.00, 7400000.00, 0.00, NULL),
+(27, 27, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-027.pdf', '2026-01-10', NULL, 'Activo', NULL, 17400000.00, 5400000.00, 0.00, NULL),
+(28, 28, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-028.pdf', '2026-01-10', NULL, 'Activo', NULL, 22250000.00, 950000.00, 0.00, NULL),
+(29, 29, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-029.pdf', '2026-01-10', NULL, 'Activo', NULL, 11250000.00, 4250000.00, 0.00, NULL),
+(30, 30, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2026-030.pdf', '2026-01-10', NULL, 'Activo', NULL, 13000000.00, 1400000.00, 0.00, NULL),
+(31, 31, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2025-085.pdf', '2025-06-01', NULL, 'Cerrado', '2025-12-31', 8750000.00, 8750000.00, 8750000.00, 'Finalizacion de obra'),
+(32, 32, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2025-086.pdf', '2025-06-01', NULL, 'Cerrado', '2025-12-31', 14900000.00, 14900000.00, 14900000.00, 'Finalizacion de obra'),
+(33, 33, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2025-087.pdf', '2025-06-01', NULL, 'Cerrado', '2025-12-31', 13100000.00, 13100000.00, 13100000.00, 'Finalizacion de obra'),
+(34, 34, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2025-088.pdf', '2025-06-01', NULL, 'Cerrado', '2025-12-31', 7100000.00, 7100000.00, 7100000.00, 'Finalizacion de obra'),
+(35, 35, _binary 'PDF_CONTRATO_OBRA_OFICIAL_2026', 'contrato_CTR-2025-089.pdf', '2025-06-01', NULL, 'Cerrado', '2025-12-31', 10000000.00, 10000000.00, 10000000.00, 'Finalizacion de obra')
+ON DUPLICATE KEY UPDATE estado = VALUES(estado), monto_total = VALUES(monto_total), monto_liquidado = VALUES(monto_liquidado), importe_final = VALUES(importe_final);
+
 
 -- ===== 6. MAQUINARIA (25 maquinarias) =====
 INSERT INTO maquinaria (nombre, marca) VALUES
@@ -481,46 +591,46 @@ LIMIT 350;
 
 -- ===== 11. RECURSOS =====
 INSERT INTO recursos (id_obra, id_registro, fecha, nombre, cantidad, precio_unitario, es_material) VALUES
-(1, NULL, '2026-03-10', 'Cemento Loma Negra Portland CP40 (Bolsa 50kg)', 180, 9800.00, 1),
-(2, NULL, '2026-03-10', 'Cal Hidratada El Milagro (Bolsa 25kg)', 120, 5600.00, 1),
-(3, NULL, '2026-03-10', 'Hierro conformado ADN 420 8mm (Barra 12m)', 350, 1450.00, 1),
-(4, NULL, '2026-03-10', 'Hierro conformado ADN 420 12mm (Barra 12m)', 240, 3200.00, 1),
-(5, NULL, '2026-03-10', 'Hierro conformado ADN 420 16mm (Barra 12m)', 140, 5900.00, 1),
-(6, NULL, '2026-03-10', 'Arena gruesa lavada de río (m3)', 45, 45000.00, 1),
-(7, NULL, '2026-03-10', 'Piedra partida basáltica 6-20 (m3)', 38, 38000.00, 1),
-(8, NULL, '2026-03-10', 'Ladrillo cerámico hueco 12x18x33 (Unidad)', 6000, 220.00, 1),
-(9, NULL, '2026-03-10', 'Ladrillo cerámico portante 18x19x33 (Unidad)', 3500, 380.00, 1),
-(10, NULL, '2026-03-10', 'Malla electrosoldada 15x15 4.2mm (Paño 2x5m)', 65, 22500.00, 1),
-(11, NULL, '2026-03-10', 'Pintura látex exterior Alba blanco 20L', 28, 68000.00, 1),
-(12, NULL, '2026-03-10', 'Enduido plástico exterior 20kg', 20, 18500.00, 1),
-(1, NULL, '2026-03-10', 'Membrana asfáltica con aluminio 4mm (Rollo 10m2)', 35, 34000.00, 1),
-(2, NULL, '2026-03-10', 'Caño cloacal PVC 110mm x 4m Tigre', 85, 14200.00, 1),
-(3, NULL, '2026-03-10', 'Caño termofusión IPS agua 20mm x 4m', 120, 4800.00, 1),
-(4, NULL, '2026-03-10', 'Cable unipolar normalizado 2.5mm Prysmian (Rollo 100m)', 22, 38000.00, 1),
-(5, NULL, '2026-03-10', 'Llave termomagnética bipolar Schneider 25A', 20, 12500.00, 1),
-(6, NULL, '2026-03-10', 'Disyuntor diferencial bipolar 40A 30mA', 12, 28000.00, 1),
-(7, NULL, '2026-03-10', 'Vigueta pretensada de hormigón 4.20m', 80, 9200.00, 1),
-(8, NULL, '2026-03-10', 'Bovedilla de telgopor para losa 100x42x10cm', 160, 2400.00, 1),
-(9, NULL, '2026-03-10', 'Pegamento para cerámicos Klaukol 30kg', 60, 7900.00, 1),
-(10, NULL, '2026-03-10', 'Piso cerámico esmaltado 45x45 San Lorenzo (m2)', 220, 6800.00, 1),
-(11, NULL, '2026-03-10', 'Adhesivo sellador de poliuretano Sikaflex 11FC', 36, 11500.00, 1),
-(12, NULL, '2026-03-10', 'Impermeabilizante para cimientos Sika 1 20L', 15, 31000.00, 1),
-(1, NULL, '2026-03-10', 'Chapa galvanizada acanalada C25 6m', 45, 26000.00, 1),
-(2, NULL, '2026-03-12', 'Rotomartillo SDS Plus Bosch GBH 2-28', 5, NULL, 0),
-(3, NULL, '2026-03-12', 'Amoladora angular 7\" DeWalt DWE490', 8, NULL, 0),
-(4, NULL, '2026-03-12', 'Amoladora angular 4.5\" Makita GA4530', 10, NULL, 0),
-(5, NULL, '2026-03-12', 'Hormigonera de volteo 130L con motor 3/4 HP', 4, NULL, 0),
-(6, NULL, '2026-03-12', 'Sierra circular de mano Makita 5007N 7-1/4\"', 4, NULL, 0),
-(7, NULL, '2026-03-12', 'Nivel láser rotativo autonivelante 360° Huepar', 3, NULL, 0),
-(8, NULL, '2026-03-12', 'Generador eléctrico portátil 6.5 kVA Gamma', 3, NULL, 0),
-(9, NULL, '2026-03-12', 'Vibrador de inmersión para hormigón Lusqtoff 2HP', 4, NULL, 0),
-(10, NULL, '2026-03-12', 'Hidrolavadora industrial 2500 PSI Karcher', 3, NULL, 0),
-(11, NULL, '2026-03-12', 'Cortadora sensitiva de metales 14\" Stanley', 3, NULL, 0),
-(12, NULL, '2026-03-12', 'Andamios tubulares con tablones metálicos (Cuerpo)', 16, NULL, 0),
-(1, NULL, '2026-03-12', 'Escalera extensible dieléctrica de fibra 8m', 6, NULL, 0),
-(2, NULL, '2026-03-12', 'Soldadora inverter 200A Esab HandyArc', 4, NULL, 0),
-(3, NULL, '2026-03-12', 'Termofusora digital para caños 800W Dogo', 5, NULL, 0),
-(4, NULL, '2026-03-12', 'Pistola de calor industrial 2000W Bosch', 4, NULL, 0);
+(1, 1, '2026-03-10', 'Cemento Loma Negra Portland CP40 (Bolsa 50kg)', 180, 9800.00, 1),
+(2, 2, '2026-03-10', 'Cal Hidratada El Milagro (Bolsa 25kg)', 120, 5600.00, 1),
+(3, 3, '2026-03-10', 'Hierro conformado ADN 420 8mm (Barra 12m)', 350, 1450.00, 1),
+(4, 4, '2026-03-10', 'Hierro conformado ADN 420 12mm (Barra 12m)', 240, 3200.00, 1),
+(5, 5, '2026-03-10', 'Hierro conformado ADN 420 16mm (Barra 12m)', 140, 5900.00, 1),
+(6, 6, '2026-03-10', 'Arena gruesa lavada de río (m3)', 45, 45000.00, 1),
+(7, 7, '2026-03-10', 'Piedra partida basáltica 6-20 (m3)', 38, 38000.00, 1),
+(8, 8, '2026-03-10', 'Ladrillo cerámico hueco 12x18x33 (Unidad)', 6000, 220.00, 1),
+(9, 9, '2026-03-10', 'Ladrillo cerámico portante 18x19x33 (Unidad)', 3500, 380.00, 1),
+(10, 10, '2026-03-10', 'Malla electrosoldada 15x15 4.2mm (Paño 2x5m)', 65, 22500.00, 1),
+(11, 11, '2026-03-10', 'Pintura látex exterior Alba blanco 20L', 28, 68000.00, 1),
+(12, 12, '2026-03-10', 'Enduido plástico exterior 20kg', 20, 18500.00, 1),
+(1, 13, '2026-03-10', 'Membrana asfáltica con aluminio 4mm (Rollo 10m2)', 35, 34000.00, 1),
+(2, 14, '2026-03-10', 'Caño cloacal PVC 110mm x 4m Tigre', 85, 14200.00, 1),
+(3, 15, '2026-03-10', 'Caño termofusión IPS agua 20mm x 4m', 120, 4800.00, 1),
+(4, 16, '2026-03-10', 'Cable unipolar normalizado 2.5mm Prysmian (Rollo 100m)', 22, 38000.00, 1),
+(5, 17, '2026-03-10', 'Llave termomagnética bipolar Schneider 25A', 20, 12500.00, 1),
+(6, 18, '2026-03-10', 'Disyuntor diferencial bipolar 40A 30mA', 12, 28000.00, 1),
+(7, 19, '2026-03-10', 'Vigueta pretensada de hormigón 4.20m', 80, 9200.00, 1),
+(8, 20, '2026-03-10', 'Bovedilla de telgopor para losa 100x42x10cm', 160, 2400.00, 1),
+(9, 21, '2026-03-10', 'Pegamento para cerámicos Klaukol 30kg', 60, 7900.00, 1),
+(10, 22, '2026-03-10', 'Piso cerámico esmaltado 45x45 San Lorenzo (m2)', 220, 6800.00, 1),
+(11, 23, '2026-03-10', 'Adhesivo sellador de poliuretano Sikaflex 11FC', 36, 11500.00, 1),
+(12, 24, '2026-03-10', 'Impermeabilizante para cimientos Sika 1 20L', 15, 31000.00, 1),
+(1, 25, '2026-03-10', 'Chapa galvanizada acanalada C25 6m', 45, 26000.00, 1),
+(2, 26, '2026-03-12', 'Rotomartillo SDS Plus Bosch GBH 2-28', 5, NULL, 0),
+(3, 27, '2026-03-12', 'Amoladora angular 7\" DeWalt DWE490', 8, NULL, 0),
+(4, 28, '2026-03-12', 'Amoladora angular 4.5\" Makita GA4530', 10, NULL, 0),
+(5, 29, '2026-03-12', 'Hormigonera de volteo 130L con motor 3/4 HP', 4, NULL, 0),
+(6, 30, '2026-03-12', 'Sierra circular de mano Makita 5007N 7-1/4\"', 4, NULL, 0),
+(7, 31, '2026-03-12', 'Nivel láser rotativo autonivelante 360° Huepar', 3, NULL, 0),
+(8, 32, '2026-03-12', 'Generador eléctrico portátil 6.5 kVA Gamma', 3, NULL, 0),
+(9, 33, '2026-03-12', 'Vibrador de inmersión para hormigón Lusqtoff 2HP', 4, NULL, 0),
+(10, 34, '2026-03-12', 'Hidrolavadora industrial 2500 PSI Karcher', 3, NULL, 0),
+(11, 35, '2026-03-12', 'Cortadora sensitiva de metales 14\" Stanley', 3, NULL, 0),
+(12, 36, '2026-03-12', 'Andamios tubulares con tablones metálicos (Cuerpo)', 16, NULL, 0),
+(1, 37, '2026-03-12', 'Escalera extensible dieléctrica de fibra 8m', 6, NULL, 0),
+(2, 38, '2026-03-12', 'Soldadora inverter 200A Esab HandyArc', 4, NULL, 0),
+(3, 39, '2026-03-12', 'Termofusora digital para caños 800W Dogo', 5, NULL, 0),
+(4, 40, '2026-03-12', 'Pistola de calor industrial 2000W Bosch', 4, NULL, 0);
 
 -- ===== 12. INTENTOS DE LOGIN =====
 INSERT INTO intentos_login (username, ip_address, fecha, exitoso) VALUES
@@ -786,21 +896,108 @@ INSERT INTO contrato_tareas (id_contrato, id_tarea_origen, descripcion, importe,
 (35, NULL, 'Muro de contención de hormigón ciclópeo con barbacanas', 5900000.00, 'Completada', '2025-07-20'),
 (35, NULL, 'Canal colector pluvial superior y disipador de energía', 2600000.00, 'Completada', '2025-09-18');
 
--- ===== 15. COMBUSTIBLE (combustible) =====
+-- ===== 15. COMBUSTIBLE (Registro de consumos Diésel y Nafta en obras) =====
 INSERT INTO combustible (nombre_combustible, litros, precio_unitario, precio_total, fecha, id_obra, id_maquinaria) VALUES
 ('Diesel', 180.00, 1180.00, 212400.00, '2026-01-15', 1, 1),
 ('Diesel', 120.00, 1180.00, 141600.00, '2026-01-20', 1, 8),
+('Nafta', 60.00, 1260.00, 75600.00, '2026-04-05', 1, 13),
+('Diesel', 175.00, 1260.00, 220500.00, '2026-08-18', 1, 1),
 ('Diesel', 250.00, 1195.00, 298750.00, '2026-02-05', 2, 1),
 ('Diesel', 150.00, 1195.00, 179250.00, '2026-02-12', 2, 2),
-('Nafta', 45.00, 1250.00, 56250.00, '2026-02-15', 3, 11),
-('Diesel', 90.00, 1210.00, 108900.00, '2026-03-02', 4, 7),
-('Diesel', 200.00, 1220.00, 244000.00, '2026-03-10', 5, 5),
-('Nafta', 60.00, 1260.00, 75600.00, '2026-04-05', 1, 13),
 ('Diesel', 140.00, 1230.00, 172200.00, '2026-05-12', 2, 4),
+('Nafta', 40.00, 1290.00, 51600.00, '2026-08-25', 2, 14),
+('Nafta', 45.00, 1250.00, 56250.00, '2026-02-15', 3, 11),
 ('Diesel', 220.00, 1240.00, 272800.00, '2026-06-08', 3, 15),
+('Diesel', 190.00, 1270.00, 241300.00, '2026-08-10', 3, 3),
+('Diesel', 90.00, 1210.00, 108900.00, '2026-03-02', 4, 7),
 ('Nafta', 50.00, 1280.00, 64000.00, '2026-07-15', 4, 11),
+('Diesel', 130.00, 1250.00, 162500.00, '2026-08-20', 4, 2),
+('Diesel', 200.00, 1220.00, 244000.00, '2026-03-10', 5, 5),
 ('Diesel', 160.00, 1250.00, 200000.00, '2026-08-03', 5, 8),
-('Diesel', 175.00, 1260.00, 220500.00, '2026-08-18', 1, 1),
-('Nafta', 40.00, 1290.00, 51600.00, '2026-08-25', 2, 14);
+('Nafta', 55.00, 1280.00, 70400.00, '2026-08-22', 5, 12),
+('Diesel', 210.00, 1230.00, 258300.00, '2026-04-12', 6, 6),
+('Diesel', 145.00, 1260.00, 182700.00, '2026-07-18', 6, 8),
+('Diesel', 115.00, 1220.00, 140300.00, '2026-03-15', 7, 5),
+('Nafta', 40.00, 1270.00, 50800.00, '2026-06-10', 7, 10),
+('Diesel', 280.00, 1240.00, 347200.00, '2026-04-20', 8, 1),
+('Diesel', 190.00, 1260.00, 239400.00, '2026-07-22', 8, 3),
+('Diesel', 320.00, 1210.00, 387200.00, '2026-02-18', 9, 15),
+('Diesel', 240.00, 1250.00, 300000.00, '2026-05-30', 9, 2),
+('Diesel', 150.00, 1230.00, 184500.00, '2026-04-10', 10, 6),
+('Nafta', 65.00, 1280.00, 83200.00, '2026-07-25', 10, 13),
+('Diesel', 260.00, 1235.00, 321100.00, '2026-04-15', 11, 5),
+('Diesel', 180.00, 1255.00, 225900.00, '2026-06-20', 11, 8),
+('Diesel', 95.00, 1240.00, 117800.00, '2026-03-18', 12, 10),
+('Nafta', 50.00, 1270.00, 63500.00, '2026-05-22', 12, 14);
+
+
+-- ===== 16. PARTES DIARIOS DE MAQUINARIA (Registro operativo de cuadrillas) =====
+INSERT INTO partes_diarios (id_parte, id_obra, id_maquinaria, id_usuario, fecha, horas_trabajadas, horas_paradas, litros_combustible, observaciones) VALUES
+(1, 1, 1, 2, '2026-01-15', 8.50, 0.50, 180.00, 'Excavación en tramo costanera sin novedades mecánicas.'),
+(2, 1, 8, 2, '2026-01-20', 7.50, 1.00, 120.00, 'Transporte de escombros y tosca seleccionada.'),
+(3, 2, 1, 2, '2026-02-05', 9.00, 0.00, 250.00, 'Movimiento masivo de suelo en platea de hospital.'),
+(4, 2, 2, 2, '2026-02-12', 8.00, 0.50, 150.00, 'Zanjeo perimetral y bases de fundación.'),
+(5, 3, 11, 4, '2026-02-15', 6.00, 2.00, 45.00, 'Alimentación eléctrica para bombas y termofusoras.'),
+(6, 4, 7, 4, '2026-03-02', 8.00, 1.00, 90.00, 'Demolición controlada y apoyo en pasarelas.'),
+(7, 5, 5, 4, '2026-03-10', 8.50, 0.00, 200.00, 'Compactación de calzada en cordón cuneta.'),
+(8, 1, 13, 2, '2026-04-05', 7.00, 1.50, 60.00, 'Generador móvil para iluminación y martillos.'),
+(9, 2, 4, 2, '2026-05-12', 8.00, 0.50, 140.00, 'Carga de material árido y hormigonado.'),
+(10, 3, 15, 4, '2026-06-08', 9.00, 0.00, 220.00, 'Nivelación de terreno y apoyo a cuadrillas.')
+ON DUPLICATE KEY UPDATE horas_trabajadas = VALUES(horas_trabajadas), litros_combustible = VALUES(litros_combustible);
+
+-- ===== 17. COSTOS GENERALES OPERATIVOS (Fijos y Variables) =====
+INSERT INTO costos_generales (id_costo_general, concepto, categoria, periodo, monto, fecha_registro, id_usuario) VALUES
+(1, 'Seguro de responsabilidad civil flotas y maquinarias', 'Fijo', '2026-01-01', 480000.00, '2026-01-05', 1),
+(2, 'Alquiler de galpón y depósito central Posadas', 'Fijo', '2026-01-01', 950000.00, '2026-01-05', 1),
+(3, 'Mantenimiento preventivo y service de flota pesada', 'Variable', '2026-01-01', 1250000.00, '2026-01-28', 1),
+(4, 'Servicios de telecomunicaciones e internet satelital obras', 'Fijo', '2026-02-01', 180000.00, '2026-02-02', 3),
+(5, 'Seguro de accidentes personales y ART personal de cuadrilla', 'Fijo', '2026-02-01', 1850000.00, '2026-02-05', 1),
+(6, 'Reparación hidráulica oruga Excavadora CAT 320D', 'Variable', '2026-02-01', 890000.00, '2026-02-20', 3),
+(7, 'Elementos de protección personal (EPP cascos, botines, arneses)', 'Variable', '2026-03-01', 650000.00, '2026-03-10', 1),
+(8, 'Honorarios profesionales agrimensura y seguridad e higiene', 'Fijo', '2026-03-01', 750000.00, '2026-03-15', 5)
+ON DUPLICATE KEY UPDATE monto = VALUES(monto);
+
+-- ===== 18. NOTIFICACIONES LEÍDAS (Estado de lectura de alertas) =====
+INSERT INTO notificaciones_leidas (id_usuario, tipo, id_referencia, fecha_leido) VALUES
+(1, 'maquinaria', 1, '2026-02-01 10:00:00'),
+(1, 'contrato_obrero', 1, '2026-02-01 10:05:00'),
+(3, 'maquinaria', 5, '2026-03-01 11:30:00'),
+(5, 'contrato_obrero', 6, '2026-03-15 09:20:00')
+ON DUPLICATE KEY UPDATE fecha_leido = VALUES(fecha_leido);
+
+
+-- ===== 16. PARTES DIARIOS DE MAQUINARIA (Registro operativo de cuadrillas) =====
+INSERT INTO partes_diarios (id_parte, id_obra, id_maquinaria, id_usuario, fecha, horas_trabajadas, horas_paradas, litros_combustible, observaciones) VALUES
+(1, 1, 1, 2, '2026-01-15', 8.50, 0.50, 180.00, 'Excavación en tramo costanera sin novedades mecánicas.'),
+(2, 1, 8, 2, '2026-01-20', 7.50, 1.00, 120.00, 'Transporte de escombros y tosca seleccionada.'),
+(3, 2, 1, 2, '2026-02-05', 9.00, 0.00, 250.00, 'Movimiento masivo de suelo en platea de hospital.'),
+(4, 2, 2, 2, '2026-02-12', 8.00, 0.50, 150.00, 'Zanjeo perimetral y bases de fundación.'),
+(5, 3, 11, 4, '2026-02-15', 6.00, 2.00, 45.00, 'Alimentación eléctrica para bombas y termofusoras.'),
+(6, 4, 7, 4, '2026-03-02', 8.00, 1.00, 90.00, 'Demolición controlada y apoyo en pasarelas.'),
+(7, 5, 5, 4, '2026-03-10', 8.50, 0.00, 200.00, 'Compactación de calzada en cordón cuneta.'),
+(8, 1, 13, 2, '2026-04-05', 7.00, 1.50, 60.00, 'Generador móvil para iluminación y martillos.'),
+(9, 2, 4, 2, '2026-05-12', 8.00, 0.50, 140.00, 'Carga de material árido y hormigonado.'),
+(10, 3, 15, 4, '2026-06-08', 9.00, 0.00, 220.00, 'Nivelación de terreno y apoyo a cuadrillas.')
+ON DUPLICATE KEY UPDATE horas_trabajadas = VALUES(horas_trabajadas), litros_combustible = VALUES(litros_combustible);
+
+-- ===== 17. COSTOS GENERALES OPERATIVOS (Fijos y Variables) =====
+INSERT INTO costos_generales (id_costo_general, concepto, categoria, periodo, monto, fecha_registro, id_usuario) VALUES
+(1, 'Seguro de responsabilidad civil flotas y maquinarias', 'Fijo', '2026-01-01', 480000.00, '2026-01-05', 1),
+(2, 'Alquiler de galpón y depósito central Posadas', 'Fijo', '2026-01-01', 950000.00, '2026-01-05', 1),
+(3, 'Mantenimiento preventivo y service de flota pesada', 'Variable', '2026-01-01', 1250000.00, '2026-01-28', 1),
+(4, 'Servicios de telecomunicaciones e internet satelital obras', 'Fijo', '2026-02-01', 180000.00, '2026-02-02', 3),
+(5, 'Seguro de accidentes personales y ART personal de cuadrilla', 'Fijo', '2026-02-01', 1850000.00, '2026-02-05', 1),
+(6, 'Reparación hidráulica oruga Excavadora CAT 320D', 'Variable', '2026-02-01', 890000.00, '2026-02-20', 3),
+(7, 'Elementos de protección personal (EPP cascos, botines, arneses)', 'Variable', '2026-03-01', 650000.00, '2026-03-10', 1),
+(8, 'Honorarios profesionales agrimensura y seguridad e higiene', 'Fijo', '2026-03-01', 750000.00, '2026-03-15', 5)
+ON DUPLICATE KEY UPDATE monto = VALUES(monto);
+
+-- ===== 18. NOTIFICACIONES LEÍDAS (Estado de lectura de alertas) =====
+INSERT INTO notificaciones_leidas (id_usuario, tipo, id_referencia, fecha_leido) VALUES
+(1, 'maquinaria', 1, '2026-02-01 10:00:00'),
+(1, 'contrato_obrero', 1, '2026-02-01 10:05:00'),
+(3, 'maquinaria', 5, '2026-03-01 11:30:00'),
+(5, 'contrato_obrero', 6, '2026-03-15 09:20:00')
+ON DUPLICATE KEY UPDATE fecha_leido = VALUES(fecha_leido);
 
 COMMIT;

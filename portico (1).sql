@@ -735,6 +735,23 @@ INSERT INTO `usuarios` (`id_usuario`, `nombre`, `usuario`, `password_hash`, `cor
 (1, 'Administrador', 'admin', '$2y$12$ATczWwHjwfhi9BVElVybR..BYXJ5X4PFRjjJ9EWR/8Ew3/.hHxItm', NULL, 'Administrador', 1),
 (2, 'Capataz', 'capataz', '$2y$12$eFL7X6dijAsHUsEapoACFOn.9AoS.DBK1wPH4Izh9IxTXCdc4Bmpq', NULL, 'Capataz', 1),
 (3, 'Irina Muñoz Braceiro', 'Irina', '$2y$12$N3/WG6/bCbwM8wcvh81SPudLT.6pt39p4qsJgJA52Gz2Wda.wlehi', NULL, 'Administrador', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notificaciones_leidas`
+--
+
+DROP TABLE IF EXISTS `notificaciones_leidas`;
+CREATE TABLE IF NOT EXISTS `notificaciones_leidas` (
+  `id_usuario` int NOT NULL,
+  `tipo` varchar(20) NOT NULL,
+  `id_referencia` int NOT NULL,
+  `fecha_leido` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_usuario`,`tipo`,`id_referencia`),
+  KEY `idx_notif_usuario` (`id_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
