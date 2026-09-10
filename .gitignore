@@ -1,45 +1,80 @@
-# Build outputs
-desktop-csharp/bin/
-desktop-csharp/obj/
-desktop-csharp/**/publish/
+# Compilación y artefactos (.NET / C#)
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+**/publish/
 artifacts/
 TestResults/
+*.lscache
 
+# Entornos de desarrollo e IDEs
 # Visual Studio
 .vs/
 *.user
 *.suo
+*.userprefs
 *.userosscache
 *.sln.docstates
 
-# VS Code local settings (opcional)
+# JetBrains Rider
+.idea/
+*.DotSettings.user
+
+# VS Code
 .vscode/*
+!.vscode/settings.json
 !.vscode/extensions.json
 
-# WebView2 cache
+# Chromium / CefSharp / WebView2
 *.WebView2/
+GPUCache/
+blob_storage/
+Crashpad/
+*.dmp
 
-# Environment / credentials
+# Variables de entorno y credenciales
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.pfx
+*.cer
 
-# Logs / temp
+# Logs y archivos temporales
 *.log
 *.tmp
+*.temp
+php_error.log
+error_log
 
 # Herramientas / scripts temporales de dev
 tools/
 
-# SQL Dumps temporales y descargas de phpMyAdmin
-portico (*).sql
-portico.sql
-*.sql.bak
-portico (*).zip
-portico.zip
+# Dependencias PHP / Composer
+vendor/
+composer.phar
 
-# OS
+# Respaldos SQL y descargas temporales
+# (schema.sql y seed_data.sql son la fuente de verdad)
+portico*.sql
+portico (*).sql
+dump*.sql
+backup*.sql
+*.sql.bak
+*.bak
+
+# Archivos comprimidos
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Archivos del Sistema Operativo
 Thumbs.db
+ehthumbs.db
 desktop.ini
 .DS_Store
-
+.AppleDouble
+.LSOverride
