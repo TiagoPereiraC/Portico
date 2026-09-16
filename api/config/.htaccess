@@ -1,0 +1,3 @@
+# Bloquea acceso HTTP directo a los archivos de configuración
+Order deny,allow
+Deny from all
