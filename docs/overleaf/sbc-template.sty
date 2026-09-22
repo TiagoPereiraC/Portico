@@ -1,0 +1,387 @@
+% ==============================================================================
+% SISTEMA PÓRTICO 2.0 — ARCHIVO MAESTRO DE DISEÑO Y ESTILOS (sbc-template.sty)
+% ==============================================================================
+% Este paquete concentra toda la arquitectura visual del documento:
+%  - Tipografía ejecutiva de alta legibilidad con Microtype y fuentes vectoriales.
+%  - Paleta equilibrada: Grises pizarra (Slate) para lectura fluida y descanso visual.
+%  - Uso exclusivo del Azul Eléctrico (#1F51FF) para separadores estéticos y acentos.
+%  - Cajas modernas con diseño tipo tarjeta (borde izquierdo de acento de 2.5pt).
+%  - Control riguroso de quiebre de líneas y prevención de desbordamientos (\tolerance).
+%  - Configuración avanzada de Listings con resaltado para JavaScript / PHP / C#.
+%  - Definición de columnas balanceadas para tablas técnicas (Tabularx).
+% ==============================================================================
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{sbc-template}[2026/01/01 Sistema Portico 2.0 Executive Modern Template]
+
+% Guardián de idempotencia
+\ifcsname porticotemplateloaded\endcsname
+    \endinput
+\fi
+\def\porticotemplateloaded{1}
+
+% --- PAQUETES FUNDAMENTALES Y TIPOGRAFÍA ---
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[T1]{fontenc}
+\RequirePackage[spanish,es-tabla,es-nodecimaldot,es-noshorthands]{babel}
+\spanishdeactivate{"<>}
+\RequirePackage[margin=2.4cm,top=2.6cm,bottom=2.6cm,headheight=24pt,footskip=1.2cm]{geometry}
+\RequirePackage{microtype}
+\RequirePackage{lmodern}
+\RequirePackage{amsmath,amssymb}
+\RequirePackage{graphicx}
+\RequirePackage{float}
+\RequirePackage{caption}
+\RequirePackage{subcaption}
+\RequirePackage{booktabs}
+\RequirePackage{tabularx}
+\RequirePackage{multirow}
+\RequirePackage{colortbl}
+\RequirePackage{array}
+\RequirePackage{enumitem}
+\RequirePackage{fancyhdr}
+\RequirePackage{titlesec}
+\RequirePackage{xcolor}
+\RequirePackage[most]{tcolorbox}
+\RequirePackage{listings}
+\RequirePackage{hyperref}
+\RequirePackage{bookmark}
+\RequirePackage{setspace}
+\RequirePackage{parskip}
+\RequirePackage{xurl}
+\RequirePackage{needspace}
+\RequirePackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, shadows, shadows.blur, calc, fit, backgrounds, mindmap}
+
+% --- PREVENCIÓN DE QUIEBRE DE LÍNEAS Y CONTROL DE DESBORDAMIENTO ---
+% Garantiza que términos técnicos, nombres de métodos y código no desborden los márgenes
+\tolerance=3000
+\emergencystretch=3em
+\hfuzz=1pt
+\hbadness=2500
+\setstretch{1.16}
+\setlength{\parskip}{5pt plus 2pt minus 1pt}
+\setlength{\parindent}{0pt}
+
+% --- ESTILO DE CAPTIONS ---
+\captionsetup{
+    font={small},
+    labelfont={bf,color=midnightnavy},
+    textfont={color=charcoal},
+    skip=7pt,
+    justification=centering
+}
+
+% ==============================================================================
+% PALETA DE COLORES EQUILIBRADA Y ELEGANTE
+% ==============================================================================
+% Azul Eléctrico (#1F51FF) reservado estrictamente para separadores y sutiles acentos
+\definecolor{electricblue}{HTML}{1F51FF}    % Separador principal y acento estético (#1F51FF)
+\definecolor{electriclight}{HTML}{EEF2FF}   % Tinte tenue para fondos de badges y tarjetas
+\definecolor{electricborder}{HTML}{818CF8}  % Borde sutil derivado
+\definecolor{subtleblue}{HTML}{EEF2FF}      % Fondo tenue azul (nodos y cajas)
+\definecolor{azureblue}{HTML}{2563EB}       % Azul intermedio
+\definecolor{indigo}{HTML}{4F46E5}          % Indigo para acentos de arquitectura
+
+% Tipografía principal de alta legibilidad (escala Slate)
+\definecolor{midnightnavy}{HTML}{0F172A}    % Slate 900: Títulos principales y cabeceras
+\definecolor{charcoal}{HTML}{1E293B}        % Slate 800: Texto de cuerpo suave y nítido
+\definecolor{slategray}{HTML}{475569}       % Slate 600: Subtítulos, metadatos y encabezados
+\definecolor{slate}{HTML}{475569}           % Slate 600: Alias directo para tablas y fondos
+\definecolor{mutedgray}{HTML}{64748B}       % Slate 500: Pies de página y notas al pie
+\definecolor{bordergray}{HTML}{E2E8F0}      % Slate 200: Bordes discretos y neutrales
+\definecolor{cardbg}{HTML}{F8FAFC}          % Slate 50: Fondo alternado de tablas y tarjetas
+\definecolor{lightgray}{HTML}{F1F5F9}       % Slate 100: Fondo suave para tablas y bloques
+
+% Colores semánticos para cajas de estado (tonos sobrios, sin estridencias)
+\definecolor{emerald}{HTML}{059669}         % Verde para buenas prácticas y tips
+\definecolor{crimson}{HTML}{DC2626}         % Rojo para reglas críticas de integridad
+\definecolor{amber}{HTML}{D97706}           % Ámbar para advertencias técnicas
+
+% Sintaxis de código fuente (paleta profesional estilo VS Code / GitHub)
+\definecolor{codekw}{HTML}{1E40AF}          % Palabras clave en azul marino profundo
+\definecolor{codestr}{HTML}{047857}         % Cadenas en verde esmeralda
+\definecolor{codecom}{HTML}{64748B}         % Comentarios en gris pizarra
+\definecolor{codenum}{HTML}{B45309}         % Números y directivas en ámbar
+\definecolor{codeident}{HTML}{0F172A}       % Identificadores en grafito oscuro
+
+% ==============================================================================
+% COMANDOS DECORATIVOS: SEPARADORES ESTÉTICOS (#1F51FF)
+% ==============================================================================
+
+% 1. Separador horizontal fino en azul eléctrico (regla estándar)
+\newcommand{\electricrule}{%
+    \vspace{2mm}%
+    \noindent{\color{electricblue}\rule{\linewidth}{1pt}}%
+    \vspace{2.5mm}%
+}
+
+% 2. Separador ultra-fino para transiciones sutiles
+\newcommand{\electricrulethin}{%
+    \vspace{1.5mm}%
+    \noindent{\color{electricblue!60}\rule{\linewidth}{0.6pt}}%
+    \vspace{2mm}%
+}
+
+% 3. Separador ornamental estético con diamante y alas en degradé
+\newcommand{\electricsep}{%
+    \vspace{1mm}%
+    \begin{center}%
+        \begin{tikzpicture}%
+            \draw[color=electricblue!25, line width=0.6pt] (0,0) -- (3.2,0);%
+            \fill[color=electricblue!60] (3.4,0) circle (1.2pt);%
+            \fill[color=electricblue] (3.65,0) -- (3.8,0.15) -- (3.95,0) -- (3.8,-0.15) -- cycle;%
+            \fill[color=electricblue!60] (4.05,0) circle (1.2pt);%
+            \draw[color=electricblue!25, line width=0.6pt] (4.25,0) -- (7.45,0);%
+        \end{tikzpicture}%
+    \end{center}%
+    \vspace{1mm}%
+}
+
+% 4. Separador neutro para subsecciones
+\newcommand{\sectiondivider}{%
+    \vspace{2mm}%
+    \noindent{\color{bordergray}\rule{\linewidth}{0.6pt}}%
+    \vspace{2.5mm}%
+}
+
+% 5. Badges inline estilizados y legibles
+\newcommand{\methodbadge}[1]{\colorbox{electriclight}{\texttt{\footnotesize\bfseries\color{midnightnavy}#1}}}
+\newcommand{\tablebadge}[1]{\colorbox{cardbg}{\texttt{\footnotesize\bfseries\color{charcoal}#1}}}
+\newcommand{\tagbadge}[1]{\colorbox{electriclight}{\textbf{\scriptsize\color{electricblue}#1}}}
+
+% 6. Helper para identificadores largos en texto (evita quiebres incorrectos)
+\newcommand{\code}[1]{\texttt{\hyphenpenalty=500\exhyphenpenalty=500 #1}}
+
+% 7. Macros de compatibilidad SBC
+\providecommand{\inst}[1]{\ensuremath{^{#1}}}
+\providecommand{\email}[1]{\\\mbox{}\\[-4pt]\footnotesize\texttt{#1}}
+\providecommand{\address}[1]{\gdef\@address{#1}}
+
+% ==============================================================================
+% COLUMNAS ESPECIALES PARA TABLAS (TABULARX)
+% ==============================================================================
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{Z}[1]{>{\raggedright\arraybackslash\hsize=#1\hsize}X}
+
+% ==============================================================================
+% CONFIGURACIÓN DE ENCABEZADOS Y PIES DE PÁGINA (FANCYHDR)
+% ==============================================================================
+\pagestyle{fancy}
+\fancyhf{}
+
+\fancyhead[L]{\small\color{slategray}\nouppercase{\leftmark}}
+\fancyhead[R]{\small\bfseries\color{midnightnavy}SISTEMA PÓRTICO \textbar\ \color{slategray}\textmd{Manual Técnico}}
+\renewcommand{\headrule}{%
+    \hbox to\headwidth{%
+        \color{electricblue}\leaders\hrule height 0.8pt\hfill%
+    }%
+}
+
+\fancyfoot[L]{\scriptsize\color{mutedgray}Manual de Mantenimiento \textbar\ Uso Confidencial de Ingeniería}
+\fancyfoot[R]{\small\bfseries\color{midnightnavy}\thepage}
+\renewcommand{\footrule}{%
+    \hbox to\headwidth{%
+        \color{bordergray}\leaders\hrule height 0.4pt\hfill%
+    }%
+}
+
+% ==============================================================================
+% FORMATO DE CAPÍTULOS Y SECCIONES (TITLESEC)
+% ==============================================================================
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries}
+  {\flushleft\small\bfseries\color{slategray}\MakeUppercase{Capítulo}~\fontsize{24}{24}\selectfont\color{midnightnavy}\thechapter}
+  {1ex}
+  {\noindent{\color{electricblue}\rule{3.5cm}{2.2pt}}\vspace{1.5ex}\Huge\color{midnightnavy}}
+  [\vspace{1.5ex}{\color{bordergray}\rule{\linewidth}{0.6pt}}]
+
+\titlespacing*{\chapter}{0pt}{10pt}{25pt}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{midnightnavy}}
+  {\color{electricblue}\thesection\quad}{0pt}{}
+
+\titlespacing*{\section}{0pt}{18pt}{8pt}
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{charcoal}}
+  {\color{slategray}\thesubsection\quad}{0pt}{}
+
+\titlespacing*{\subsection}{0pt}{14pt}{6pt}
+
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{slategray}}
+  {\color{electricblue}$\blacksquare$\ \thesubsubsection\quad}{0pt}{}
+
+\titlespacing*{\subsubsection}{0pt}{10pt}{4pt}
+
+% ==============================================================================
+% CAJAS MODERNAS TIPO TARJETA (TCOLORBOX)
+% ==============================================================================
+\newtcolorbox{modernbox}[2][]{
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=bordergray,
+    boxrule=0.6pt,
+    arc=1.5mm,
+    borderline west={2.5pt}{0pt}{electricblue},
+    title={\textbf{\color{midnightnavy}#2}},
+    coltitle=midnightnavy,
+    fonttitle=\bfseries\normalsize,
+    attach title to upper,
+    after title={\par\vspace{1.5mm}\noindent{\color{bordergray}\rule{\linewidth}{0.4pt}}\par\vspace{2mm}},
+    left=4.5mm, right=4.5mm, top=4mm, bottom=4mm,
+    #1
+}
+
+\newtcolorbox{alertbox}[2][]{
+    enhanced,
+    breakable,
+    colback=red!2!white,
+    colframe=red!20!white,
+    boxrule=0.6pt,
+    arc=1.5mm,
+    borderline west={2.5pt}{0pt}{crimson},
+    title={\textbf{\color{crimson}REGLA CRÍTICA DE MANTENIMIENTO: }#2},
+    coltitle=crimson,
+    fonttitle=\bfseries\normalsize,
+    attach title to upper,
+    after title={\par\vspace{1.5mm}\noindent{\color{red!20}\rule{\linewidth}{0.4pt}}\par\vspace{2mm}},
+    left=4.5mm, right=4.5mm, top=4mm, bottom=4mm,
+    #1
+}
+
+\newtcolorbox{apibox}[2][]{
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=bordergray,
+    boxrule=0.6pt,
+    arc=1.5mm,
+    borderline west={2.5pt}{0pt}{electricblue},
+    title={\colorbox{electriclight}{\textbf{\scriptsize\color{electricblue}API REST}}\quad\textbf{\color{midnightnavy}#2}},
+    coltitle=midnightnavy,
+    fonttitle=\small,
+    attach title to upper,
+    after title={\par\vspace{1.5mm}\noindent{\color{bordergray}\rule{\linewidth}{0.4pt}}\par\vspace{2mm}},
+    left=4.5mm, right=4.5mm, top=3.5mm, bottom=3.5mm,
+    #1
+}
+
+\newtcolorbox{methodbox}[2][]{
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=bordergray,
+    boxrule=0.6pt,
+    arc=1.5mm,
+    borderline west={2.5pt}{0pt}{midnightnavy},
+    title={\colorbox{slate!10}{\textbf{\scriptsize\color{midnightnavy}HOST IPC C\#}}\quad\textbf{\color{midnightnavy}#2}},
+    coltitle=midnightnavy,
+    fonttitle=\small,
+    attach title to upper,
+    after title={\par\vspace{1.5mm}\noindent{\color{bordergray}\rule{\linewidth}{0.4pt}}\par\vspace{2mm}},
+    left=4.5mm, right=4.5mm, top=3.5mm, bottom=3.5mm,
+    #1
+}
+
+\newtcolorbox{tipbox}[2][]{
+    enhanced,
+    breakable,
+    colback=emerald!2!white,
+    colframe=emerald!20!white,
+    boxrule=0.6pt,
+    arc=1.5mm,
+    borderline west={2.5pt}{0pt}{emerald},
+    title={\textbf{\color{emerald!90!black}CONSEJO DE INGENIERÍA: }#2},
+    coltitle=emerald!90!black,
+    fonttitle=\bfseries\normalsize,
+    attach title to upper,
+    after title={\par\vspace{1.5mm}\noindent{\color{emerald!25}\rule{\linewidth}{0.4pt}}\par\vspace{2mm}},
+    left=4.5mm, right=4.5mm, top=4mm, bottom=4mm,
+    #1
+}
+
+% ==============================================================================
+% CONFIGURACIÓN DE LISTINGS (CÓDIGO FUENTE)
+% ==============================================================================
+\lstdefinelanguage{JavaScript}{
+  keywords={break, case, catch, class, const, continue, debugger, default, delete, do, else, export, extends, finally, for, function, if, import, in, instanceof, let, new, return, super, switch, this, throw, try, typeof, var, void, while, with, yield, async, await},
+  keywordstyle=\bfseries\color{codekw},
+  ndkeywords={boolean, number, string, null, undefined, true, false, JSON, window, chrome, webview, Promise, setTimeout, Error},
+  ndkeywordstyle=\bfseries\color{electricblue},
+  identifierstyle=\color{codeident},
+  sensitive=true,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  commentstyle=\itshape\color{codecom},
+  stringstyle=\color{codestr},
+  morestring=[b]',
+  morestring=[b]"
+}
+\lstalias{javascript}{JavaScript}
+
+\lstset{
+    backgroundcolor=\color{cardbg},
+    basicstyle=\ttfamily\footnotesize\color{charcoal},
+    keywordstyle=\bfseries\color{codekw},
+    stringstyle=\color{codestr},
+    commentstyle=\itshape\color{codecom},
+    identifierstyle=\color{codeident},
+    breaklines=true,
+    breakatwhitespace=false,
+    breakautoindent=true,
+    postbreak=\mbox{\textcolor{mutedgray}{$\hookrightarrow$}\space},
+    columns=flexible,
+    keepspaces=true,
+    showstringspaces=false,
+    tabsize=4,
+    frame=single,
+    rulecolor=\color{bordergray},
+    framerule=0.6pt,
+    framesep=6pt,
+    numbers=left,
+    numberstyle=\tiny\color{mutedgray!80},
+    numbersep=7pt,
+    captionpos=b,
+    abovecaptionskip=6pt,
+    belowcaptionskip=6pt,
+    inputencoding=utf8,
+    extendedchars=true,
+    literate=%
+      {á}{{\'a}}1
+      {é}{{\'e}}1
+      {í}{{\'i}}1
+      {ó}{{\'o}}1
+      {ú}{{\'u}}1
+      {Á}{{\'A}}1
+      {É}{{\'E}}1
+      {Í}{{\'I}}1
+      {Ó}{{\'O}}1
+      {Ú}{{\'U}}1
+      {ñ}{{\~n}}1
+      {Ñ}{{\~N}}1
+      {¿}{{?`}}1
+      {¡}{{!`}}1
+}
+
+% ==============================================================================
+% HIPERVÍNCULOS Y NAVEGACIÓN PDF
+% ==============================================================================
+\hypersetup{
+    colorlinks=true,
+    linkcolor=electricblue,
+    citecolor=electricblue,
+    urlcolor=electricblue,
+    pdfauthor={Tiago Pereira C. - Equipo de Ingenieria Portico},
+    pdftitle={Manual Tecnico y de Mantenimiento Integral - Sistema Portico 2.0},
+    pdfsubject={Arquitectura Hibrida Dual, Persistencia Relacional y Guia de Mantenimiento},
+    pdfkeywords={Portico, PHP 8, NET 10, CSharp, WebView2, MySQL, Arquitectura Hibrida, Mantenimiento}
+}
+
+% Fin de sbc-template.sty

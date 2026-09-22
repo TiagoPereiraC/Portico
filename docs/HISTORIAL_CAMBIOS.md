@@ -210,6 +210,7 @@ flowchart TD
 | `dbabde1` | 2026-09-09 18:00 | `feat(obras): agregar seccion de combustible en detalles de obra` | `api/Obras.php`, `MainWindow.cs`, `web-ui/Obras.html`, `Obras.js`, `regObras.css` |
 | `53691bf` | 2026-09-09 18:10 | `feat: logo circular en login, sincronizacion de schema y actualizacion relacional de seed_data.sql` | `Login-style.css`, `seed_data.sql`, `portico (1).sql` |
 | `a3f052f` | 2026-09-09 18:11 | `chore: elimina volcados sql redundantes y los anade a .gitignore para mantener schema.sql como unica fuente de verdad` | `.gitignore`, eliminación de volcados `.sql` en raíz |
+| `fe5a812` | 2026-09-15 20:45 | `feat(dashboard): rediseño ejecutivo de cards KPI, desglose de combustible y recursos, finalización de gráficos y corrección de alertas` | `PanelInicio.html`, `inicio.css`, `dashboard.js`, `MainWindow.cs` |
 
 ---
 
@@ -241,6 +242,25 @@ flowchart TD
 - **Políticas `.gitignore`:** Inclusión explícita de `portico*.sql`, archivos `.zip` y volcados de backup.
 - **Consolidación DDL:** Garantía de que `schema.sql` y `seed_data.sql` constituyan la única fuente de verdad para el despliegue del sistema.
 - **Compatibilidad de Tests:** Modificación de `fecha_fin` en `seed_data.sql` asegurando que la suite en `tests/run.php` mantenga una tasa de aprobación del 100%.
+
+#### 5. Modernización Integral del Panel de Control, Métricas Operativas y Notificaciones
+- **Rediseño Ejecutivo de Tarjetas KPI (`web-ui/PanelInicio.html`, `web-ui/assets/css/inicio.css`, `web-ui/assets/js/dashboard.js`):**
+  - Se conservó la identidad cromática institucional (`--blue`, `--emerald`, `--amber`, `--indigo`) pero reemplazando las tarjetas simples por estructuras informativas completas de nivel ejecutivo.
+  - Cada tarjeta incluye ahora: encabezado semántico con icono SVG temático, valor numérico destacado con animación incremental, métrica de contexto secundario, barra de progreso proporcional, fila de micro-estadísticas clave (píldoras comparativas) y botón de acceso rápido con icono de navegación (`Obras`, `Obreros`, `Maquinaria`, `Asistencias`).
+- **Desglose Operativo Detallado (Combustible, Tareas de Contrato y Recursos):**
+  - Se superó el indicador plano previo dividiendo la sección operativa en una grilla de 3 tarjetas enriquecidas:
+    1. **Avance de Actividades de Contrato:** Muestra el porcentaje consolidado, barra de avance dinámica y conteo de tareas completadas vs pendientes.
+    2. **Control de Combustible:** Expone el volumen total despachado (en litros), monto acumulado en pesos argentinos (`$`), y chips visuales independientes desglosando litros de **Diesel** y **Nafta**.
+    3. **Recursos & Insumos:** Indicador global de elementos inventariados con detalle de materiales de obra vs herramientas de trabajo.
+  - Sincronización en backend dual: soporte nativo en `api/dashboard.php` y en el host de escritorio `desktop-csharp/MainWindow.cs` (`combustible`, `actividades`, `recursos`).
+- **Terminación y Optimización de Gráficos Analíticos (Chart.js):**
+  - Corrección de visualización: el contenedor analítico ahora inicializa visible por defecto (`display: block`) previniendo dimensiones 0x0 en el canvas de Chart.js.
+  - **Gráfico Doughnut (Distribución por Cargo):** Implementación de plugin interno de Chart.js (`centroDonaTexto`) que dibuja dinámicamente en el centro del anillo la cifra total de operarios con tipografía corporativa y soporte responsivo.
+  - **Gráfico de Barras (Horas por Obra):** Barras estilizadas con gradiente azul-índigo, esquinas redondeadas (`borderRadius: 6`), grilla sutil y formateo de ejes numéricos con sufijo de unidad (`hs`).
+- **Resolución de Superposición en Notificaciones de Alertas:**
+  - Rediseño estructural de los ítems de alerta en el menú desplegable: se amplió el ancho del dropdown a 530px y se adoptó una arquitectura de doble columna (`.alert-left` y `.alert-actions-col`).
+  - `.alert-actions-col` organiza verticalmente el badge de vencimiento arriba y el botón de acción con icono de visto (`✓ Visto`) abajo, evitando choques o superposiciones independientemente de la longitud del texto descriptivo o la cantidad de días transcurridos.
+  - Adición de `word-break: break-word` y flex containment en el contenedor de texto de la alerta.
 
 ---
 

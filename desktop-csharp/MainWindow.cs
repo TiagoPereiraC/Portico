@@ -3027,6 +3027,70 @@ public sealed class MainWindow : Form
 				}
 			}
 
+			// Combustible
+			double totalLitrosComb = 0, totalGastoComb = 0, dieselLitros = 0, naftaLitros = 0;
+			try
+			{
+				await using var cmdComb = new MySqlCommand(@"
+					SELECT COALESCE(SUM(litros), 0),
+					       COALESCE(SUM(precio_total), 0),
+					       COALESCE(SUM(CASE WHEN LOWER(nombre_combustible) LIKE '%diesel%' THEN litros ELSE 0 END), 0),
+					       COALESCE(SUM(CASE WHEN LOWER(nombre_combustible) LIKE '%nafta%' THEN litros ELSE 0 END), 0)
+					FROM combustible", conn);
+				await using var reader = await cmdComb.ExecuteReaderAsync();
+				if (await reader.ReadAsync())
+				{
+					totalLitrosComb = reader.IsDBNull(0) ? 0 : Convert.ToDouble(reader[0]);
+					totalGastoComb = reader.IsDBNull(1) ? 0 : Convert.ToDouble(reader[1]);
+					dieselLitros = reader.IsDBNull(2) ? 0 : Convert.ToDouble(reader[2]);
+					naftaLitros = reader.IsDBNull(3) ? 0 : Convert.ToDouble(reader[3]);
+				}
+			}
+			catch { }
+
+			// Actividades / Tareas
+			int totalTareas = 0, tareasCompletadas = 0, tareasPendientes = 0;
+			double porcentajeAvance = 0;
+			try
+			{
+				await using var cmdTareas = new MySqlCommand(@"
+					SELECT COUNT(*),
+					       SUM(CASE WHEN estado = 'Completada' THEN 1 ELSE 0 END),
+					       SUM(CASE WHEN estado = 'Pendiente' THEN 1 ELSE 0 END)
+					FROM contrato_tareas", conn);
+				await using var reader = await cmdTareas.ExecuteReaderAsync();
+				if (await reader.ReadAsync())
+				{
+					totalTareas = reader.IsDBNull(0) ? 0 : Convert.ToInt32(reader[0]);
+					tareasCompletadas = reader.IsDBNull(1) ? 0 : Convert.ToInt32(reader[1]);
+					tareasPendientes = reader.IsDBNull(2) ? 0 : Convert.ToInt32(reader[2]);
+					if (totalTareas > 0)
+					{
+						porcentajeAvance = Math.Round(((double)tareasCompletadas / totalTareas) * 100.0, 1);
+					}
+				}
+			}
+			catch { }
+
+			// Recursos
+			int totalRecursos = 0, totalMateriales = 0, totalHerramientas = 0;
+			try
+			{
+				await using var cmdRecursos = new MySqlCommand(@"
+					SELECT COUNT(*),
+					       SUM(CASE WHEN es_material = 1 THEN 1 ELSE 0 END),
+					       SUM(CASE WHEN es_material = 0 THEN 1 ELSE 0 END)
+					FROM recursos", conn);
+				await using var reader = await cmdRecursos.ExecuteReaderAsync();
+				if (await reader.ReadAsync())
+				{
+					totalRecursos = reader.IsDBNull(0) ? 0 : Convert.ToInt32(reader[0]);
+					totalMateriales = reader.IsDBNull(1) ? 0 : Convert.ToInt32(reader[1]);
+					totalHerramientas = reader.IsDBNull(2) ? 0 : Convert.ToInt32(reader[2]);
+				}
+			}
+			catch { }
+
 			await EnsureNotificacionesLeidasTableAsync(conn);
 			var userId = _currentUserId ?? 0;
 
@@ -3167,6 +3231,26 @@ public sealed class MainWindow : Form
 						obreros = new { activos = obrerosActivos, total = totalObreros },
 						maquinaria = new { total = totalMaquinaria, asignada = maquinariaAsignada },
 						horas = new { total_horas = totalHoras, total_registros = totalRegistros },
+						combustible = new
+						{
+							total_litros = totalLitrosComb,
+							total_gasto = totalGastoComb,
+							diesel_litros = dieselLitros,
+							nafta_litros = naftaLitros
+						},
+						actividades = new
+						{
+							total_tareas = totalTareas,
+							tareas_completadas = tareasCompletadas,
+							tareas_pendientes = tareasPendientes,
+							porcentaje_avance = porcentajeAvance
+						},
+						recursos = new
+						{
+							total_recursos = totalRecursos,
+							total_materiales = totalMateriales,
+							total_herramientas = totalHerramientas
+						},
 						alertas = new
 						{
 							certificados = totalAlertasCert,

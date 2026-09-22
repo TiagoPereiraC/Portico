@@ -246,11 +246,6 @@ function renderizarKPIs(kpis) {
     if (elObrasTotal) elObrasTotal.textContent = `${totalObras} en total`;
 
     const avancePct = kpis.actividades?.porcentaje_avance ?? 0;
-    const elObrasBar = document.getElementById("kpiObrasBar");
-    if (elObrasBar) {
-        const barraWidth = totalObras > 0 ? Math.round((activasObras / totalObras) * 100) : 0;
-        elObrasBar.style.width = `${barraWidth}%`;
-    }
     const elObrasAvance = document.getElementById("kpiObrasAvance");
     if (elObrasAvance) {
         elObrasAvance.textContent = avancePct > 0 
@@ -264,11 +259,6 @@ function renderizarKPIs(kpis) {
     animarNumero("kpiObrerosActivos", activosObreros);
     const elObrerosTotal = document.getElementById("kpiObrerosTotal");
     if (elObrerosTotal) elObrerosTotal.textContent = `${totalObreros} registrados`;
-
-    const elObrerosBar = document.getElementById("kpiObrerosBar");
-    if (elObrerosBar && totalObreros > 0) {
-        elObrerosBar.style.width = `${Math.round((activosObreros / totalObreros) * 100)}%`;
-    }
 
     const contratosPorVencer = kpis.alertas?.contratos ?? 0;
     const elObrerosHint = document.getElementById("kpiObrerosAlertasHint");
@@ -296,57 +286,31 @@ function renderizarKPIs(kpis) {
     }
 
     const elMaqAsignada = document.getElementById("kpiMaqAsignada");
-    if (elMaqAsignada) elMaqAsignada.textContent = `${asignadaMaq} equipos en obra actualmente`;
+    if (elMaqAsignada) elMaqAsignada.textContent = `${asignadaMaq} de ${totalMaq} equipos operando`;
 
-    // 4. Combustible & Insumos
-    const litrosComb = kpis.combustible?.total_litros ?? 0;
-    const gastoComb = kpis.combustible?.total_gasto ?? 0;
-    const dieselLitros = kpis.combustible?.diesel_litros ?? 0;
-    const naftaLitros = kpis.combustible?.nafta_litros ?? 0;
+    // 4. Horas y Asistencia
+    const totalHoras = kpis.horas?.total_horas ?? 0;
+    const totalRegistros = kpis.horas?.total_registros ?? 0;
+    animarNumero("subKpiHoras", totalHoras, true, "", " hrs");
 
-    animarNumero("kpiCombustibleLitros", litrosComb, litrosComb % 1 !== 0, "", " L");
-    const elCombGasto = document.getElementById("kpiCombustibleGasto");
-    if (elCombGasto) {
-        elCombGasto.textContent = gastoComb > 0 ? `$ ${gastoComb.toLocaleString("es-AR")}` : "$ 0";
-    }
-
-    const elCombDetalle = document.getElementById("kpiCombustibleDetalle");
-    if (elCombDetalle) {
-        elCombDetalle.textContent = `Diesel: ${Math.round(dieselLitros)}L | Nafta: ${Math.round(naftaLitros)}L`;
-    }
+    const elRegistros = document.getElementById("subKpiRegistros");
+    if (elRegistros) elRegistros.textContent = `${totalRegistros} partes`;
 }
 
 function renderizarResumenOperativo(kpis) {
     if (!kpis) return;
 
-    // Horas acumuladas
-    const totalHoras = kpis.horas?.total_horas ?? 0;
-    const totalRegistros = kpis.horas?.total_registros ?? 0;
-    animarNumero("subKpiHoras", totalHoras, true, "", " hrs");
-    const elRegistros = document.getElementById("subKpiRegistros");
-    if (elRegistros) elRegistros.textContent = `${totalRegistros} registros de asistencia`;
-
-    // Avance de Contratos
+    // 1. Avance de Actividades de Contrato
     const pctAvance = kpis.actividades?.porcentaje_avance ?? 0;
-    const tareasComp = kpis.actividades?.tareas_completadas ?? 0;
-    const totalTareas = kpis.actividades?.total_tareas ?? 0;
     animarNumero("subKpiAvanceContratos", pctAvance, true, "", "%");
-    const elTareas = document.getElementById("subKpiTareas");
-    if (elTareas) {
-        elTareas.textContent = totalTareas > 0
-            ? `${tareasComp} de ${totalTareas} tareas completadas`
-            : "Sin actividades de contrato registradas";
-    }
 
-    // Recursos
+    // 2. Control de Combustible
+    const litrosComb = kpis.combustible?.total_litros ?? 0;
+    animarNumero("kpiCombustibleLitros", litrosComb, litrosComb % 1 !== 0, "", " L");
+
+    // 3. Recursos e Insumos
     const totalRecursos = kpis.recursos?.total_recursos ?? 0;
-    const totalMat = kpis.recursos?.total_materiales ?? 0;
-    const totalHerr = kpis.recursos?.total_herramientas ?? 0;
     animarNumero("subKpiRecursos", totalRecursos, false, "", " items");
-    const elRecursosDetalle = document.getElementById("subKpiRecursosDetalle");
-    if (elRecursosDetalle) {
-        elRecursosDetalle.textContent = `${totalMat} materiales | ${totalHerr} herramientas`;
-    }
 }
 
 function cambiarTabAlertas(tipo) {
@@ -380,6 +344,35 @@ function renderizarGraficoCargos(cargos) {
     if (typeof Chart !== "undefined") {
         if (chartCargosInstance) chartCargosInstance.destroy();
 
+        // Plugin personalizado para mostrar número total en el centro del Doughnut
+        const centroDonaPlugin = {
+            id: "centroDonaTexto",
+            beforeDraw(chart) {
+                if (chart.config.type !== "doughnut") return;
+                const { ctx } = chart;
+                const meta = chart.getDatasetMeta(0);
+                if (!meta || !meta.data || !meta.data.length) return;
+
+                const x = meta.data[0].x;
+                const y = meta.data[0].y;
+                const total = chart.config.data.datasets[0].data.reduce((a, b) => a + b, 0);
+
+                ctx.save();
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+
+                ctx.font = "bold 24px Inter, sans-serif";
+                ctx.fillStyle = "#0f172a";
+                ctx.fillText(String(total), x, y - 8);
+
+                ctx.font = "600 10.5px Inter, sans-serif";
+                ctx.fillStyle = "#64748b";
+                ctx.fillText("OBREROS", x, y + 14);
+
+                ctx.restore();
+            }
+        };
+
         chartCargosInstance = new Chart(canvas, {
             type: "doughnut",
             data: {
@@ -388,9 +381,11 @@ function renderizarGraficoCargos(cargos) {
                     data: valores,
                     backgroundColor: COLORES_PORTICO.slice(0, labels.length),
                     borderWidth: 2,
-                    borderColor: "#ffffff"
+                    borderColor: "#ffffff",
+                    hoverOffset: 6
                 }]
             },
+            plugins: [centroDonaPlugin],
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -399,12 +394,17 @@ function renderizarGraficoCargos(cargos) {
                         position: window.innerWidth >= 1400 ? "right" : "bottom",
                         labels: {
                             boxWidth: 12,
-                            padding: 10,
-                            font: { family: "Inter", size: 11, weight: "500" },
-                            color: "#475569"
+                            padding: 12,
+                            font: { family: "Inter", size: 11, weight: "600" },
+                            color: "#334155"
                         }
                     },
                     tooltip: {
+                        backgroundColor: "#0f172a",
+                        titleFont: { family: "Inter", size: 12, weight: "600" },
+                        bodyFont: { family: "Inter", size: 12 },
+                        padding: 10,
+                        cornerRadius: 8,
                         callbacks: {
                             label: function(ctx) {
                                 const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
@@ -432,7 +432,7 @@ function renderizarGraficoHoras(obras) {
         return;
     }
 
-    const labels = obras.map(o => o.nombre ? (o.nombre.length > 22 ? o.nombre.substring(0, 20) + "..." : o.nombre) : "Obra");
+    const labels = obras.map(o => o.nombre ? (o.nombre.length > 20 ? o.nombre.substring(0, 18) + "..." : o.nombre) : "Obra");
     const valores = obras.map(o => Number(o.total_horas) || 0);
 
     if (typeof Chart !== "undefined") {
@@ -443,11 +443,13 @@ function renderizarGraficoHoras(obras) {
             data: {
                 labels: labels,
                 datasets: [{
-                    label: "Horas Trabajadas",
+                    label: "Horas Registradas",
                     data: valores,
-                    backgroundColor: "#3b82f6",
-                    hoverBackgroundColor: "#2563eb",
-                    borderRadius: 6
+                    backgroundColor: "#2563eb",
+                    hoverBackgroundColor: "#1d4ed8",
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 45
                 }]
             },
             options: {
@@ -456,9 +458,14 @@ function renderizarGraficoHoras(obras) {
                 plugins: {
                     legend: { display: false },
                     tooltip: {
+                        backgroundColor: "#0f172a",
+                        titleFont: { family: "Inter", size: 12, weight: "600" },
+                        bodyFont: { family: "Inter", size: 12 },
+                        padding: 10,
+                        cornerRadius: 8,
                         callbacks: {
                             label: function(ctx) {
-                                return ` ${ctx.raw} horas registradas`;
+                                return ` ${ctx.raw.toLocaleString("es-AR")} horas trabajadas`;
                             }
                         }
                     }
@@ -467,7 +474,7 @@ function renderizarGraficoHoras(obras) {
                     x: {
                         grid: { display: false },
                         ticks: {
-                            font: { family: "Inter", size: 11 },
+                            font: { family: "Inter", size: 11, weight: "500" },
                             color: "#64748b",
                             maxRotation: 20
                         }
@@ -476,7 +483,10 @@ function renderizarGraficoHoras(obras) {
                         grid: { color: "#f1f5f9" },
                         ticks: {
                             font: { family: "Inter", size: 11 },
-                            color: "#64748b"
+                            color: "#64748b",
+                            callback: function(val) {
+                                return val + " h";
+                            }
                         }
                     }
                 }
@@ -554,22 +564,22 @@ function renderizarAlertas() {
         const estaLeida = Boolean(a.leido);
 
         const readActionHtml = estaLeida
-            ? `<span class="alert-badge-tag leido">Leída</span>`
-            : `<button type="button" class="btn-mark-single-read" data-tipo="${a.tipo_alerta}" data-id="${idRef}" title="Marcar como leída">
+            ? `<span class="alert-badge-tag leido">Visto</span>`
+            : `<button type="button" class="btn-mark-single-read" data-tipo="${a.tipo_alerta}" data-id="${idRef}" title="Marcar como visto">
                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                 <span>Leída</span>
+                 <span>Visto</span>
                </button>`;
 
         return `
             <div class="alert-row ${estaLeida ? 'is-read' : ''}">
                 <div class="alert-left">
                     <svg class="alert-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                    <div>
+                    <div class="alert-text-wrap">
                         <div class="alert-item-title">${titulo}</div>
                         <div class="alert-item-subtitle">${subtitulo}</div>
                     </div>
                 </div>
-                <div class="alert-actions">
+                <div class="alert-actions-col">
                     <span class="alert-badge-tag ${badgeClass}">${badgeText}</span>
                     ${readActionHtml}
                 </div>

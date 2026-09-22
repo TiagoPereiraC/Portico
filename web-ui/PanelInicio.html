@@ -127,101 +127,88 @@
                 </div>
             </header>
 
-            <!-- Fila de 4 KPI Cards Principales (Limpio y Despejado) -->
+            <!-- KPIs esenciales -->
             <section class="kpi-grid">
+                <!-- Card 1: Obras -->
                 <div class="kpi-card">
                     <div class="kpi-top">
-                        <span class="kpi-label">Obras & Proyectos</span>
+                        <h2 class="kpi-label">Obras & Proyectos</h2>
                         <div class="kpi-icon-wrap icon-blue">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1 8 8 0 0 0-16 0"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15h16"/></svg>
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1 8 8 0 0 0-16 0"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15h16"/></svg>
                         </div>
                     </div>
                     <div class="kpi-value-row">
                         <span class="kpi-value" id="kpiObrasActivas">--</span>
                         <span class="kpi-badge badge-success" id="kpiObrasTotal">-- en total</span>
                     </div>
-                    <div class="kpi-footer">
-                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" id="kpiObrasBar" style="width: 0%;"></div></div>
-                        <span class="kpi-hint" id="kpiObrasAvance">Proyectos en ejecución</span>
-                    </div>
+                    <p class="kpi-hint" id="kpiObrasAvance">Proyectos en ejecución</p>
                 </div>
 
+                <!-- Card 2: Personal -->
                 <div class="kpi-card">
                     <div class="kpi-top">
-                        <span class="kpi-label">Personal en Obra</span>
+                        <h2 class="kpi-label">Personal en Obra</h2>
                         <div class="kpi-icon-wrap icon-emerald">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         </div>
                     </div>
                     <div class="kpi-value-row">
                         <span class="kpi-value" id="kpiObrerosActivos">--</span>
                         <span class="kpi-badge" id="kpiObrerosTotal">-- registrados</span>
                     </div>
-                    <div class="kpi-footer">
-                        <div class="kpi-progress-bar"><div class="kpi-progress-fill fill-emerald" id="kpiObrerosBar" style="width: 0%;"></div></div>
-                        <span class="kpi-hint" id="kpiObrerosAlertasHint">Cuadrillas operativas</span>
-                    </div>
+                    <p class="kpi-hint" id="kpiObrerosAlertasHint">Cuadrillas operativas</p>
                 </div>
 
+                <!-- Card 3: Maquinaria -->
                 <div class="kpi-card">
                     <div class="kpi-top">
-                        <span class="kpi-label">Parque de Maquinaria</span>
+                        <h2 class="kpi-label">Parque Maquinaria</h2>
                         <div class="kpi-icon-wrap icon-amber">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
                         </div>
                     </div>
                     <div class="kpi-value-row">
                         <span class="kpi-value" id="kpiMaquinariaTotal">--</span>
                         <span class="kpi-badge badge-warning" id="kpiMaqAlertas">-- alertas</span>
                     </div>
-                    <div class="kpi-footer">
-                        <span class="kpi-hint" id="kpiMaqAsignada">Equipos disponibles y asignados</span>
-                    </div>
+                    <p class="kpi-hint" id="kpiMaqAsignada">Equipos disponibles y asignados</p>
                 </div>
 
+                <!-- Card 4: Horas Hombre -->
                 <div class="kpi-card">
                     <div class="kpi-top">
-                        <span class="kpi-label">Horas Mano de Obra</span>
+                        <h2 class="kpi-label">Horas Mano de Obra</h2>
                         <div class="kpi-icon-wrap icon-indigo">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         </div>
                     </div>
                     <div class="kpi-value-row">
                         <span class="kpi-value" id="subKpiHoras">-- hrs</span>
                         <span class="kpi-badge badge-info" id="subKpiRegistros">-- registros</span>
                     </div>
-                    <div class="kpi-footer">
-                        <span class="kpi-hint">Horas cumplidas por obreros en partes de asistencia</span>
-                    </div>
+                    <p class="kpi-hint">Horas registradas en partes de obra</p>
                 </div>
             </section>
 
-            <!-- Fila Secundaria Compacta (Resumen Operativo) -->
-            <section class="operational-summary-grid">
-                <div class="summary-metric-card">
-                    <div class="metric-icon-small icon-theme-teal">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                    </div>
-                    <div class="metric-info">
-                        <span class="metric-title">Avance de Actividades de Contrato</span>
-                        <strong class="metric-number" id="subKpiAvanceContratos">--%</strong>
-                        <span class="metric-sub" id="subKpiTareas">-- tareas completadas</span>
-                    </div>
+            <!-- Franja operativa compacta -->
+            <section class="operational-strip">
+                <div class="strip-item">
+                    <span class="strip-label">Avance de actividades</span>
+                    <strong class="strip-value" id="subKpiAvanceContratos">--%</strong>
                 </div>
-
-                <div class="summary-metric-card">
-                    <div class="metric-icon-small icon-theme-amber">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v20"/><path d="M7 2h10a2 2 0 0 1 2 2v18H3"/><path d="M19 10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2"/><circle cx="11" cy="7" r="2"/><line x1="7" y1="14" x2="15" y2="14"/></svg>
-                    </div>
-                    <div class="metric-info">
-                        <span class="metric-title">Combustible & Insumos</span>
-                        <strong class="metric-number" id="kpiCombustibleLitros">-- L</strong>
-                        <span class="metric-sub" id="kpiCombustibleGasto">$ 0 · <span id="kpiCombustibleDetalle">Diesel: 0L | Nafta: 0L</span></span>
-                    </div>
+                <div class="strip-divider"></div>
+                <div class="strip-item">
+                    <span class="strip-label">Combustible</span>
+                    <strong class="strip-value" id="kpiCombustibleLitros">-- L</strong>
+                </div>
+                <div class="strip-divider"></div>
+                <div class="strip-item">
+                    <span class="strip-label">Recursos e insumos</span>
+                    <strong class="strip-value" id="subKpiRecursos">-- items</strong>
                 </div>
             </section>
 
-            <!-- Sección Desplegable de Gráficos y Analíticas (No satura la pantalla) -->
+            <!-- Sección de Gráficos (oculta por defecto para no saturar) -->
             <section class="analytics-collapsible-card" id="analyticsSection">
                 <div class="collapsible-header" id="btnToggleAnalytics" role="button" tabindex="0" aria-expanded="false" aria-controls="analyticsContent">
                     <div class="collapsible-header-left">
@@ -234,14 +221,14 @@
                         </div>
                     </div>
                     <div class="collapsible-badge">
-                        <span id="toggleAnalyticsText">Desplegar gráficos</span>
+                        <span id="toggleAnalyticsText">Ver gráficos</span>
                         <svg class="chevron-arrow" id="toggleAnalyticsChevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                 </div>
 
                 <div class="collapsible-content" id="analyticsContent" style="display: none;">
                     <div class="dashboard-analytics-grid">
-                        <!-- Gráfico: Distribución de Personal -->
+                        <!-- Gráfico 1: Distribución de Personal -->
                         <div class="chart-card">
                             <div class="card-head-row">
                                 <div class="card-title-wrap">
@@ -252,12 +239,12 @@
                                     Ver obreros <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                                 </a>
                             </div>
-                            <div class="chart-wrapper">
+                            <div class="chart-wrapper chart-wrapper-doughnut">
                                 <canvas id="chartCargos"></canvas>
                             </div>
                         </div>
 
-                        <!-- Gráfico: Top Obras -->
+                        <!-- Gráfico 2: Top Obras -->
                         <div class="chart-card">
                             <div class="card-head-row">
                                 <div class="card-title-wrap">

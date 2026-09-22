@@ -1,0 +1,1277 @@
+% ==============================================================================
+% SISTEMA PÓRTICO 2.0 — DOCUMENTO MAESTRO DE MANTENIMIENTO TÉCNICO
+% ==============================================================================
+% El diseño, estilos, colores y paquetes se encuentran centralizados en sbc-template.sty
+% Las referencias bibliográficas residen en template.bib y se formatean con sbc.bst
+% ==============================================================================
+\documentclass[11pt,a4paper,openany]{report}
+
+% Carga del paquete de diseño maestro
+\usepackage{sbc-template}
+
+\begin{document}
+
+% ------------------------------------------------------------------------------
+% PORTADA EJECUTIVA MODERNA CON SEPARADORES ESTÉTICOS EN AZUL ELÉCTRICO (#1F51FF)
+% ------------------------------------------------------------------------------
+\begin{titlepage}
+    \pagecolor{white}
+    \begin{tikzpicture}[remember picture,overlay]
+        % Detalle de borde minimalista
+        \fill[electricblue] (current page.north west) rectangle ([xshift=5mm]current page.south west);
+        \fill[midnightnavy] ([xshift=5mm]current page.north west) rectangle ([xshift=8mm]current page.south west);
+        \draw[bordergray, line width=0.6pt] ([xshift=2.2cm, yshift=-2.2cm]current page.north west) rectangle ([xshift=-1.8cm, yshift=2.2cm]current page.south east);
+    \end{tikzpicture}
+
+    \vspace*{1.5cm}
+    \hspace*{1.8cm}
+    \begin{minipage}{0.84\textwidth}
+        {\large\bfseries\color{slategray}\textls[120]{SISTEMA PÓRTICO 2.0}}\\[0.4cm]
+        {\huge\bfseries\color{midnightnavy} MANUAL TÉCNICO Y GUÍA\\DE MANTENIMIENTO INTEGRAL}\\[0.4cm]
+        {\large\color{slategray} Especificación de Arquitectura Híbrida Dual, Flujos de Métodos,\\Persistencia Relacional y Protocolos de Extensión de Software}\\[0.6cm]
+
+        % Separador estético en azul eléctrico (#1F51FF)
+        \electricrule
+        \vspace*{0.6cm}
+
+        \begin{minipage}[t]{0.48\textwidth}
+            \textbf{\color{midnightnavy}Gobernanza del Sistema:}\\[0.2cm]
+            \textbf{Plataforma:} Sistema Pórtico\\
+            \textbf{Arquitectura:} Híbrida Dual (Web / Desktop)\\
+            \textbf{Backend Web:} PHP 8.2+ / Apache / PDO\\
+            \textbf{Host Nativo:} .NET 10 / C\# / Edge WebView2\\
+            \textbf{Persistencia:} MySQL 8.0 (Motor InnoDB)
+        \end{minipage}
+        \hfill
+        \begin{minipage}[t]{0.48\textwidth}
+            \textbf{\color{midnightnavy}Metadatos del Documento:}\\[0.2cm]
+            \textbf{Autoría:} Tiago Pereira C.\\
+            \textbf{Rol:} Ingeniería de Software y DevOps\\
+            \textbf{Clasificación:} Documentación Técnica Confidencial\\
+            \textbf{Fecha de Edición:} Septiembre de 2026\\
+            \textbf{Estado de Entrega:} Versión 2.0 Maestro
+        \end{minipage}
+
+        \vfill
+        \vspace*{3.5cm}
+
+        \begin{modernbox}{PROPÓSITO Y OBLIGATORIEDAD DE ESTA GUÍA}
+            Este manual técnico constituye la fuente canónica de arquitectura, directrices de diseño y gobernanza de código para futuros ciclos de mantenimiento evolutivo y correctivo del sistema Pórtico. Cualquier modificación que rompa la paridad estricta entre la API REST (PHP) y el Host de Escritorio (.NET 10) compromete la integridad operativa de la plataforma.
+        \end{modernbox}
+    \end{minipage}
+\end{titlepage}
+\nopagecolor
+
+% ------------------------------------------------------------------------------
+% TABLA DE CONTENIDOS, FIGURAS Y TABLAS
+% ------------------------------------------------------------------------------
+\tableofcontents
+\newpage
+\listoffigures
+\listoftables
+\newpage
+
+% ==============================================================================
+% CAPÍTULO 1: INTRODUCCIÓN Y ARQUITECTURA GENERAL
+% ==============================================================================
+\chapter{Fundamentos y Arquitectura del Sistema}
+
+\section{Propósito del Sistema y Objetivos de Mantenimiento}
+
+El sistema \textbf{Pórtico} es una plataforma empresarial diseñada para centralizar y optimizar la administración integral de proyectos constructivos, cuadrillas de personal operativo, parque de maquinaria pesada, suministros energéticos y trazabilidad de contratos legales.
+
+A lo largo del ciclo de vida de una obra civil, surgen múltiples vectores de inconsistencia: desfasaje en los partes diarios de asistencia, demoras en la detección de certificados técnicos vencidos, liquidaciones imprecisas de tareas contractuales y falta de visibilidad en el consumo de combustible por máquina. Pórtico resuelve estos desafíos a través de un modelo de datos unificado y una interfaz gráfica responsiva.
+
+\electricsep
+
+\section{Arquitectura Global: El Modelo Híbrido Dual}
+
+La característica más relevante del sistema Pórtico reside en su \textbf{Arquitectura Híbrida Dual Simétrica}: la misma capa de presentación visual (\texttt{web-ui/}), construida con estándares web abiertos (HTML5, CSS modular y JavaScript Vanilla), es ejecutada en dos runtimes con entornos de ejecución radicalmente distintos pero con idéntica lógica de negocio y persistencia en una base de datos MySQL centralizada.
+
+\begin{figure}[H]
+    \centering
+    \noindent\resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=1.4cm and 1.5cm,
+        box/.style={rectangle, rounded corners=1.5mm, draw=bordergray, line width=0.8pt, fill=white, inner sep=7pt, align=center, font=\small},
+        ui/.style={box, draw=electricblue, fill=cardbg, font=\bfseries\small, text width=13.5cm, align=center},
+        web/.style={box, draw=bordergray, fill=white},
+        win/.style={box, draw=bordergray, fill=white},
+        db/.style={cylinder, cylinder uses custom fill, cylinder end fill=cardbg, cylinder body fill=white, draw=midnightnavy, line width=1.2pt, aspect=0.25, shape border rotate=90, inner sep=6pt, align=center, font=\bfseries\small},
+        arrow/.style={-{Stealth[scale=1.0]}, line width=1.1pt, color=electricblue}
+    ]
+        % Nodo Frontend
+        \node[ui, minimum width=13.5cm] (frontend) {
+            \textbf{\color{midnightnavy}CAPA DE PRESENTACIÓN COMPARTIDA (\texttt{web-ui/})}\\[0.1cm]
+            \footnotesize Vistas HTML5 semánticas \textbar\ Estilos CSS con Tokens \textbar\ Controladores JS con autodetección de entorno
+        };
+
+        % Runtimes
+        \node[web, below left=1.8cm and -0.6cm of frontend, text width=6.2cm] (runtimeWeb) {
+            \textbf{\color{midnightnavy}RUNTIME 1: SERVIDOR WEB (PHP 8+)}\\[0.1cm]
+            \footnotesize $\bullet$ Apache / Nginx / PHP CLI Server\\
+            $\bullet$ Endpoints RESTful (\texttt{api/*.php})\\
+            $\bullet$ Filtros Anti-CSRF \& Control de Sesión\\
+            $\bullet$ Driver PDO MySQL (Prepared Statements)
+        };
+
+        \node[win, below right=1.8cm and -0.6cm of frontend, text width=6.2cm] (runtimeWin) {
+            \textbf{\color{midnightnavy}RUNTIME 2: ESCRITORIO (.NET 10)}\\[0.1cm]
+            \footnotesize $\bullet$ Host Windows Forms (\texttt{PorticoDesktop.exe})\\
+            $\bullet$ Motor Microsoft Edge WebView2\\
+            $\bullet$ Esquema Virtual (\texttt{https://portico.desktop/*})\\
+            $\bullet$ Canal IPC Bidireccional (\texttt{postMessage})\\
+            $\bullet$ Driver Directo ADO.NET (\texttt{MySqlConnector})
+        };
+
+        % Base de Datos
+        \node[db, below=2.5cm of frontend, text width=9.2cm] (database) {
+            \color{midnightnavy}MOTOR DE PERSISTENCIA RELACIONAL: MySQL 8.0 (InnoDB)\\[0.1cm]
+            \footnotesize 18 Tablas Relacionales \textbar\ Esquema DDL Maestro: \texttt{schema.sql} \textbar\ Transacciones ACID
+        };
+
+        % Conectores
+        \draw[arrow] (frontend.south -| runtimeWeb.north) -- node[left, font=\scriptsize\color{slategray}] {HTTP(S) / \texttt{fetch()}} (runtimeWeb.north);
+        \draw[arrow] (frontend.south -| runtimeWin.north) -- node[right, font=\scriptsize\color{slategray}] {IPC \texttt{window.chrome.webview}} (runtimeWin.north);
+
+        \draw[arrow] (runtimeWeb.south) -- node[below left, font=\scriptsize\color{slategray}] {TCP 3306 (PDO)} (database.north -| runtimeWeb.south);
+        \draw[arrow] (runtimeWin.south) -- node[below right, font=\scriptsize\color{slategray}] {TCP 3306 (ADO.NET)} (database.north -| runtimeWin.south);
+    \end{tikzpicture}%
+    }
+    \caption{Diagrama de Arquitectura Híbrida Dual: Separación de Runtimes y Persistencia.}
+    \label{fig:arquitectura_tikz}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{modernbox}{CAPTURA DEL DIAGRAMA COMPLEMENTARIO (MERMAID)}
+        \centering\vspace{0.8cm}
+        \textbf{\color{slategray}[CAPTURA MERMAID OPCIONAL: fig\_arquitectura\_hibrida.png]}\\[0.15cm]
+        \footnotesize Si desea insertar la captura generada en Markdown, ubique la imagen en la carpeta \texttt{img/} y descomente la línea de inclusión.
+        \vspace{0.8cm}
+    \end{modernbox}
+    \caption{Representación complementaria de la Arquitectura Híbrida del Sistema.}
+    \label{fig:arquitectura_mermaid}
+\end{figure}
+
+\electricsep
+
+\section{Justificación Técnica y Beneficios del Modelo}
+
+La coexistencia de dos runtimes proporciona ventajas operativas insustituibles en la industria de la construcción:
+\begin{enumerate}
+    \item \textbf{Cero Latencia en Oficinas Centrales (Modo Escritorio):} Los supervisores y directores de proyecto disponen de una aplicación nativa en Windows (.NET 10) que interactúa con la base de datos a través de sockets TCP directos y transacciones compiladas, brindando tiempos de respuesta instantáneos sin overhead de capa web intermedia.
+    \item \textbf{Movilidad y Operatividad en Campo (Modo Web):} Los capataces en pie de obra pueden acceder desde dispositivos móviles, tablets o portátiles a través de cualquier navegador conectándose al servidor PHP (\texttt{api/}), registrando asistencias y combustible en tiempo real.
+    \item \textbf{Mantenibilidad Centralizada del Frontend:} Todo cambio en la interfaz gráfica (diseño visual, validaciones de formularios, interacción DOM) se efectúa una única vez en la carpeta \texttt{web-ui/}. Dado que el proyecto .NET incrusta dichos archivos como recursos binarios en tiempo de compilación (\texttt{EmbeddedResource}), no existe duplicación de código de frontend.
+\end{enumerate}
+
+% ==============================================================================
+% CAPÍTULO 2: MODELO HÍBRIDO DUAL
+% ==============================================================================
+\chapter{El Modelo Híbrido Dual: Web (PHP 8) vs. Escritorio (.NET 10)}
+
+\section{Runtime Web: Pila Tecnológica y Flujo de Ejecución}
+
+En el entorno Web, el sistema opera bajo una arquitectura de microcontroladores orientada a recursos:
+\begin{itemize}
+    \item \textbf{Servidor Web:} Compatible con Apache, Nginx o el servidor embebido de desarrollo PHP (\texttt{php -S localhost:8000}).
+    \item \textbf{Control de Sesión Reforzado:} Implementado en \texttt{api/config/session.php}, establece parámetros de cookies de extrema seguridad (\texttt{SameSite=Strict}, \texttt{HttpOnly=true} y \texttt{Secure} condicional si opera bajo HTTPS).
+    \item \textbf{Protección contra Ataques CSRF:} Cada petición de mutación (\texttt{POST}, \texttt{PUT}, \texttt{DELETE}) valida que la cabecera enviada por el cliente (\texttt{X-CSRF-Token}) coincida con el token criptográfico persistido en la sesión del servidor (\texttt{\$\_SESSION['csrf\_token']}) empleando la función segura \texttt{hash\_equals()}.
+    \item \textbf{Detección de Desbordamiento de Carga (\texttt{post\_max\_size}):} La función \texttt{verificarLimitePost()} en \texttt{api/config/utils.php} detecta cuando un usuario sube un contrato o plano que excede el límite fijado en el servidor, impidiendo que PHP descarte silenciosamente el payload y arrojando una excepción HTTP 400 legible.
+\end{itemize}
+
+\begin{lstlisting}[language=PHP, caption={Patrón de Conexión Singleton Seguro en PHP (api/config/db.php)}]
+function conectar(): PDO {
+    static $pdo = null;
+    if ($pdo !== null) return $pdo;
+
+    // Carga de variables de entorno desde .env
+    $host   = $_ENV['DB_HOST']     ?? 'localhost';
+    $port   = $_ENV['DB_PORT']     ?? '3306';
+    $dbname = $_ENV['DB_NAME']     ?? 'portico';
+    $user   = $_ENV['DB_USER']     ?? '';
+    $pass   = $_ENV['DB_PASSWORD'] ?? '';
+
+    $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";
+    $pdo = new PDO($dsn, $user, $pass, [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES   => false, // Inmunidad a SQLi
+        PDO::ATTR_TIMEOUT            => 5,
+    ]);
+    return $pdo;
+}
+\end{lstlisting}
+
+\electricsep
+
+\section{Runtime Desktop: .NET 10, WebView2 e IPC Nativo}
+
+La aplicación de escritorio prescinde totalmente de servidores web locales (como Kestrel o Apache local). Su arquitectura se fundamenta en:
+\begin{enumerate}
+    \item \textbf{Host WinForms y Control WebView2:} La ventana principal (\texttt{MainWindow.cs}) aloja el control \texttt{Microsoft.Web.WebView2.WinForms.WebView2}, inicializando el runtime de Chromium.
+    \item \textbf{Filtro de Recursos Embebidos:} Se establece una regla de resolución virtual:
+    \begin{lstlisting}[language={[Sharp]C}]
+_webView.CoreWebView2.AddWebResourceRequestedFilter(
+    "https://portico.desktop/*", 
+    CoreWebView2WebResourceContext.All
+);
+    \end{lstlisting}
+    Cuando el navegador interno solicita \texttt{https://portico.desktop/Obras.html}, el evento \texttt{OnWebResourceRequested} busca el recurso incrustado en el ensamblado bajo la convención \texttt{webui.Obras.html} y devuelve un flujo de lectura en memoria (\texttt{Stream}) con el tipo MIME correspondiente.
+    \item \textbf{Bucle de Mensajes IPC (Inter-Process Communication):} Para ejecutar operaciones contra la base de datos, el código JavaScript no realiza llamadas \texttt{fetch()}, sino que emite mensajes estructurados:
+    \begin{lstlisting}[language=javascript]
+window.chrome.webview.postMessage(JSON.stringify({
+    type: 'obras_guardar',
+    requestId: 'req_1726000000',
+    nombre: 'Ampliacion Edificio Norte',
+    numero_contrata: 'OB-2026-042'
+}));
+    \end{lstlisting}
+    El método \texttt{OnWebMessageReceived} en C\# intercepta el JSON, valida la sesión en memoria, ejecuta la transacción contra MySQL mediante \texttt{MySqlConnector} y responde a través de \texttt{PostWebMessageAsString()} emparejando el mismo \texttt{requestId}.
+\end{enumerate}
+
+\begin{alertbox}{PARIDAD ESTRICTA ENTRE API Y C\#}
+Cualquier modificación o añadido en una ruta de la API PHP (\texttt{api/*.php}) \textbf{DEBE CONTAR OBLIGATORIAMENTE} con su homólogo despachador en el bloque \texttt{switch (messageType)} de \texttt{MainWindow.cs}. Omitir esta regla inutilizará la vista correspondiente en el ejecutable de escritorio.
+\end{alertbox}
+
+% ==============================================================================
+% CAPÍTULO 3: MAPA MENTAL Y TAXONOMÍA
+% ==============================================================================
+\chapter{Mapa Mental y Taxonomía del Ecosistema Pórtico}
+
+\section{Taxonomía Jerárquica del Repositorio}
+
+El mapa mental de la Figura \ref{fig:mapamental_tikz} ilustra la descomposición funcional del sistema, estructurado en cuatro ramas maestras: Capa de Presentación, Runtime Backend Web, Runtime Desktop y Motor de Persistencia Relacional.
+
+\begin{figure}[H]
+    \centering
+    \noindent\resizebox{0.88\linewidth}{!}{%
+    \begin{tikzpicture}[
+        mindmap,
+        grow cyclic,
+        every node/.style={concept},
+        root concept/.append style={concept color=midnightnavy, text=white, font=\bfseries\small, minimum size=2.6cm},
+        level 1 concept/.append style={font=\bfseries\scriptsize, minimum size=2.1cm, text width=1.9cm},
+        level 2 concept/.append style={font=\tiny, minimum size=1.4cm, text width=1.5cm},
+        p1/.style={concept color=electricblue, text=white},
+        p2/.style={concept color=slategray, text=white},
+        p3/.style={concept color=charcoal, text=white},
+        p4/.style={concept color=midnightnavy!80!black, text=white}
+    ]
+        \node[root concept] {SISTEMA PÓRTICO}
+            child[concept color=electricblue] {
+                node[p1] {Capa Visual web-ui}
+                child { node {HTML5 Semántico} }
+                child { node {CSS Tokens} }
+                child { node {JS Vanilla} }
+            }
+            child[concept color=slategray] {
+                node[p2] {Backend PHP 8}
+                child { node {Endpoints REST} }
+                child { node {Anti-CSRF} }
+                child { node {PDO MySQL} }
+            }
+            child[concept color=charcoal] {
+                node[p3] {Host Desktop C\#}
+                child { node {WinForms 10} }
+                child { node {WebView2 IPC} }
+                child { node {MySql\\Connector} }
+            }
+            child[concept color=midnightnavy!80!black] {
+                node[p4] {Persistencia MySQL}
+                child { node {18 Tablas} }
+                child { node {InnoDB ACID} }
+                child { node {schema.sql} }
+            };
+    \end{tikzpicture}%
+    }
+    \caption{Mapa Mental: Descomposición jerárquica de componentes del sistema.}
+    \label{fig:mapamental_tikz}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{modernbox}{CAPTURA DEL MAPA MENTAL COMPLEMENTARIO (MERMAID)}
+        \centering\vspace{0.8cm}
+        \textbf{\color{slategray}[CAPTURA MERMAID OPCIONAL: fig\_mapa\_mental.png]}\\[0.15cm]
+        \footnotesize Inserte aquí la captura del mapa mental generado en el documento Markdown.
+        \vspace{0.8cm}
+    \end{modernbox}
+    \caption{Representación complementaria del Mapa Mental del Sistema.}
+    \label{fig:mapa_mermaid}
+\end{figure}
+
+% ==============================================================================
+% CAPÍTULO 4: MODELO DE BASE DE DATOS
+% ==============================================================================
+\chapter{Catálogo y Diccionario Relacional de Base de Datos}
+
+\section{Diagrama Entidad-Relación Consolidado}
+
+El modelo relacional está compuesto por 18 tablas en tercera forma normal (3NF), optimizadas para operaciones concurrentes mediante el motor transaccional \textbf{InnoDB} con soporte nativo para caracteres UTF-8 extendidos (\texttt{utf8mb4\_unicode\_ci}).
+
+\begin{figure}[H]
+    \centering
+    \begin{modernbox}{DIAGRAMA ENTIDAD-RELACIÓN COMPLEMENTARIO}
+        \centering\vspace{1.2cm}
+        \textbf{\color{slategray}[DIAGRAMA ERD COMPLETO: fig\_erd\_completo.png]}\\[0.15cm]
+        \footnotesize Inserte aquí la captura del Diagrama Entidad-Relación exportado desde Markdown o herramientas de diseño.
+        \vspace{1.2cm}
+    \end{modernbox}
+    \caption{Diagrama Entidad-Relación Consolidado (18 Tablas Relacionales).}
+    \label{fig:erd_placeholder}
+\end{figure}
+
+\electricsep
+
+\section{Diccionario Técnico de Tablas y Restricciones}
+
+A continuación se detalla la especificación de cada tabla del esquema maestro \texttt{schema.sql}, configurada con anchos balanceados y ajuste de línea automático para evitar desbordamientos:
+
+% 1. usuarios
+\subsection{Tabla \texttt{usuarios}}
+Almacena las credenciales y roles del personal con acceso al sistema.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_usuario & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador único del usuario. \\
+nombre & VARCHAR(100) & NOT NULL & Nombre y apellido completo. \\
+usuario & VARCHAR(50) & NOT NULL, UNIQUE & Nombre de usuario único para inicio de sesión. \\
+password\_hash & VARCHAR(255) & NOT NULL & Hash criptográfico BCrypt (\$2y\$ / \$2a\$). \\
+correo & VARCHAR(150) & NULL, UNIQUE & Correo electrónico institucional. \\
+rol & ENUM('Admin', 'Capataz') & NOT NULL & Control de acceso por roles RBAC. \\
+activo & BOOLEAN & DEFAULT 1 & Borrado lógico de cuentas (1: Activo, 0: Baja). \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{usuarios}.}
+\label{tab:usuarios}
+\end{table}
+
+% 2. intentos_login
+\subsection{Tabla \texttt{intentos\_login}}
+Auditoría y mitigación de ataques de fuerza bruta en el inicio de sesión.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador del intento de autenticación. \\
+username & VARCHAR(50) & NOT NULL & Nombre de usuario ingresado en el intento. \\
+ip\_address & VARCHAR(45) & NOT NULL & Dirección IPv4 o IPv6 del cliente. \\
+fecha & DATETIME & NOT NULL & Marca temporal del evento de acceso. \\
+exitoso & BOOLEAN & DEFAULT 0 & Resultado de la validación (1: Válido, 0: Fallido). \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{intentos\_login}.}
+\label{tab:intentos_login}
+\end{table}
+
+% 3. auditoria_logs
+\subsection{Tabla \texttt{auditoria\_logs}}
+Pista forense inmutable de todas las mutaciones críticas en el sistema.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_log & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador único del evento de auditoría. \\
+id\_usuario & INT & NULL, FK & Usuario ejecutor (ON DELETE SET NULL). \\
+usuario & VARCHAR(50) & NULL & Nombre de usuario en el momento de la acción. \\
+rol & VARCHAR(20) & NULL & Rol administrativo del operador. \\
+accion & VARCHAR(20) & NOT NULL & Tipo de operación (LOGIN, CREAR, EDITAR). \\
+entidad & VARCHAR(50) & NOT NULL & Módulo afectado (obras, obreros, contratos). \\
+entidad\_id & INT & NULL & ID del registro intervenido. \\
+detalle\_json & TEXT & NULL & Snapshot JSON con el estado previo y posterior. \\
+ip\_address & VARCHAR(45) & NULL & Dirección IP de la terminal emisora. \\
+created\_at & DATETIME & NOT NULL & Marca de tiempo del registro. \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{auditoria\_logs}.}
+\label{tab:auditoria_logs}
+\end{table}
+
+% 4. obras
+\subsection{Tabla \texttt{obras}}
+Entidad principal del dominio que modela los proyectos constructivos.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_obra & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador primario de la obra civil. \\
+numero\_contrata & VARCHAR(50) & NOT NULL, UNIQUE & Código administrativo oficial de la contrata. \\
+nombre & VARCHAR(150) & NOT NULL & Denominación formal del proyecto. \\
+direccion & VARCHAR(200) & NULL & Emplazamiento geográfico de la obra. \\
+descripcion & TEXT & NULL & Memoria descriptiva y alcance técnico. \\
+fecha\_inicio & DATE & NULL & Fecha de apertura de actividades de obra. \\
+fecha\_fin & DATE & NULL & Fecha prevista o efectiva de finalización. \\
+nombre\_cliente & VARCHAR(150) & NOT NULL & Razón social o titular contratante. \\
+telefono\_cliente & VARCHAR(30) & NULL & Teléfono de contacto institucional. \\
+activo & BOOLEAN & DEFAULT 1 & Flag de operatividad (1: En ejecución, 0: Concluida). \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{obras}.}
+\label{tab:obras}
+\end{table}
+
+% 5. contratos
+\subsection{Tabla \texttt{contratos}}
+Almacena los documentos de contrata legal y control financiero por obra.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_contrato & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador del contrato. \\
+id\_obra & INT & NOT NULL, FK & Referencia a \texttt{obras} (ON DELETE CASCADE). \\
+archivo & LONGBLOB & NOT NULL & Binario del contrato en PDF/Scan (hasta 10 MB). \\
+nombre\_archivo & VARCHAR(255) & NULL & Nombre original del fichero cargado. \\
+fecha\_subida & DATE & NOT NULL & Fecha de ingreso documental al sistema. \\
+id\_contrato\_origen & INT & NULL, FK & Contrato predecesor en adendas (SET NULL). \\
+estado & ENUM('Activo', 'Cerrado') & DEFAULT 'Activo' & Estado del contrato en su ciclo de vida. \\
+fecha\_cierre & DATE & NULL & Fecha de liquidación formal. \\
+monto\_total & DECIMAL(12,2) & DEFAULT 0.00 & Presupuesto total del contrato. \\
+monto\_liquidado & DECIMAL(12,2) & DEFAULT 0.00 & Suma de tareas efectivamente completadas. \\
+importe\_final & DECIMAL(12,2) & DEFAULT 0.00 & Saldo o liquidación final consolidada. \\
+motivo\_cierre & ENUM(...) & NULL & 'Nuevo contrato' o 'Finalizacion de obra'. \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{contratos}.}
+\label{tab:contratos}
+\end{table}
+
+% 6. contrato_tareas
+\subsection{Tabla \texttt{contrato\_tareas}}
+Desglose presupuestario de tareas o partidas contractuales.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_tarea & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador único de la partida o tarea. \\
+id\_contrato & INT & NOT NULL, FK & Contrato asociado (ON DELETE CASCADE). \\
+id\_tarea\_origen & INT & NULL & ID de la tarea original si proviene de una adenda. \\
+descripcion & VARCHAR(255) & NOT NULL & Detalle técnico de la tarea o hito. \\
+importe & DECIMAL(12,2) & DEFAULT 0.00 & Valor asignado en el presupuesto. \\
+estado & ENUM('Pendiente', 'Completada') & DEFAULT 'Pendiente' & Avance físico del ítem. \\
+fecha\_completada & DATE & NULL & Fecha de validación por el capataz. \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{contrato\_tareas}.}
+\label{tab:contrato_tareas}
+\end{table}
+
+% 7. obreros
+\subsection{Tabla \texttt{obreros}}
+Padrón de personal operativo y cuadrillas de construcción.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_obrero & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador del trabajador. \\
+nombre & VARCHAR(150) & NOT NULL & Nombres del operario. \\
+apellido & VARCHAR(100) & NULL & Apellidos del operario. \\
+documento & VARCHAR(30) & NOT NULL, UNIQUE & DNI, CUIT o documento de identidad. \\
+telefono & VARCHAR(30) & NULL & Teléfono personal de contacto. \\
+fecha\_contratacion & DATE & NULL & Fecha de alta laboral. \\
+fecha\_fin & DATE & NULL & Fecha de baja o cese laboral. \\
+cargo & ENUM(...) & NOT NULL & Oficio (Albañil, Capataz, Electricista, Peón, etc.). \\
+activo & BOOLEAN & DEFAULT 1 & Flag de operatividad (1: En plantilla, 0: Baja). \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{obreros}.}
+\label{tab:obreros}
+\end{table}
+
+% 8. contrato_obrero
+\subsection{Tabla \texttt{contrato\_obrero}}
+Legajos laborales y pólizas con control de vencimiento.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_contrato\_obrero & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador del legajo digital. \\
+archivo & LONGBLOB & NOT NULL & Contenido binario del contrato digitalizado. \\
+nombre\_archivo & VARCHAR(255) & NULL & Nombre original del archivo PDF/imagen. \\
+id\_obrero & INT & NOT NULL, FK & Obrero titular (ON DELETE CASCADE). \\
+fecha\_vencimiento & DATE & NULL & Fecha de caducidad para disparo de alertas. \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{contrato\_obrero}.}
+\label{tab:contrato_obrero}
+\end{table}
+
+% 9. maquinaria
+\subsection{Tabla \texttt{maquinaria}}
+Catálogo maestro de vehículos, maquinaria pesada y equipos de obra.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_maquinaria & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador del equipo. \\
+nombre & VARCHAR(150) & NOT NULL & Descripción o denominación de la máquina. \\
+marca & VARCHAR(100) & NULL & Fabricante o modelo técnico del equipo. \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{maquinaria}.}
+\label{tab:maquinaria}
+\end{table}
+
+% 10. certificado
+\subsection{Tabla \texttt{certificado}}
+Pólizas técnicas, seguros de cobertura y habilitaciones de maquinaria.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_certificado & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador del certificado técnico. \\
+archivo & LONGBLOB & NOT NULL & Documento digitalizado de la certificación. \\
+nombre\_archivo & VARCHAR(255) & NULL & Nombre original del comprobante. \\
+id\_maquinaria & INT & NOT NULL, FK & Equipo vinculado (ON DELETE CASCADE). \\
+fecha\_vencimiento & DATE & NULL & Fecha de caducidad para disparo de alertas. \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{certificado}.}
+\label{tab:certificado}
+\end{table}
+
+% 11. obra_maquinaria
+\subsection{Tabla \texttt{obra\_maquinaria}}
+Historial de asignación y destino de maquinaria pesada en proyectos.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_obra\_maquinaria & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador de la asignación. \\
+id\_obra & INT & NOT NULL, FK & Obra receptora (ON DELETE CASCADE). \\
+id\_maquinaria & INT & NOT NULL, FK & Maquinaria asignada (ON DELETE CASCADE). \\
+fecha\_asignacion & DATE & NULL & Fecha de ingreso al predio constructivo. \\
+fecha\_retiro & DATE & NULL & Fecha de desmovilización. \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{obra\_maquinaria}.}
+\label{tab:obra_maquinaria}
+\end{table}
+
+% 12. asistencia_maquinaria
+\subsection{Tabla \texttt{asistencia\_maquinaria}}
+Control diario de entradas y salidas de maquinaria por obra.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador del movimiento de máquina. \\
+id\_obra & INT & NOT NULL, FK & Obra asignada (ON DELETE CASCADE). \\
+id\_maquinaria & INT & NOT NULL, FK & Maquinaria controlada (ON DELETE CASCADE). \\
+fecha & DATE & NOT NULL & Fecha de la jornada de trabajo. \\
+hora\_salida & TIME & NOT NULL & Hora de inicio o salida a campo. \\
+hora\_devolucion & TIME & NULL & Hora de retorno o aparcamiento final. \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{asistencia\_maquinaria}.}
+\label{tab:asistencia_maquinaria}
+\end{table}
+
+% 13. registros
+\subsection{Tabla \texttt{registros}}
+Partes diarios de control horario y asistencia de personal obrero.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_registro & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador del parte de asistencia. \\
+fecha & DATE & NOT NULL & Fecha de la jornada laboral registrada. \\
+hora\_entrada & TIME & NOT NULL & Hora de fichada matutina o ingreso. \\
+hora\_salida & TIME & NOT NULL & Hora de egreso o cierre de la jornada. \\
+horas\_trabajadas & DECIMAL(5,2) & NULL & Cómputo neto de horas operativas. \\
+id\_obrero & INT & NOT NULL, FK & Obrero que prestó servicios (CASCADE). \\
+id\_obra & INT & NOT NULL, FK & Obra de asignación (CASCADE). \\
+id\_usuario & INT & NULL, FK & Capataz certificante (ON DELETE SET NULL). \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{registros}.}
+\label{tab:registros}
+\end{table}
+
+% 14. recursos
+\subsection{Tabla \texttt{recursos}}
+Insumos, materiales y recursos extraordinarios consumidos en la jornada.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_recurso & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador del insumo consumido. \\
+id\_obra & INT & NOT NULL, FK & Obra a la que se imputa el gasto (CASCADE). \\
+id\_registro & INT & NULL, FK & Parte diario vinculado (ON DELETE SET NULL). \\
+fecha & DATE & NOT NULL & Fecha del suministro en obra. \\
+nombre & VARCHAR(150) & NOT NULL & Denominación del material o servicio. \\
+cantidad & DECIMAL(10,2) & NOT NULL & Unidades o volumen empleado. \\
+precio\_unitario & DECIMAL(10,2) & NULL & Costo unitario al momento del registro. \\
+es\_material & BOOLEAN & DEFAULT 0 & Flag indicador (1: Material físico, 0: Servicio). \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{recursos}.}
+\label{tab:recursos}
+\end{table}
+
+% 15. combustible
+\subsection{Tabla \texttt{combustible}}
+Control de abastecimiento energético y consumo de carburantes en obra.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_combustible & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador de la carga de carburante. \\
+nombre\_combustible & VARCHAR(100) & NOT NULL & Tipo de carburante (Diesel 500, Premium). \\
+litros & DECIMAL(10,2) & DEFAULT 0.00 & Volumen suministrado en litros. \\
+precio\_unitario & DECIMAL(10,2) & DEFAULT 0.00 & Costo por litro vigente a la fecha de carga. \\
+precio\_total & DECIMAL(12,2) & DEFAULT 0.00 & Importe total de la operación monetaria. \\
+fecha & DATE & NOT NULL & Fecha del suministro. \\
+id\_obra & INT & NOT NULL, FK & Obra imputable del gasto (ON DELETE CASCADE). \\
+id\_maquinaria & INT & NULL, FK & Máquina abastecida (ON DELETE SET NULL). \\
+id\_factura & INT & NULL & Número de remito fiscal o comprobante. \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{combustible}.}
+\label{tab:combustible}
+\end{table}
+
+% 16. costos_generales
+\subsection{Tabla \texttt{costos\_generales}}
+Erogaciones periódicas fijas y variables de administración y soporte de obras.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_costo\_general & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador del costo operativo. \\
+concepto & VARCHAR(150) & NOT NULL & Motivo de la erogación (alquiler, fletes, etc.). \\
+categoria & ENUM('Fijo', 'Variable') & NOT NULL & Clasificación de contabilidad de gestión. \\
+periodo & DATE & NOT NULL & Mes o período fiscal de imputación. \\
+monto & DECIMAL(12,2) & NOT NULL & Importe monetario del gasto. \\
+fecha\_registro & DATE & NOT NULL & Fecha de carga contable. \\
+id\_usuario & INT & NOT NULL, FK & Usuario que autorizó la erogación. \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{costos\_generales}.}
+\label{tab:costos_generales}
+\end{table}
+
+% 17. partes_diarios
+\subsection{Tabla \texttt{partes\_diarios}}
+Reportes consolidados de operación y horas efectivas de maquinaria en obra.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_parte & INT AUTO\_INCREMENT & NOT NULL, PK & Identificador del parte operativo. \\
+id\_obra & INT & NOT NULL, FK & Obra donde operó el equipo (CASCADE). \\
+id\_maquinaria & INT & NOT NULL, FK & Maquinaria controlada (CASCADE). \\
+id\_usuario & INT & NOT NULL, FK & Operador o capataz certificante. \\
+fecha & DATE & NOT NULL & Fecha del turno de trabajo. \\
+horas\_trabajadas & DECIMAL(5,2) & DEFAULT 0.00 & Horas reloj con motor en operación activa. \\
+horas\_paradas & DECIMAL(5,2) & DEFAULT 0.00 & Horas de inactividad por avería o lluvia. \\
+litros\_combustible & DECIMAL(10,2) & DEFAULT 0.00 & Consumo estimado en la jornada. \\
+observaciones & TEXT & NULL & Desperfectos mecánicos o incidencias. \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{partes\_diarios}.}
+\label{tab:partes_diarios}
+\end{table}
+
+% 18. notificaciones_leidas
+\subsection{Tabla \texttt{notificaciones\_leidas}}
+Marcado individual de alertas leídas por cada usuario del sistema.
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\ttfamily\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.7cm} >{\ttfamily\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.2cm} Y}
+\rowcolor{slate!8}
+\textbf{Campo} & \textbf{Tipo de Dato} & \textbf{Nulo / Default} & \textbf{Descripción y Reglas de Integridad} \\
+\specialrule{1pt}{0pt}{2pt}
+id\_usuario & INT & NOT NULL, PK, FK & Usuario que interactuó con la alerta (CASCADE). \\
+tipo & VARCHAR(20) & NOT NULL, PK & 'maquinaria' (certificado) o 'obrero' (contrato). \\
+id\_referencia & INT & NOT NULL, PK & ID del certificado o contrato descartado. \\
+fecha\_leido & DATETIME & CURRENT\_TIMESTAMP & Marca temporal del acuse de recibo. \\
+\bottomrule
+\end{tabularx}
+\caption{Estructura técnica de la tabla \texttt{notificaciones\_leidas}.}
+\label{tab:notificaciones_leidas}
+\end{table}
+
+% ==============================================================================
+% ==============================================================================
+% CAPÍTULO 5: ESPECIFICACIÓN DETALLADA DE MÓDULOS
+% ==============================================================================
+\chapter{Especificación Detallada de Módulos Operativos}
+
+\section{Módulo 1: Autenticación, Sesión y Control RBAC}
+
+El subsistema de autenticación protege todos los puntos de entrada mediante validación criptográfica y control de tasa en ambos runtimes:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Cifrado Cruzado BCrypt:} El sistema utiliza el algoritmo adaptativo BCrypt con costo computacional estándar. Tanto PHP (\texttt{password\_hash}) como C\# (\texttt{BCrypt.Net.BCrypt.Verify}) son 100\% interoperables, procesando indistintamente prefijos de formato \texttt{\$2y\$} y \texttt{\$2a\$}.
+    \item \textbf{Control de Fuerza Bruta en Base de Datos:} En cada intento fallido, se registra la tupla en la tabla \texttt{intentos\_login}. Antes de autenticar, el sistema valida que la cuenta no acumule $\ge 5$ fallos o la IP $\ge 20$ en los últimos 5 minutos (código HTTP 429).
+    \item \textbf{Filtrado RBAC en el Cliente (\texttt{auth.js}):} El script oculta de forma preventiva el DOM (\texttt{document.documentElement.style.visibility = 'hidden'}) hasta validar la sesión, evitando el parpadeo de contenido desprotegido (FOUC) a usuarios no autorizados.
+\end{itemize}
+
+\begin{apibox}{api/login.php}
+    \textbf{Método HTTP:} \texttt{POST}\\[0.1cm]
+    \textbf{Cuerpo JSON:} \texttt{\{"usuario": "admin", "password": "..."\}}\\[0.1cm]
+    \textbf{Respuesta:} \texttt{\{"success": true, "user": \{"nombre": "...", "rol": "Administrador"\}\}}
+\end{apibox}
+
+\begin{methodbox}{HandleLoginAsync(JsonObject payload, string requestId)}
+    Valida credenciales con \texttt{BCrypt.Net-Next}, inicializa la sesión en memoria en el host nativo de Windows y responde a la vista mediante \texttt{PostWebMessageAsStringAsync}.
+\end{methodbox}
+
+\electricsep
+
+\section{Módulo 2: Obras Civiles, Contratos y Desglose Presupuestario}
+
+Administra los proyectos constructivos y su trazabilidad financiera. Permite crear proyectos, asociar documentación contractual (almacenada en \texttt{LONGBLOB}), desglosar partidas en \texttt{contrato\_tareas}, y efectuar el cierre formal de contratos.
+
+\begin{tipbox}{TRANSACCIONALIDAD EN EL CIERRE DE CONTRATOS}
+    Al cerrar un contrato (por nuevo contrato o finalización de obra), tanto el endpoint PHP como el método C\# deben envolver la operación en una transacción ACID:
+    \begin{enumerate}[leftmargin=1.2em]
+        \item Calcular la sumatoria de tareas completadas: $\sum(\text{importe de tareas completadas})$.
+        \item Actualizar \texttt{monto\_liquidado} e \texttt{importe\_final} en la tabla \texttt{contratos}.
+        \item Cambiar el estado del contrato a \texttt{'Cerrado'}.
+        \item Si se renueva con una adenda, crear el nuevo contrato referenciando \texttt{id\_contrato\_origen}.
+    \end{enumerate}
+\end{tipbox}
+
+\begin{apibox}{api/obras.php}
+    \textbf{Métodos Soportados:} GET (listar obras con saldo de contrato activo), POST (creación, edición y cierre de contratos con carga de archivos adjuntos).
+\end{apibox}
+
+\begin{methodbox}{HandleObrasListarAsync / HandleGuardarObraAsync}
+    Ejecuta transacciones directas mediante ADO.NET con \texttt{MySqlTransaction}, garantizando consistencia relacional atómica.
+\end{methodbox}
+
+\electricsep
+
+\section{Módulo 3: Cuadrilla de Obreros, Legajos y Contratos Laborales}
+
+Gestiona el padrón del personal operativo y el control riguroso de vencimientos de contratos laborales.
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Padrón y Documentación:} Cada operario cuenta con registro de DNI/CUIT único, oficio especializado (\texttt{cargo}) y legajo digital en \texttt{contrato\_obrero}.
+    \item \textbf{Alertas de Caducidad:} La vista de inicio detecta contratos cuya fecha de vencimiento ocurra dentro de los próximos 7 o 15 días, disparando notificaciones visuales para prevenir que un trabajador ingrese a obra sin seguro o contrato vigente.
+\end{itemize}
+
+\begin{apibox}{api/obreros.php}
+    \textbf{Rutas y Operaciones Soportadas:}
+    \begin{itemize}[leftmargin=1.2em, topsep=2pt, itemsep=1pt]
+        \item \texttt{GET api/obreros.php}: Padrón general con estado de contrato.
+        \item \texttt{POST api/obreros.php?action=guardar}: Alta y modificación de operarios.
+        \item \texttt{POST api/obreros.php?action=subir\_contrato}: Carga de documentación digital.
+    \end{itemize}
+\end{apibox}
+
+\begin{methodbox}{HandleObrerosListarAsync / HandleObrerosSubirContrato}
+    Inserta o actualiza tuplas en \texttt{obreros} y \texttt{contrato\_obrero} con streaming de bytes de archivo.
+\end{methodbox}
+
+\electricsep
+
+\section{Módulo 4: Parque de Maquinaria y Certificaciones Técnicas}
+
+Controla los activos rodantes y maquinaria pesada afectada a obras constructivas:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Gestión de Flota:} Registro de marca, modelo y estado operativo en \texttt{maquinaria}.
+    \item \textbf{Certificados y Habilitaciones:} Pólizas de seguro, inspecciones técnicas vehiculares y habilitaciones de seguridad con fecha de caducidad en la tabla \texttt{certificado}.
+    \item \textbf{Asignación a Obras:} Movimientos de entrada y salida asentados en \texttt{obra\_maquinaria} y \texttt{asistencia\_maquinaria}.
+\end{itemize}
+
+\begin{apibox}{api/maquinaria.php / api/cert\_maq.php}
+    Administración de equipos mecánicos y subida de archivos binarios de certificación.
+\end{apibox}
+
+\begin{methodbox}{HandleMaquinariaListar / HandleMaquinariaCertSubir}
+    Lectura de flota con verificación de vencimientos y persistencia de certificados en MySQL.
+\end{methodbox}
+
+\electricsep
+
+\section{Módulo 5: Partes Diarios de Asistencia, Recursos y Combustible}
+
+Constituye el núcleo transaccional cotidiano de las operaciones en obra:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Control de Asistencia Horaria (\texttt{registros}):} Permite asentar hora de entrada y salida por obrero, computando automáticamente horas netas trabajadas.
+    \item \textbf{Insumos y Materiales (\texttt{recursos}):} Asienta el uso de materiales de construcción o contratación de servicios especiales por jornada.
+    \item \textbf{Suministro de Combustible (\texttt{combustible}):} Imputa cargas de gasoil o nafta directamente a la obra y máquina receptora, calculando el importe total monetario.
+\end{itemize}
+
+\begin{apibox}{api/guardar\_asistencia.php / api/guardar\_combustible.php}
+    Recepción de partes diarios por lote y registro de consumo de combustible.
+\end{apibox}
+
+\begin{methodbox}{HandleGuardarAsistencia / HandleGuardarCombustible}
+    Despacho transaccional de partes diarios en C\# con validación de no duplicidad de jornada por operario.
+\end{methodbox}
+
+\electricsep
+
+\section{Módulo 6: Dashboard, Analíticas y Notificaciones Persistentes}
+
+El panel de inicio consolida los indicadores clave de rendimiento (KPIs) de la constructora:
+\begin{itemize}[leftmargin=1.5em]
+    \item Conteo activo de proyectos en ejecución y presupuestos consolidados.
+    \item Personal obrero presente en obra durante la jornada y cuadrillas asignadas.
+    \item Sistema de notificaciones no destructivas: Las alertas de vencimiento descartadas se asientan en \texttt{notificaciones\_leidas} con clave compuesta \texttt{(id\_usuario, tipo, id\_referencia)}, evitando alertas repetitivas para ese usuario específico.
+\end{itemize}
+
+\begin{apibox}{api/dashboard.php / api/marcar\_notificacion.php}
+    Consulta agregada de analíticas y persistencia de acuses de recibo de alertas.
+\end{apibox}
+
+\begin{methodbox}{HandleDashboardMetricas / HandleNotificacionMarcar}
+    Cálculo de métricas consolidadas en memoria y persistencia de alertas leídas.
+\end{methodbox}
+
+\electricsep
+
+\section{Módulo 7: Consultas Parametrizadas y Reportabilidad}
+
+Permite la auditoría transversal y generación de informes de actividad operativa:
+\begin{itemize}[leftmargin=1.5em]
+    \item Filtro multifactorial por rango de fechas, obra específica y operario.
+    \item Cómputo agregado de horas hombre trabajadas y costo acumulado de combustible.
+    \item Vista tabular optimizada con paginación en cliente.
+\end{itemize}
+
+\begin{apibox}{api/consultas.php}
+    \textbf{Parámetros GET:} \texttt{id\_obra}, \texttt{id\_obrero}, \texttt{fecha\_desde}, \texttt{fecha\_hasta}.
+\end{apibox}
+
+\begin{methodbox}{HandleConsultasBuscarAsync}
+    Construcción dinámica y segura de consultas SQL preparadas con parámetros vinculados.
+\end{methodbox}
+
+\electricsep
+
+\section{Módulo 8: Gestión de Usuarios y Auditoría Forense}
+
+Administración del control de acceso y fiscalización de eventos del sistema:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Gobernanza de Cuentas:} Creación y edición de usuarios con roles \texttt{Administrador} o \texttt{Capataz}.
+    \item \textbf{Regla del Último Administrador:} Se impide la desactivación o eliminación de la última cuenta con privilegios de administrador en el sistema.
+    \item \textbf{Bitácora Forense:} Registro automático de cada mutación en la tabla inmutable \texttt{auditoria\_logs}.
+\end{itemize}
+
+\begin{apibox}{api/usuarios.php / api/auditoria.php}
+    CRUD de usuarios y consulta paginada de registros históricos de auditoría.
+\end{apibox}
+
+\begin{methodbox}{HandleUsersListAsync / HandleUserSaveAsync}
+    Administración de operadores en C\# con hashing seguro y registro de eventos.
+\end{methodbox}
+
+\electricsep
+
+\section{Módulo 9: Exportación Masiva de Datos a Formato Plano (CSV/ZIP)}
+
+Permite la extracción completa de información operativa para conciliaciones contables externas:
+\begin{itemize}[leftmargin=1.5em]
+    \item Generación de flujos de texto plano en formato CSV con delimitador estandarizado (punto y coma o coma) y codificación UTF-8 con BOM para compatibilidad total con Microsoft Excel.
+    \item Descarga empaquetada en archivos comprimidos ZIP conteniendo contratos y reportes consolidados por período.
+\end{itemize}
+
+\begin{apibox}{api/exportar\_csv.php}
+    Descarga directa mediante streaming HTTP con cabecera \texttt{Content-Disposition: attachment; filename=export.csv}.
+\end{apibox}
+
+% ==============================================================================
+\chapter{Protocolo de Comunicación Inter-Procesos (IPC en WebView2)}
+
+\section{Mecanismo de Despacho y Manejo de Concurrencia}
+
+En el modo de escritorio, la ventana de Windows Forms no realiza conexiones HTTP locales. Toda la comunicación fluye a través del canal IPC nativo de Microsoft Edge WebView2:
+
+\begin{figure}[H]
+    \centering
+    \noindent\resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=2.5cm and 3cm,
+        proc/.style={rectangle, rounded corners=1.5mm, draw=midnightnavy, line width=1.2pt, fill=white, inner sep=7pt, align=center, font=\small},
+        flow/.style={-{Stealth[scale=1.1]}, line width=1.3pt, color=electricblue}
+    ]
+        \node[proc, fill=subtleblue, text width=4.5cm] (js) {
+            \textbf{\color{midnightnavy}JavaScript (Frontend)}\\[0.1cm]
+            \footnotesize 1. Genera \texttt{requestId}\\
+            2. Registra listener temporal\\
+            3. Invoca \texttt{postMessage(json)}
+        };
+
+        \node[proc, right=3.5cm of js, fill=indigo!5!white, text width=5cm] (cs) {
+            \textbf{\color{midnightnavy}C\# MainWindow.cs}\\[0.1cm]
+            \footnotesize 1. Recibe en \texttt{OnWebMessageReceived}\\
+            2. Despacha por \texttt{messageType}\\
+            3. Ejecuta comando MySQL tipado\\
+            4. Responde con \texttt{PostWebMessage}
+        };
+
+        \node[proc, below=1.8cm of js, fill=green!5!white, text width=4.5cm] (resolve) {
+            \textbf{\color{midnightnavy}Resolución en JS}\\[0.1cm]
+            \footnotesize 1. Filtra por \texttt{requestId}\\
+            2. Remueve listener temporal\\
+            3. Resuelve \texttt{Promise (resolve/reject)}
+        };
+
+        \draw[flow] (js.east) -- node[above, font=\scriptsize\color{charcoal}] {Mensaje JSON IPC} (cs.west);
+        \draw[flow] (cs.south) |- node[below, font=\scriptsize\color{charcoal}] {Respuesta JSON con \texttt{requestId}} (resolve.east);
+        \draw[flow] (resolve.north) -- node[left, font=\scriptsize\color{charcoal}] {Actualiza UI} (js.south);
+    \end{tikzpicture}%
+    }
+    \caption{Ciclo de Vida de una Petición IPC Bidireccional en WebView2.}
+    \label{fig:ipc_cycle}
+\end{figure}
+
+\begin{lstlisting}[language=javascript, caption={Función Universal de Despacho IPC en el Cliente (dashboard.js)}]
+function sendDesktopRequest(type, payload, responseType) {
+    return new Promise((resolve, reject) => {
+        if (!window.chrome?.webview) {
+            reject(new Error("No se detecto el entorno de escritorio."));
+            return;
+        }
+        const requestId = `${type}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        const timer = setTimeout(() => {
+            window.chrome.webview.removeEventListener("message", onMessage);
+            reject(new Error("Tiempo de espera agotado en host C#."));
+        }, 12000);
+
+        function onMessage(event) {
+            let data = event.data;
+            if (typeof data === "string") {
+                try { data = JSON.parse(data); } catch { return; }
+            }
+            if (!data || data.requestId !== requestId) return;
+            window.chrome.webview.removeEventListener("message", onMessage);
+            clearTimeout(timer);
+            if (data.success) resolve(data);
+            else reject(new Error(data.error || "Error al procesar la solicitud."));
+        }
+
+        window.chrome.webview.addEventListener("message", onMessage);
+        window.chrome.webview.postMessage(JSON.stringify({ type, requestId, ...payload }));
+    });
+}
+\end{lstlisting}
+
+% ==============================================================================
+% CAPÍTULO 7: MATRIZ DE REFERENCIAS CRUZADAS
+% ==============================================================================
+\chapter{Matriz de Referencias Cruzadas y Mapeo de Métodos}
+
+\section{Mapeo Completo de Componentes de Frontend, Backend y Persistencia}
+
+La Tabla \ref{tab:matriz_completa} constituye la guía definitiva para rastrear cualquier flujo funcional del sistema:
+
+Para erradicar ambigüedades de mantenimiento y prevenir desbordamientos en la visualización, la matriz de métodos se presenta estructurada por dominios funcionales con anchos de celda balanceados:
+
+% Subtabla 1: Seguridad y Auditoría
+\subsection{Mapeo: Seguridad, Sesión y Auditoría}
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.6cm} >{\raggedright\arraybackslash}p{2.5cm} >{\ttfamily\raggedright\arraybackslash}p{3.2cm} >{\ttfamily\raggedright\arraybackslash}p{3.4cm} Y}
+\rowcolor{slate!8}
+\textbf{Acción} & \textbf{Vista UI} & \textbf{Endpoint PHP} & \textbf{Despachador C\#} & \textbf{Tablas Afectadas} \\
+\specialrule{1pt}{0pt}{2pt}
+Autenticación & \texttt{Login.html} & \texttt{api/login.php} & \texttt{HandleLoginAsync} & \texttt{usuarios, intentos\_login} \\
+Cierre Sesión & Navbar UI & \texttt{api/logout.php} & \texttt{HandleLogout} & \texttt{auditoria\_logs} \\
+Gestión Usuarios & \texttt{Usuarios.html} & \texttt{api/usuarios.php} & \texttt{HandleUsersListAsync} & \texttt{usuarios, auditoria\_logs} \\
+Auditoría Logs & \texttt{Auditoria.html} & \texttt{api/auditoria.php} & \textit{(Vía Web API)} & \texttt{auditoria\_logs} \\
+\bottomrule
+\end{tabularx}
+\caption{Correspondencia funcional: Subsistema de Seguridad y Auditoría.}
+\label{tab:matriz_seguridad}
+\end{table}
+
+% Subtabla 2: Obras y Contratos
+\subsection{Mapeo: Obras Civiles, Contratos y Presupuesto}
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.6cm} >{\raggedright\arraybackslash}p{2.5cm} >{\ttfamily\raggedright\arraybackslash}p{3.2cm} >{\ttfamily\raggedright\arraybackslash}p{3.4cm} Y}
+\rowcolor{slate!8}
+\textbf{Acción} & \textbf{Vista UI} & \textbf{Endpoint PHP} & \textbf{Despachador C\#} & \textbf{Tablas Afectadas} \\
+\specialrule{1pt}{0pt}{2pt}
+Listar Obras & \texttt{Obras.html} & \texttt{api/obras.php?GET} & \texttt{HandleObrasListarAsync} & \texttt{obras, contratos} \\
+Detalle de Obra & \texttt{Obras.html} & \texttt{api/obras.php?id} & \texttt{HandleObrasDetalleAsync} & \texttt{obras, tareas, combustible} \\
+Guardar Obra & \texttt{Obras.html} & \texttt{api/obras.php?POST}& \texttt{HandleGuardarObraAsync} & \texttt{obras, contratos} \\
+Cerrar Contrato & \texttt{Obras.html} & \texttt{api/obras.php?cierre}& \texttt{HandleObrasCerrarContrato}& \texttt{contratos, contrato\_tareas} \\
+\bottomrule
+\end{tabularx}
+\caption{Correspondencia funcional: Subsistema de Obras y Contratos.}
+\label{tab:matriz_obras}
+\end{table}
+
+% Subtabla 3: Personal Obrero
+\subsection{Mapeo: Personal Obrero y Legajos Laborales}
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.6cm} >{\raggedright\arraybackslash}p{2.5cm} >{\ttfamily\raggedright\arraybackslash}p{3.2cm} >{\ttfamily\raggedright\arraybackslash}p{3.4cm} Y}
+\rowcolor{slate!8}
+\textbf{Acción} & \textbf{Vista UI} & \textbf{Endpoint PHP} & \textbf{Despachador C\#} & \textbf{Tablas Afectadas} \\
+\specialrule{1pt}{0pt}{2pt}
+Listar Obreros & \texttt{Obreros.html} & \texttt{api/obreros.php?GET} & \texttt{HandleObrerosListarAsync} & \texttt{obreros, contrato\_obrero} \\
+Guardar Obrero & \texttt{Obreros.html} & \texttt{api/obreros.php?POST}& \texttt{HandleGuardarObreroAsync} & \texttt{obreros} \\
+Subir Contrato & \texttt{Obreros.html} & \texttt{api/obreros.php?subir}& \texttt{HandleObrerosSubirContrato}& \texttt{contrato\_obrero} \\
+Editar Fecha & \texttt{Obreros.html} & \texttt{api/obreros.php?edit}& \texttt{HandleObrerosEditarFecha}& \texttt{contrato\_obrero} \\
+\bottomrule
+\end{tabularx}
+\caption{Correspondencia funcional: Subsistema de Obreros y Contratos.}
+\label{tab:matriz_obreros}
+\end{table}
+
+% Subtabla 4: Maquinaria Pesada
+\subsection{Mapeo: Maquinaria Pesada y Certificaciones}
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.6cm} >{\raggedright\arraybackslash}p{2.5cm} >{\ttfamily\raggedright\arraybackslash}p{3.2cm} >{\ttfamily\raggedright\arraybackslash}p{3.4cm} Y}
+\rowcolor{slate!8}
+\textbf{Acción} & \textbf{Vista UI} & \textbf{Endpoint PHP} & \textbf{Despachador C\#} & \textbf{Tablas Afectadas} \\
+\specialrule{1pt}{0pt}{2pt}
+Listar Equipos & \texttt{Maquinaria.html}& \texttt{api/maquinaria.php} & \texttt{HandleMaquinariaListar} & \texttt{maquinaria, obra\_maq} \\
+Guardar Equipo & \texttt{Maquinaria.html}& \texttt{api/maquinaria.php} & \texttt{HandleGuardarMaquinaria}& \texttt{maquinaria} \\
+Listar Certs & \texttt{Maquinaria.html}& \texttt{api/cert\_maq.php} & \texttt{HandleMaquinariaCertListar}& \texttt{certificado} \\
+Subir Cert & \texttt{Maquinaria.html}& \texttt{api/cert\_maq.php} & \texttt{HandleMaquinariaCertSubir}& \texttt{certificado} \\
+\bottomrule
+\end{tabularx}
+\caption{Correspondencia funcional: Subsistema de Maquinaria y Certificados.}
+\label{tab:matriz_maquinaria}
+\end{table}
+
+% Subtabla 5: Asistencia y Combustible
+\subsection{Mapeo: Asistencias, Jornadas y Combustible}
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.6cm} >{\raggedright\arraybackslash}p{2.5cm} >{\ttfamily\raggedright\arraybackslash}p{3.2cm} >{\ttfamily\raggedright\arraybackslash}p{3.4cm} Y}
+\rowcolor{slate!8}
+\textbf{Acción} & \textbf{Vista UI} & \textbf{Endpoint PHP} & \textbf{Despachador C\#} & \textbf{Tablas Afectadas} \\
+\specialrule{1pt}{0pt}{2pt}
+Guardar Asist & \texttt{Asistencia.html}& \texttt{api/guardar\_asist} & \texttt{HandleGuardarAsistencia}& \texttt{registros, recursos} \\
+Cargar Catálogos& \texttt{Asistencia.html}& \texttt{api/datos\_asist} & \texttt{HandleAsistenciaCatalogos}& \texttt{obras, obreros, maq} \\
+Carga Combustible&\texttt{Asistencia.html}& \texttt{api/guardar\_comb} & \texttt{HandleGuardarCombustible}& \texttt{combustible} \\
+Consultas & \texttt{Consultas.html} & \texttt{api/consultas.php} & \texttt{HandleConsultasBuscarAsync}& \texttt{registros, obras, obreros} \\
+\bottomrule
+\end{tabularx}
+\caption{Correspondencia funcional: Subsistema de Asistencia y Combustible.}
+\label{tab:matriz_asistencia}
+\end{table}
+
+% Subtabla 6: Dashboard y Exportación
+\subsection{Mapeo: Dashboard, Analíticas y Exportaciones}
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.6cm} >{\raggedright\arraybackslash}p{2.5cm} >{\ttfamily\raggedright\arraybackslash}p{3.2cm} >{\ttfamily\raggedright\arraybackslash}p{3.4cm} Y}
+\rowcolor{slate!8}
+\textbf{Acción} & \textbf{Vista UI} & \textbf{Endpoint PHP} & \textbf{Despachador C\#} & \textbf{Tablas Afectadas} \\
+\specialrule{1pt}{0pt}{2pt}
+Métricas Resumen& \texttt{Inicio.html} & \texttt{api/dashboard.php} & \texttt{HandleDashboardMetricas}& Multi-tabla consolidada \\
+Marcar Alerta & \texttt{Inicio.html} & \texttt{api/marcar\_notif} & \texttt{HandleNotificacionMarcar}& \texttt{notificaciones\_leidas} \\
+Exportar CSV & \texttt{Exportar.html} & \texttt{api/exportar\_csv} & \textit{(Descarga directa stream)}& Tablas según entidad \\
+\bottomrule
+\end{tabularx}
+\caption{Correspondencia funcional: Subsistema de Dashboard y Exportación.}
+\label{tab:matriz_dashboard}
+\end{table}
+
+% ==============================================================================
+% CAPÍTULO 8: CRIPTOGRAFÍA Y SEGURIDAD
+% ==============================================================================
+\chapter{Criptografía, Seguridad y Blindaje del Sistema}
+
+\section{Defensa en Profundidad y Principios de Seguridad}
+
+El sistema implementa defensas coordinadas en todas sus capas:
+\begin{enumerate}
+    \item \textbf{Cero Concatenación SQL (Inmunidad a SQLi):} En PHP, \texttt{PDO::ATTR\_EMULATE\_PREPARES = false} garantiza que el motor MySQL reciba el árbol de la consulta precompilado. En C\#, todos los parámetros se agregan mediante \texttt{MySqlParameter} tipado (\texttt{AddWithValue}).
+    \item \textbf{Validación de Tipos MIME Reales:} Para evitar la subida de ejecutables camuflados, se analizan las firmas binarias (*Magic Bytes*) y se restringe a listas blancas estrictas (\texttt{pdf}, \texttt{doc}, \texttt{docx}, \texttt{jpg}, \texttt{jpeg}, \texttt{png}).
+    \item \textbf{Protección contra Desactivación del Último Administrador:}
+    Tanto \texttt{api/usuarios.php} como \texttt{MainWindow.HandleUserDeleteAsync} implementan la salvaguarda lógica:
+    \begin{lstlisting}[language=SQL]
+SELECT COUNT(*) FROM usuarios 
+WHERE rol = 'Administrador' AND activo = 1 AND id_usuario <> @idUsuario;
+    \end{lstlisting}
+    Si el conteo arroja 0, la operación se cancela con error de negocio, evitando que el sistema quede huérfano de administradores.
+\end{enumerate}
+
+% ==============================================================================
+% CAPÍTULO 9: PROCEDIMIENTOS DE MANTENIMIENTO
+% ==============================================================================
+\chapter{Guía Operativa de Mantenimiento y Procedimientos Paso a Paso}
+
+\section{Procedimiento para Incorporar un Campo en una Entidad}
+
+Para ejemplificar la disciplina de desarrollo requerida, se describe el proceso para añadir la columna \texttt{numero\_poliza} (\texttt{VARCHAR(100)}) a la entidad \texttt{maquinaria}:
+
+\begin{enumerate}
+    \item \textbf{Paso 1: Modificación de \texttt{schema.sql}:}
+    \begin{lstlisting}[language=SQL]
+ALTER TABLE maquinaria ADD COLUMN numero_poliza VARCHAR(100) NULL AFTER marca;
+    \end{lstlisting}
+    
+    \item \textbf{Paso 2: Actualización de la API PHP (\texttt{api/maquinaria.php}):}
+    \begin{lstlisting}[language=PHP]
+// En responderListado():
+$stmt = $pdo->query('SELECT id_maquinaria, nombre, marca, numero_poliza FROM maquinaria');
+
+// En responderGuardado():
+$poliza = limpiarTexto($body['numero_poliza'] ?? null, 100, false);
+$stmt = $pdo->prepare('UPDATE maquinaria SET nombre = ?, marca = ?, numero_poliza = ? WHERE id_maquinaria = ?');
+$stmt->execute([$nombre, $marca, $poliza, $id]);
+    \end{lstlisting}
+
+    \item \textbf{Paso 3: Actualización de C\# en \texttt{desktop-csharp/MainWindow.cs}:}
+    \begin{lstlisting}[language=C]
+// En HandleMaquinariaListarAsync:
+numero_poliza = ReadNullableString(reader, "numero_poliza");
+
+// En HandleGuardarMaquinariaAsync:
+var poliza = SanitizeText(root, "numero_poliza", 100, required: false);
+cmd.Parameters.AddWithValue("@numeroPoliza", ToDbValue(poliza));
+    \end{lstlisting}
+
+    \item \textbf{Paso 4: Actualización Visual en \texttt{web-ui/Maquinaria.html} y \texttt{maquinaria.js}:}
+    Incorporar el campo \texttt{<input id="numeroPoliza">} en el modal de edición y enlazar el valor en el mapeo de renderizado y envío de formularios.
+\end{enumerate}
+
+\electricsep
+
+\section{Compilación del Ejecutable de Escritorio (.NET 10)}
+
+Para generar el ejecutable de producción para Windows:
+\begin{lstlisting}[language=bash]
+# Compilacion estandar en Release
+dotnet build desktop-csharp/PorticoDesktop.csproj -c Release
+
+# Publicacion autonoma de un solo archivo ejecutable (Self-Contained)
+dotnet publish desktop-csharp/PorticoDesktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o bin/Publish/
+\end{lstlisting}
+El binario final se ubicará en \texttt{bin/Publish/PorticoDesktop.exe}.
+
+\electricsep
+
+\section{Ejecución Local de Pruebas Automatizadas}
+
+Pórtico cuenta con un test runner CLI sin dependencias externas en \texttt{tests/run.php}. Valida la integridad del esquema, la ausencia de registros huérfanos y la respuesta de los endpoints:
+\begin{lstlisting}[language=bash]
+php tests/run.php --verbose
+\end{lstlisting}
+
+% ==============================================================================
+% CAPÍTULO 10: DIAGNÓSTICO Y RESOLUCIÓN DE PROBLEMAS
+% ==============================================================================
+\chapter{Diagnóstico y Resolución de Problemas Frecuentes (Troubleshooting)}
+
+\section{Matriz de Diagnóstico y Árbol de Fallos}
+
+\begin{table}[H]
+\centering\small
+\renewcommand{\arraystretch}{1.35}
+\begin{tabularx}{\textwidth}{>{\bfseries\color{midnightnavy}\raggedright\arraybackslash}p{2.8cm} >{\raggedright\arraybackslash}p{3.2cm} >{\raggedright\arraybackslash}p{3.4cm} Y}
+\rowcolor{slate!8}
+\textbf{Síntoma} & \textbf{Causa Raíz Probable} & \textbf{Diagnóstico Rápido} & \textbf{Procedimiento de Reparación} \\
+\specialrule{1pt}{0pt}{2pt}
+Pantalla blanca en Host Desktop & Motor WebView2 no inicializado o fallo en esquema virtual. & Revisar si \texttt{WebView2 Runtime} está instalado en el SO. & Instalar Runtime Evergreen y validar \texttt{SetVirtualHostNameToFolderMapping}. \\
+Error HTTP 403 CSRF Mismatch & Sesión expirada o pérdida de cabecera \texttt{X-CSRF-Token}. & Comprobar si la cookie de sesión fue purgada en el navegador. & Limpiar cookies o recargar la vista para renegociar el token criptográfico. \\
+Carga truncada de archivo PDF & Archivo superior a \texttt{post\_max\_size} de PHP. & El payload llega vacío a \texttt{\$\_POST} y \texttt{\$\_FILES}. & Incrementar \texttt{upload\_max\_filesize = 50M} y \texttt{post\_max\_size = 55M} en \texttt{php.ini}. \\
+Timeout en consultas C\# & Pool de conexiones MySQL agotado por bloqueos. & Revisar conexiones activas en MySQL (\texttt{SHOW PROCESSLIST}). & Asegurar el uso de \texttt{using (var conn = ...)} en todos los métodos C\#. \\
+Falta de Paridad Web/Desktop & Método implementado en PHP pero omitido en C\#. & Cotejar la matriz de referencias cruzadas del Capítulo 7. & Implementar el mensaje en el bloque switch de \texttt{MainWindow.cs}. \\
+\bottomrule
+\end{tabularx}
+\caption{Matriz de diagnóstico técnico y resolución de incidencias en producción.}
+\label{tab:troubleshooting}
+\end{table}
+
+\electricsep
+
+\section{Casos Frecuentes Detallados}
+
+\begin{modernbox}{1. Error MySQL `errno 150` al importar esquema}
+\textbf{Síntoma:} MySQL rechaza la creación de claves foráneas con el código de error 150.\\
+\textbf{Causa:} Se intentó crear una referencia hacia una tabla aún no definida o con cotejamiento dispar.\\
+\textbf{Solución:} El script DDL \texttt{schema.sql} debe abrir siempre con \texttt{SET FOREIGN\_KEY\_CHECKS = 0;} y cerrar con \texttt{SET FOREIGN\_KEY\_CHECKS = 1;}, garantizando además que todas las tablas declaren explícitamente \texttt{ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4\_unicode\_ci}.
+\end{modernbox}
+
+\begin{modernbox}{2. Subida de contratos o planos falla silenciosamente en PHP}
+\textbf{Síntoma:} La petición responde con error de campos vacíos o código HTTP 400.\\
+\textbf{Causa:} El tamaño del archivo adjunto superó la directiva \texttt{post\_max\_size} del servidor PHP.\\
+\textbf{Solución:} Configurar \texttt{.user.ini} o iniciar el servidor con directivas explícitas de memoria:
+\texttt{php -d upload\_max\_filesize=25M -d post\_max\_size=25M -d memory\_limit=256M -S localhost:8000}.
+\end{modernbox}
+
+\begin{modernbox}{3. Pantalla en blanco en la Aplicación de Escritorio}
+\textbf{Síntoma:} Al iniciar \texttt{PorticoDesktop.exe}, la ventana se abre pero no carga contenido.\\
+\textbf{Causa:} Desfase en el nombre del recurso incrustado en el manifiesto binario de C\#.\\
+\textbf{Solución:} Verificar que los archivos añadidos en \texttt{web-ui/} cumplan con la regla de inclusión en \texttt{PorticoDesktop.csproj}. La función \texttt{MapPathToResourceName} en \texttt{MainWindow.cs} transforma rutas separadas por barras en nombres lógicos separados por puntos (\texttt{webui.subcarpeta.archivo.ext}).
+\end{modernbox}
+
+\begin{modernbox}{4. Error HTTP 403: "Token de seguridad inválido"}
+\textbf{Síntoma:} El formulario web rechaza peticiones de guardado tras periodos de inactividad.\\
+\textbf{Causa:} La sesión de PHP expiró en el servidor pero la pestaña del navegador permaneció abierta.\\
+\textbf{Solución:} Recargar la página para renegociar el token o solicitar una renovación asíncrona contra \texttt{api/csrf.php}.
+\end{modernbox}
+
+% ==============================================================================
+% REFERENCIAS BIBLIOGRÁFICAS (AUTO-CONTENIDAS)
+% ==============================================================================
+% ==============================================================================
+% REFERENCIAS BIBLIOGRÁFICAS (BIBTEX + ESTILO SBC)
+% ==============================================================================
+\nocite{*}
+\bibliographystyle{sbc}
+\bibliography{template}
+
+\end{document}
