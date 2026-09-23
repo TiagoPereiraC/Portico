@@ -648,19 +648,33 @@ function responderDetalle(PDO $pdo): void
         'SELECT
             m.nombre,
             m.marca,
-            am.fecha,
-            am.hora_salida,
-            am.hora_devolucion
-        FROM asistencia_maquinaria am
-        INNER JOIN maquinaria m
-            ON m.id_maquinaria = am.id_maquinaria
-        WHERE am.id_obra = ?
-        ORDER BY am.fecha DESC, am.hora_salida DESC, m.nombre'
+            om.fecha_asignacion,
+            om.fecha_retiro,
+            am.fecha           AS fecha_devolucion,
+            am.hora_salida     AS hora_salida,
+            am.hora_devolucion AS hora_devolucion
+         FROM obra_maquinaria om
+         INNER JOIN maquinaria m
+             ON m.id_maquinaria = om.id_maquinaria
+         LEFT JOIN asistencia_maquinaria am
+             ON am.id_obra       = om.id_obra
+            AND am.id_maquinaria = om.id_maquinaria
+            AND am.fecha = (
+                SELECT MAX(am2.fecha)
+                FROM asistencia_maquinaria am2
+                WHERE am2.id_obra       = om.id_obra
+                  AND am2.id_maquinaria = om.id_maquinaria
+            )
+         WHERE om.id_obra = ?
+         ORDER BY
+            om.fecha_asignacion DESC,
+            m.nombre'
     );
 
     $stmt->execute([$idObra]);
 
     $maquinaria = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 
 
     /*

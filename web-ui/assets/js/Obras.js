@@ -2880,41 +2880,27 @@ function renderDetalle(data) {
         detailMaquinariaBody.innerHTML =
             maquinaria
                 .map((m) => {
+                    const horaSalida = m.hora_salida ? String(m.hora_salida).slice(0, 5) : "";
+                    const horaDevolucion = m.hora_devolucion ? String(m.hora_devolucion).slice(0, 5) : "";
 
                     return `
                         <tr>
-
+                            <td>${escapeHtml(m.nombre || "—")}</td>
+                            <td>${escapeHtml(m.marca || "—")}</td>
+                            <td>${formatDate(m.fecha_asignacion)}</td>
                             <td>
-                                ${escapeHtml(
-                                    m.nombre || "—"
-                                )}
+                                ${formatDate(m.fecha_retiro)}
+                                ${horaSalida ? `<span class="time-tag"><i class="fas fa-clock"></i>${horaSalida}</span>` : ""}
                             </td>
-
                             <td>
-                                ${escapeHtml(
-                                    m.marca || "—"
-                                )}
+                                ${formatDate(m.fecha_devolucion)}
+                                ${horaDevolucion ? `<span class="time-tag"><i class="fas fa-clock"></i>${horaDevolucion}</span>` : ""}
                             </td>
-
-                            <td>
-                                ${formatDate(
-                                    m.fecha
-                                )}
-                            </td>
-
-                            <td>
-                                ${m.hora_salida || "—"}
-                            </td>
-
-                            <td>
-                                ${m.hora_devolucion || "Sin devolver"}
-                            </td>
-
                         </tr>
                     `;
-
                 })
                 .join("");
+
 
     } else {
 
