@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS combustible (
     precio_unitario DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     precio_total DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     fecha DATE NOT NULL,
-    id_obra INT NOT NULL,
+    id_obra INT NULL,
     id_maquinaria INT NULL,
     id_factura INT NULL,
 
@@ -198,7 +198,7 @@ CREATE TABLE IF NOT EXISTS combustible (
     INDEX idx_combustible_maquinaria (id_maquinaria),
     INDEX idx_combustible_factura (id_factura),
     CONSTRAINT fk_combustible_obra FOREIGN KEY (id_obra) REFERENCES obras(id_obra)
-        ON UPDATE CASCADE ON DELETE CASCADE,
+        ON UPDATE CASCADE ON DELETE SET NULL,
     CONSTRAINT fk_combustible_maquinaria FOREIGN KEY (id_maquinaria) REFERENCES maquinaria(id_maquinaria)
         ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
