@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facturas</title>
+
+    <link rel="stylesheet" href="assets/css/theme.css">
+    <link rel="stylesheet" href="assets/css/Facturas-style.css">
+    <link rel="stylesheet" href="assets/css/nav-sidebar.css">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <script src="assets/js/auth.js" data-role="Administrador"></script>
+</head>
+
+<body>
+
+    <nav class="main-top-nav">
+        <div class="logo-wrap">
+            <img src="assets/img/logo.png"
+                 alt="Pórtico Construcciones y Servicios">
+        </div>
+
+        <div class="user-pill">
+            <svg viewBox="0 0 24 24" width="18" height="18"
+                 fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span class="user-pill-name">Admin</span>
+        </div>
+    </nav>
+
+    <nav class="dashboard-nav-tabs" aria-label="Navegación principal">
+        <div class="nav-tabs-container">
+
+            <a href="PanelInicio.html" class="nav-tab-item">
+                <i class="fa-solid fa-house"></i>
+                <span>Panel</span>
+            </a>
+
+            <a href="Obras.html" class="nav-tab-item">
+                <i class="fa-solid fa-helmet-safety"></i>
+                <span>Obras</span>
+            </a>
+
+            <a href="RegistrarObrero.html" class="nav-tab-item">
+                <i class="fa-solid fa-users"></i>
+                <span>Obreros</span>
+            </a>
+
+            <a href="Maquinaria.html" class="nav-tab-item">
+                <i class="fa-solid fa-truck"></i>
+                <span>Maquinaria</span>
+            </a>
+
+            <a href="Asistencia.html" class="nav-tab-item">
+                <i class="fa-solid fa-clipboard-check"></i>
+                <span>Asistencias</span>
+            </a>
+
+            <a href="Consultas.html" class="nav-tab-item">
+                <i class="fa-solid fa-chart-column"></i>
+                <span>Consultas</span>
+            </a>
+
+            <a href="Facturas.html" class="nav-tab-item active">
+                <i class="fa-solid fa-file-invoice-dollar"></i>
+                <span>Facturas</span>
+            </a>
+
+            <a href="LogsAuditoria.html" class="nav-tab-item">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Logs</span>
+            </a>
+
+            <a href="ExportarDatos.html" class="nav-tab-item">
+                <i class="fa-solid fa-download"></i>
+                <span>Exportar</span>
+            </a>
+
+            <a href="TablaUsuarios.html" class="nav-tab-item">
+                <i class="fa-solid fa-user"></i>
+                <span>Usuarios</span>
+            </a>
+
+            <a href="Login.html" class="nav-tab-item nav-tab-logout">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Salir</span>
+            </a>
+
+        </div>
+    </nav>
+
+    <main>
+
+        <div class="card">
+
+            <div id="feedback"
+                 class="feedback-msg hidden"
+                 role="alert"
+                 aria-live="polite"></div>
+
+            <!-- COLUMNA IZQUIERDA -->
+            <section class="form-section">
+
+                <h1>Gestión de Facturas</h1>
+
+                <div class="section-title">
+                    <i class="fa-solid fa-file-arrow-up"></i>
+                    <span>Cargar factura</span>
+                </div>
+
+                <div class="upload-box" id="uploadBox">
+                    <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+
+                    <strong>Subir factura</strong>
+
+                    <span>
+                        Seleccioná una imagen o PDF de la factura
+                    </span>
+
+                    <small>
+                        El sistema utilizará OCR para extraer los datos.
+                    </small>
+
+                    <input type="file"
+                           id="archivoFactura"
+                           accept="image/*,.pdf"
+                           hidden>
+
+                    <button type="button"
+                            class="btn-secondary"
+                            id="btnSeleccionarArchivo">
+                        <i class="fa-solid fa-folder-open"></i>
+                        Seleccionar archivo
+                    </button>
+
+                    <div id="archivoSeleccionado"
+                         class="file-selected hidden">
+                    </div>
+                </div>
+
+                <button type="button"
+                        id="btnProcesarOCR"
+                        class="btn-search">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    Procesar factura con OCR
+                </button>
+
+                <div class="divider">
+                    <span>o ingresar los datos manualmente</span>
+                </div>
+
+                <div class="form-grid">
+
+                    <div class="field">
+                        <label for="numeroFactura">Número de factura</label>
+                        <input type="text"
+                               id="numeroFactura"
+                               placeholder="Ej.: A-001-00012345">
+                    </div>
+
+                    <div class="field">
+                        <label for="proveedor">Proveedor *</label>
+                        <input type="text"
+                               id="proveedor"
+                               placeholder="Nombre del proveedor">
+                    </div>
+
+                    <div class="field">
+                        <label for="rutProveedor">RUT / DNI</label>
+                        <input type="text"
+                               id="rutProveedor"
+                               placeholder="Documento del proveedor">
+                    </div>
+
+                    <div class="field">
+                        <label for="fechaEmision">Fecha de emisión *</label>
+                        <input type="date" id="fechaEmision">
+                    </div>
+
+                    <div class="field">
+                        <label for="tipoGasto">Tipo de gasto *</label>
+                        <select id="tipoGasto">
+                            <option value="General">Gasto general</option>
+                            <option value="Obra">Gasto de obra</option>
+                        </select>
+                    </div>
+
+                    <div class="field hidden" id="obraField">
+                        <label for="idObra">Obra asociada *</label>
+                        <select id="idObra">
+                            <option value="">Seleccionar obra...</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="section-title detail-title">
+                    <i class="fa-solid fa-list"></i>
+                    <span>Detalle de la factura</span>
+                </div>
+
+                <div class="detail-table-wrapper">
+                    <table class="detail-table">
+                        <thead>
+                            <tr>
+                                <th>Descripción</th>
+                                <th>Cantidad</th>
+                                <th>Precio unitario</th>
+                                <th>Subtotal</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="detalleFactura">
+                            <tr class="empty-detail">
+                                <td colspan="5">
+                                    No hay ítems agregados.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <button type="button"
+                        id="btnAgregarItem"
+                        class="btn-add">
+                    <i class="fa-solid fa-plus"></i>
+                    Agregar ítem
+                </button>
+
+                <div class="totals-box">
+
+                    <div>
+                        <span>Subtotal</span>
+                        <strong id="subtotalFactura">$ 0,00</strong>
+                    </div>
+
+                    <div>
+                        <label for="ivaFactura">IVA</label>
+                        <input type="number"
+                               id="ivaFactura"
+                               min="0"
+                               step="0.01"
+                               value="0">
+                    </div>
+
+                    <div class="total-final">
+                        <span>Total factura</span>
+                        <strong id="totalFactura">$ 0,00</strong>
+                    </div>
+
+                </div>
+
+                <div class="actions">
+                    <button type="button"
+                            id="btnGuardarFactura"
+                            class="btn-search">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        Guardar factura
+                    </button>
+
+                    <a href="PanelInicio.html"
+                       class="btn-back">
+                        Volver
+                    </a>
+                </div>
+
+            </section>
+
+            <!-- COLUMNA DERECHA -->
+            <section class="result-section">
+
+                <div class="result-header">
+                    <div>
+                        <h2>Facturas registradas</h2>
+                        <p>Consulta y control de gastos ingresados.</p>
+                    </div>
+
+                    <button type="button"
+                            id="btnActualizar"
+                            class="btn-icon"
+                            title="Actualizar">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
+                </div>
+
+                <div id="resumenFacturas"
+                     class="resumen-facturas">
+
+                    <div class="resumen-card">
+                        <div class="summary-icon">
+                            <i class="fa-solid fa-file-invoice"></i>
+                        </div>
+                        <div>
+                            <h3>Facturas</h3>
+                            <span id="totalCantidadFacturas">0</span>
+                        </div>
+                    </div>
+
+                    <div class="resumen-card">
+                        <div class="summary-icon">
+                            <i class="fa-solid fa-building"></i>
+                        </div>
+                        <div>
+                            <h3>Gastos de obra</h3>
+                            <span id="totalGastosObra">$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <div class="resumen-card">
+                        <div class="summary-icon">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <div>
+                            <h3>Gastos generales</h3>
+                            <span id="totalGastosGenerales">$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <div class="resumen-card total-card">
+                        <div class="summary-icon">
+                            <i class="fa-solid fa-coins"></i>
+                        </div>
+                        <div>
+                            <h3>Total de gastos</h3>
+                            <span id="totalGastos">$ 0,00</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="filters-box">
+
+                    <div class="field">
+                        <label for="filtroProveedor">Proveedor</label>
+                        <input type="text"
+                               id="filtroProveedor"
+                               placeholder="Buscar proveedor...">
+                    </div>
+
+                    <div class="field">
+                        <label for="filtroTipo">Tipo</label>
+                        <select id="filtroTipo">
+                            <option value="">Todos</option>
+                            <option value="General">Gasto general</option>
+                            <option value="Obra">Gasto de obra</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="filtroDesde">Desde</label>
+                        <input type="date" id="filtroDesde">
+                    </div>
+
+                    <div class="field">
+                        <label for="filtroHasta">Hasta</label>
+                        <input type="date" id="filtroHasta">
+                    </div>
+
+                    <button type="button"
+                            id="btnFiltrar"
+                            class="btn-filter">
+                        <i class="fa-solid fa-filter"></i>
+                        Filtrar
+                    </button>
+
+                </div>
+
+                <div class="table">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Factura</th>
+                                <th>Proveedor</th>
+                                <th>Tipo</th>
+                                <th>Obra</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="tablaFacturas">
+
+                            <tr>
+                                <td colspan="8"
+                                    class="no-data">
+                                    No hay facturas cargadas.
+                                </td>
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <!-- DISTRIBUCIÓN -->
+                <div class="distribution-section">
+
+                    <div class="result-header distribution-header">
+                        <div>
+                            <h2>Cobertura de gastos generales</h2>
+                            <p>
+                                Calculá cuánto debe absorber cada obra para cubrir
+                                los gastos generales del período.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="distribution-controls">
+
+                        <div class="field">
+                            <label for="periodoDistribucion">Período</label>
+                            <input type="month" id="periodoDistribucion">
+                        </div>
+
+                        <div class="field">
+                            <label for="criterioDistribucion">Criterio</label>
+                            <select id="criterioDistribucion">
+                                <option value="Por_Horas">Por horas-hombre</option>
+                                <option value="Por_Obreros">Por obreros asignados</option>
+                                <option value="Por_Porcentaje">Por porcentaje fijo</option>
+                            </select>
+                        </div>
+
+                        <button type="button"
+                                id="btnCalcularDistribucion"
+                                class="btn-search">
+                            <i class="fa-solid fa-calculator"></i>
+                            Calcular distribución
+                        </button>
+
+                    </div>
+
+                    <div id="resultadoDistribucion"
+                         class="distribution-result">
+
+                        <div class="distribution-empty">
+                            <i class="fa-solid fa-calculator"></i>
+                            <span>
+                                Seleccioná un período y calculá la cobertura.
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="assets/js/facturas.js"></script>
+
+</body>
+</html>
