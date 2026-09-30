@@ -46,6 +46,21 @@ function sendDesktopRequest(type, payload, responseType) {
     });
 }
 
+// Misma resolución de ruta que obreros.js: la API está en /api, un nivel
+// por encima de /web-ui/
+function resolveApiBase() {
+    const path = window.location.pathname;
+    const idx = path.lastIndexOf("/web-ui/");
+
+    if (idx !== -1) {
+        return window.location.origin + path.substring(0, idx) + "/api";
+    }
+
+    return window.location.origin + "/api";
+}
+
+const API_BASE = resolveApiBase();
+
 let resizeTimer = null;
 window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
@@ -182,10 +197,7 @@ async function cargarMetricasDashboard() {
         if (window.chrome && window.chrome.webview) {
             datos = await sendDesktopRequest("dashboard_metricas", {}, "dashboard_metricas_response");
         } else {
-            const apiBase = window.location.origin.includes("localhost") || window.location.origin.includes("127.0.0.1")
-                ? "/api"
-                : "api";
-            const res = await fetch(`${apiBase}/dashboard.php`, { credentials: "include" });
+            const res = await fetch(`${API_BASE}/dashboard.php`, { credentials: "include" });
             if (!res.ok) throw new Error("Error al obtener métricas del servidor.");
             datos = await res.json();
         }
@@ -561,7 +573,7 @@ function renderizarAlertas() {
             : `${escapeHtml(a.nombre_archivo || "Certificado técnico")} · Vencimiento: ${escapeHtml(a.fecha_vencimiento || "")}`;
 
         const idRef = a.tipo_alerta === "obrero" ? a.id_contrato_obrero : a.id_certificado;
-        const estaLeida = Boolean(a.leido);
+        const estaLeida = Boolean(Number(a.leido));
 
         const readActionHtml = estaLeida
             ? `<span class="alert-badge-tag leido">Visto</span>`
@@ -626,10 +638,7 @@ async function marcarNotificacionLeida(tipo, idReferencia) {
         if (window.chrome && window.chrome.webview) {
             await sendDesktopRequest("notificacion_marcar_leida", { tipo, id_referencia: idReferencia }, "notificacion_marcar_leida_response");
         } else {
-            const apiBase = window.location.origin.includes("localhost") || window.location.origin.includes("127.0.0.1")
-                ? "/api"
-                : "api";
-            await fetch(`${apiBase}/marcar_notificacion.php`, {
+            await fetch(`${API_BASE}/marcar_notificacion.php`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
@@ -650,10 +659,7 @@ async function marcarTodasNotificacionesLeidas() {
         if (window.chrome && window.chrome.webview) {
             await sendDesktopRequest("notificacion_marcar_leida", { tipo: "todas" }, "notificacion_marcar_leida_response");
         } else {
-            const apiBase = window.location.origin.includes("localhost") || window.location.origin.includes("127.0.0.1")
-                ? "/api"
-                : "api";
-            await fetch(`${apiBase}/marcar_notificacion.php`, {
+            await fetch(`${API_BASE}/marcar_notificacion.php`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
