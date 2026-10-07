@@ -1,40 +1,5 @@
-/*
- * facturas.js
- *
- * Pantalla de gestión de facturas.
- *
- * Al elegir o arrastrar el archivo, la factura se lee automáticamente y se
- * completan los campos (proveedor, RUT, fecha, número, detalle e IVA).
- * La lectura se hace siempre en el navegador con Tesseract.js (imágenes) y
- * PDF.js (PDF). El texto leído se envía al servidor al guardar (texto_ocr).
- *
- * Endpoints de api/facturas.php:
- *   GET  api/facturas.php?accion=listar
- *   GET  api/facturas.php?accion=obras
- *   GET  api/facturas.php?accion=archivo&id=N   (archivo original, inline)
- *   POST api/facturas.php?accion=guardar     (incluye texto_ocr y estado)
- *   POST api/facturas.php?accion=anular      (JSON: id_factura)
- *   POST api/facturas.php?accion=distribuir
- *   POST api/facturas.php?accion=estado      (JSON: id_factura, estado)
- *
- * Los POST envían el token CSRF (api/csrf.php) en el header X-CSRF-Token.
- *
- * Respuesta esperada de accion=distribuir:
- *   {
- *     success, periodo, criterio,
- *     total_operacion,   // TODOS los gastos del período (generales + de obra)
- *     total_directo,     // facturas de obra ya asignadas a una obra
- *     total_general,     // resto (generales + costos manuales), se prorratea
- *     base_total, tasa,
- *     distribucion: [{ id_obra, obra, base, porcentaje, tasa,
- *                      gasto_directo, monto_asignado, total_cubrir }]
- *   }
- */
-
 "use strict";
 
-/* Misma resolución de ruta que obreros.js: la API está en /api, un nivel
-   por encima de /web-ui/ */
 function resolveApiBase() {
     if (!window.location.protocol.startsWith("http")) {
         return null;
@@ -55,6 +20,7 @@ const API_URL = `${API_BASE}/facturas.php`;
 const OCR_IDIOMA = "spa";
 const PDFJS_WORKER =
     "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const CLAVE_TIPO_CAMBIO = "portico_tipo_cambio_usd";
 
 const OBRAS_DEMO = [
     { id_obra: 1, nombre: "Obra Rivera Centro" },
@@ -80,6 +46,8 @@ document.addEventListener("DOMContentLoaded", () => {
 function inicializar() {
     configurarCargaArchivo();
     configurarTipoGasto();
+    configurarMoneda();
+    configurarPorcentajes();
     configurarItems();
     configurarTotales();
     configurarBotones();
@@ -101,6 +69,10 @@ function hoyLocal() {
     const dia = String(d.getDate()).padStart(2, "0");
 
     return `${d.getFullYear()}-${mes}-${dia}`;
+}
+
+function redondear2(valor) {
+    return Math.round((Number(valor) || 0) * 100) / 100;
 }
 
 /* ------------------------------------------------------------------ */
@@ -261,6 +233,17 @@ function informarResultadoOCR(resultado) {
         return;
     }
 
+    if (resultado.moneda === "USD") {
+        mostrarFeedback(
+            "Factura en dólares leída. Ingresá el tipo de cambio y revisá " +
+            "los datos antes de guardar.",
+            "warning",
+            8000
+        );
+
+        return;
+    }
+
     mostrarFeedback(
         "Factura leída. Revisá los datos completados antes de guardar.",
         "success"
@@ -379,24 +362,43 @@ function interpretarTextoFactura(texto) {
 
     const plano = lineas.join("\n");
 
-    let subtotal = buscarMonto(lineas, /sub\s*-?\s*total|neto|base imponible/i);
-    let iva = buscarMonto(lineas, /\biva\b|i\.v\.a/i, true);
-    let total = buscarMonto(
-        lineas,
-        /\btotal\b/i,
-        false,
-        /sub|iva|i\.v\.a|descuento/i
-    );
-
     const items = detectarItems(lineas);
-    const sumaItems = items.reduce((s, i) => s + i.cantidad * i.precio_unitario, 0);
+    const sumaItems = items.reduce(
+        (s, i) => s + i.cantidad * i.precio_unitario,
+        0
+    );
+    const sumaBruto = items.reduce((s, i) => s + i.subtotal_linea, 0);
+    const lineasConIva = items.some(i => i.tasa_iva > 0);
 
-    if (subtotal === null && items.length) subtotal = sumaItems;
-    if (subtotal === null && total !== null && iva !== null) {
-        subtotal = total - iva;
-    }
-    if (iva === null && total !== null && subtotal !== null && total >= subtotal) {
-        iva = total - subtotal;
+    let subtotal = null;
+    let iva = null;
+    let total = null;
+
+    if (items.length && lineasConIva) {
+        // e-Factura: P.UNIT es neto y SUB.TOTAL de cada línea incluye IVA
+        subtotal = redondear2(sumaItems);
+        total = redondear2(sumaBruto);
+        iva = redondear2(total - subtotal);
+    } else {
+        subtotal = buscarMonto(
+            lineas,
+            /sub\s*-?\s*total|neto|base imponible/i
+        );
+        iva = buscarMonto(lineas, /\biva\b|i\.v\.a/i, true);
+        total = buscarMonto(
+            lineas,
+            /\btotal\b/i,
+            false,
+            /sub|iva|i\.v\.a|descuento/i
+        );
+
+        if (subtotal === null && items.length) subtotal = sumaItems;
+        if (subtotal === null && total !== null && iva !== null) {
+            subtotal = total - iva;
+        }
+        if (iva === null && total !== null && subtotal !== null && total >= subtotal) {
+            iva = total - subtotal;
+        }
     }
 
     if (!items.length && subtotal !== null) {
@@ -425,6 +427,7 @@ function interpretarTextoFactura(texto) {
         proveedor: detectarProveedor(lineas),
         rut_dni: detectarRut(plano),
         fecha_emision: detectarFecha(plano),
+        moneda: detectarMoneda(plano),
         subtotal,
         iva,
         total,
@@ -433,8 +436,20 @@ function interpretarTextoFactura(texto) {
     };
 }
 
+function detectarMoneda(plano) {
+    return /\bUSD\b|U\$S|\bD[ÓO]LAR(?:ES)?\b/i.test(plano) ? "USD" : "UYU";
+}
+
 function detectarNumeroFactura(plano) {
-    const m = plano.match(
+    // e-Factura: "e-Factura" seguido de serie y número (A 1633)
+    // (puede haber alguna línea intermedia, p. ej. "ORDEN DE COMPRA")
+    let m = plano.match(
+        /[eE]-?[fF]actura[\s\S]{0,60}?(?:^|\s)([A-Z]{1,3})[ \-]?(\d{2,10})(?=\s|$)/m
+    );
+
+    if (m) return `${m[1]}-${m[2]}`;
+
+    m = plano.match(
         /(?:factura|e-?ticket|comprobante|n[°ºo]\.?|nro\.?|n[úu]mero)\s*[:#\-]?\s*([A-Z]{1,3}[\s\-]?\d{3,}(?:[\-\/]\d+)?|\d{3,}(?:[\-\/]\d+)?)/i
     );
 
@@ -442,7 +457,12 @@ function detectarNumeroFactura(plano) {
 }
 
 function detectarRut(plano) {
-    const m = plano.match(
+    // e-Factura: el RUT del proveedor figura como "RUT EMISOR"
+    let m = plano.match(/RUT\s*EMISOR\s*:?\s*(\d{12})/i);
+
+    if (m) return m[1];
+
+    m = plano.match(
         /(?:R\.?\s?U\.?\s?[TC]\.?|C\.?\s?U\.?\s?I\.?\s?[TL]\.?|C\.?\s?I\.?|DNI)\s*[:\-]?\s*(\d[\d.\-\s]{6,14}\d)/i
     );
 
@@ -480,9 +500,16 @@ function detectarProveedor(lineas) {
     const razonSocial =
         /(^|\s)(S\.?\s?A\.?|S\.?\s?R\.?\s?L\.?|S\.?\s?A\.?\s?S\.?|LTDA\.?)(\s|$|,)/i;
 
+    // El comprador (la propia empresa) nunca es el proveedor
+    const comprador = /pronaos|portico|pórtico|comprador/i;
+
     const candidata = lineas
         .slice(0, 15)
-        .find(l => razonSocial.test(l) && l.length < 80);
+        .find(l =>
+            razonSocial.test(l) &&
+            !comprador.test(l) &&
+            l.length < 80
+        );
 
     if (candidata) return candidata;
 
@@ -494,51 +521,113 @@ function detectarProveedor(lineas) {
         .find(l =>
             (l.match(/[A-Za-zÁÉÍÓÚáéíóúÑñ]/g) || []).length >= 4 &&
             !descartar.test(l) &&
+            !comprador.test(l) &&
             l.length < 80
         );
 
     return primera || "";
 }
 
+/* ---------- Detección del detalle ---------- */
+
+const LETRAS = "A-Za-zÁÉÍÓÚáéíóúÑñ";
+const NUM = "\\$?\\s*(\\d[\\d.,]*)";
+
+const PATRONES_ITEM = [
+    // cantidad  descripción  P.UNIT  DESC.  SUB.TOTAL   (e-Factura)
+    {
+        re: new RegExp(
+            "^(\\d[\\d.,]*)\\s+(.*[" + LETRAS + "].*?)\\s+" +
+            NUM + "\\s+" + NUM + "\\s+" + NUM + "$"
+        ),
+        orden: ["q", "desc", "p", "d", "s"]
+    },
+    // cantidad  descripción  precio  subtotal
+    {
+        re: new RegExp(
+            "^(\\d[\\d.,]*)\\s+(.*[" + LETRAS + "].*?)\\s+" +
+            NUM + "\\s+" + NUM + "$"
+        ),
+        orden: ["q", "desc", "p", "s"]
+    },
+    // descripción  cantidad  precio  subtotal
+    {
+        re: new RegExp(
+            "^(.*[" + LETRAS + "].*?)\\s+" +
+            NUM + "\\s+" + NUM + "\\s+" + NUM + "$"
+        ),
+        orden: ["desc", "q", "p", "s"]
+    }
+];
+
+/* "7.500" puede ser 7,5 (punto decimal) o 7500 (miles): se prueban ambas */
+function candidatosCantidad(texto) {
+    const candidatos = [];
+
+    if (/^\d+\.\d{1,3}$/.test(texto)) candidatos.push(Number(texto));
+
+    candidatos.push(parseNumeroLocal(texto));
+
+    return candidatos.filter(Number.isFinite);
+}
+
+/* Devuelve la tasa de IVA incluida en el subtotal de la línea, o null si
+   cantidad × precio no cuadra con el subtotal (no es una línea de detalle) */
+function validarItem(q, p, d, s) {
+    const tolerancia = Math.max(1, Math.abs(s) * 0.02);
+    const base = q * p - (d || 0);
+
+    for (const tasa of [0.22, 0.10, 0]) {
+        if (Math.abs(base * (1 + tasa) - s) <= tolerancia) return tasa;
+    }
+
+    return null;
+}
+
 function detectarItems(lineas) {
-    const excluir = /total|iva|i\.v\.a|descuento|recargo|redondeo|saldo|pagar/i;
+    const excluir =
+        /\btotal\b|\biva\b|i\.v\.a|descuento|recargo|saldo|pagar|\bneto\b|\bcae\b/i;
+
     const items = [];
 
     lineas.forEach(linea => {
         if (excluir.test(linea)) return;
 
-        let q, desc, p, s;
+        for (const { re, orden } of PATRONES_ITEM) {
+            const m = linea.match(re);
 
-        let m = linea.match(
-            /^(.*[A-Za-zÁÉÍÓÚáéíóúÑñ].*?)\s+(\d[\d.,]*)\s+\$?\s*(\d[\d.,]*)\s+\$?\s*(\d[\d.,]*)$/
-        );
+            if (!m) continue;
 
-        if (m) {
-            desc = m[1];
-            q = parseNumeroLocal(m[2]);
-            p = parseNumeroLocal(m[3]);
-            s = parseNumeroLocal(m[4]);
-        } else {
-            m = linea.match(
-                /^(\d[\d.,]*)\s+(.*[A-Za-zÁÉÍÓÚáéíóúÑñ].*?)\s+\$?\s*(\d[\d.,]*)\s+\$?\s*(\d[\d.,]*)$/
-            );
+            const v = {};
 
-            if (!m) return;
+            orden.forEach((clave, i) => {
+                v[clave] = m[i + 1];
+            });
 
-            q = parseNumeroLocal(m[1]);
-            desc = m[2];
-            p = parseNumeroLocal(m[3]);
-            s = parseNumeroLocal(m[4]);
+            const p = parseNumeroLocal(v.p);
+            const s = parseNumeroLocal(v.s);
+            const d = v.d !== undefined ? parseNumeroLocal(v.d) : 0;
+
+            if (![p, s, d].every(Number.isFinite)) continue;
+
+            for (const q of candidatosCantidad(v.q)) {
+                if (q <= 0) continue;
+
+                const tasa = validarItem(q, p, d, s);
+
+                if (tasa === null) continue;
+
+                items.push({
+                    descripcion: v.desc.replace(/[|_]+/g, " ").trim(),
+                    cantidad: q,
+                    precio_unitario: p,
+                    subtotal_linea: s,
+                    tasa_iva: tasa
+                });
+
+                return;
+            }
         }
-
-        if (![q, p, s].every(Number.isFinite) || q <= 0) return;
-        if (Math.abs(q * p - s) > Math.max(1, s * 0.02)) return;
-
-        items.push({
-            descripcion: desc.replace(/[|_]+/g, " ").trim(),
-            cantidad: q,
-            precio_unitario: p
-        });
     });
 
     return items;
@@ -610,7 +699,13 @@ function detectarObraEnTexto(texto) {
 /* ---------- Volcado en el formulario ---------- */
 
 function cargarResultadoOCR(data) {
-    const resultado = { campos: 0, items: 0, proveedor: false, fecha: false };
+    const resultado = {
+        campos: 0,
+        items: 0,
+        proveedor: false,
+        fecha: false,
+        moneda: data && data.moneda ? data.moneda : "UYU"
+    };
 
     if (!data) return resultado;
 
@@ -632,6 +727,8 @@ function cargarResultadoOCR(data) {
         "fechaEmision",
         data.fecha_emision || data.fecha
     );
+
+    establecerMoneda(resultado.moneda);
 
     let idObra = data.id_obra || null;
     let tipo = data.tipo_gasto || null;
@@ -683,7 +780,7 @@ function cargarResultadoOCR(data) {
 }
 
 /* ------------------------------------------------------------------ */
-/* TIPO DE GASTO, ÍTEMS Y TOTALES DEL FORMULARIO                       */
+/* TIPO DE GASTO, MONEDA, ÍTEMS Y TOTALES DEL FORMULARIO               */
 /* ------------------------------------------------------------------ */
 
 function configurarTipoGasto() {
@@ -699,6 +796,98 @@ function configurarTipoGasto() {
             document.getElementById("idObra").value = "";
         }
     });
+}
+
+/* Agrega al formulario los campos Moneda y Tipo de cambio (sin tocar el HTML) */
+function configurarMoneda() {
+    const grid = document.querySelector(".form-grid");
+
+    if (!grid || document.getElementById("monedaFactura")) return;
+
+    const campoMoneda = document.createElement("div");
+
+    campoMoneda.className = "field";
+    campoMoneda.innerHTML = `
+        <label for="monedaFactura">Moneda</label>
+        <select id="monedaFactura">
+            <option value="UYU">Pesos uruguayos (UYU)</option>
+            <option value="USD">Dólares (USD)</option>
+        </select>
+    `;
+
+    const campoCambio = document.createElement("div");
+
+    campoCambio.className = "field hidden";
+    campoCambio.id = "tipoCambioField";
+    campoCambio.innerHTML = `
+        <label for="tipoCambio">Tipo de cambio (UYU por USD) *</label>
+        <input type="number"
+               id="tipoCambio"
+               min="0"
+               step="0.01"
+               placeholder="Ej.: 40.50">
+        <small id="equivalenteUYU"></small>
+    `;
+
+    grid.appendChild(campoMoneda);
+    grid.appendChild(campoCambio);
+
+    document.getElementById("monedaFactura")
+        .addEventListener("change", () => {
+            const esUSD = obtenerMoneda() === "USD";
+
+            campoCambio.classList.toggle("hidden", !esUSD);
+
+            if (esUSD && !obtenerTipoCambio()) {
+                const recordado = leerTipoCambioRecordado();
+
+                if (recordado) {
+                    document.getElementById("tipoCambio").value = recordado;
+                }
+            }
+
+            actualizarTotales();
+        });
+
+    document.getElementById("tipoCambio")
+        .addEventListener("input", actualizarTotales);
+}
+
+function obtenerMoneda() {
+    const select = document.getElementById("monedaFactura");
+
+    return select && select.value === "USD" ? "USD" : "UYU";
+}
+
+function establecerMoneda(moneda) {
+    const select = document.getElementById("monedaFactura");
+
+    if (!select) return;
+
+    select.value = moneda === "USD" ? "USD" : "UYU";
+    select.dispatchEvent(new Event("change"));
+}
+
+function obtenerTipoCambio() {
+    const input = document.getElementById("tipoCambio");
+
+    return input ? Number(input.value) || 0 : 0;
+}
+
+function leerTipoCambioRecordado() {
+    try {
+        return window.localStorage.getItem(CLAVE_TIPO_CAMBIO) || "";
+    } catch (error) {
+        return "";
+    }
+}
+
+function recordarTipoCambio(valor) {
+    try {
+        window.localStorage.setItem(CLAVE_TIPO_CAMBIO, String(valor));
+    } catch (error) {
+        /* sin almacenamiento disponible: se ignora */
+    }
 }
 
 function configurarItems() {
@@ -748,6 +937,7 @@ function agregarItem(item = {}) {
 
 function renderizarItems() {
     const tbody = document.getElementById("detalleFactura");
+    const moneda = obtenerMoneda();
 
     if (itemsFactura.length === 0) {
         tbody.innerHTML = `
@@ -787,7 +977,7 @@ function renderizarItems() {
             </td>
 
             <td class="item-subtotal">
-                ${formatearMoneda(item.cantidad * item.precio_unitario)}
+                ${formatearMoneda(item.cantidad * item.precio_unitario, moneda)}
             </td>
 
             <td>
@@ -804,6 +994,7 @@ function renderizarItems() {
 
 function actualizarItemsDesdeDOM() {
     const rows = document.querySelectorAll("#detalleFactura tr[data-index]");
+    const moneda = obtenerMoneda();
 
     rows.forEach(row => {
         const index = Number(row.dataset.index);
@@ -829,7 +1020,8 @@ function actualizarItemsDesdeDOM() {
         const subtotalCell = row.querySelector(".item-subtotal");
 
         if (subtotalCell) {
-            subtotalCell.textContent = formatearMoneda(cantidad * precio);
+            subtotalCell.textContent =
+                formatearMoneda(cantidad * precio, moneda);
         }
     });
 }
@@ -843,6 +1035,8 @@ function configurarTotales() {
 function actualizarTotales() {
     actualizarItemsDesdeDOM();
 
+    const moneda = obtenerMoneda();
+
     const subtotal = itemsFactura.reduce(
         (total, item) =>
             total + Number(item.cantidad) * Number(item.precio_unitario),
@@ -853,10 +1047,21 @@ function actualizarTotales() {
         Number(document.getElementById("ivaFactura").value) || 0;
 
     document.getElementById("subtotalFactura").textContent =
-        formatearMoneda(subtotal);
+        formatearMoneda(subtotal, moneda);
 
     document.getElementById("totalFactura").textContent =
-        formatearMoneda(subtotal + iva);
+        formatearMoneda(subtotal + iva, moneda);
+
+    const equivalente = document.getElementById("equivalenteUYU");
+
+    if (equivalente) {
+        const tc = obtenerTipoCambio();
+
+        equivalente.textContent =
+            moneda === "USD" && tc > 0
+                ? `Equivale a ${formatearMoneda((subtotal + iva) * tc, "UYU")}`
+                : "";
+    }
 }
 
 function configurarBotones() {
@@ -983,16 +1188,46 @@ async function guardarFactura() {
         return;
     }
 
-    const subtotal = itemsFactura.reduce(
+    const moneda = obtenerMoneda();
+    const tipoCambio = moneda === "USD" ? obtenerTipoCambio() : 1;
+
+    if (moneda === "USD" && !(tipoCambio > 0)) {
+        mostrarFeedback(
+            "La factura está en dólares: ingresá el tipo de cambio.",
+            "warning"
+        );
+
+        return;
+    }
+
+    // Todo se guarda en pesos: si la factura es en USD se convierte.
+    const convertir = valor => redondear2(Number(valor) * tipoCambio);
+
+    const itemsGuardar = itemsFactura.map(item => ({
+        ...item,
+        precio_unitario: convertir(item.precio_unitario),
+        subtotal: convertir(
+            Number(item.cantidad) * Number(item.precio_unitario)
+        )
+    }));
+
+    const subtotalOriginal = itemsFactura.reduce(
         (sum, item) =>
             sum + Number(item.cantidad) * Number(item.precio_unitario),
         0
     );
 
-    const iva =
+    const ivaOriginal =
         Number(document.getElementById("ivaFactura").value) || 0;
 
-    const total = subtotal + iva;
+    const subtotal = convertir(subtotalOriginal);
+    const iva = convertir(ivaOriginal);
+    const total = redondear2(subtotal + iva);
+
+    const textoGuardar =
+        moneda === "USD"
+            ? `${ocrTexto}\n[Factura en USD convertida a UYU. Tipo de cambio: ${tipoCambio}]`.trim()
+            : ocrTexto;
 
     const estado = ocrUsado ? "Pendiente" : "Verificada";
 
@@ -1007,8 +1242,8 @@ async function guardarFactura() {
         subtotal,
         iva,
         total,
-        items: itemsFactura.map(item => ({ ...item })),
-        texto_ocr: ocrTexto,
+        items: itemsGuardar,
+        texto_ocr: textoGuardar,
         estado
     };
 
@@ -1021,6 +1256,8 @@ async function guardarFactura() {
                 : 1;
 
         facturas.unshift(factura);
+
+        if (moneda === "USD") recordarTipoCambio(tipoCambio);
 
         aplicarFiltros();
         limpiarFormulario();
@@ -1045,8 +1282,8 @@ async function guardarFactura() {
     formData.append("iva", iva);
     formData.append("total", total);
     formData.append("estado", estado);
-    formData.append("texto_ocr", ocrTexto);
-    formData.append("items", JSON.stringify(itemsFactura));
+    formData.append("texto_ocr", textoGuardar);
+    formData.append("items", JSON.stringify(itemsGuardar));
 
     if (inputArchivo.files.length) {
         formData.append("archivo", inputArchivo.files[0]);
@@ -1060,7 +1297,14 @@ async function guardarFactura() {
             { method: "POST", body: formData }
         );
 
-        mostrarFeedback("Factura guardada correctamente.", "success");
+        if (moneda === "USD") recordarTipoCambio(tipoCambio);
+
+        mostrarFeedback(
+            moneda === "USD"
+                ? `Factura guardada y convertida a pesos (${formatearMoneda(total, "UYU")}).`
+                : "Factura guardada correctamente.",
+            "success"
+        );
 
         limpiarFormulario();
         cargarFacturas();
@@ -1812,6 +2056,8 @@ function limpiarFormulario() {
     document.getElementById("ivaFactura").value = "0";
     document.getElementById("archivoFactura").value = "";
 
+    establecerMoneda("UYU");
+
     const fileBox = document.getElementById("archivoSeleccionado");
 
     fileBox.classList.add("hidden");
@@ -1913,10 +2159,10 @@ async function llamarAPI(url, opciones = {}) {
     return data;
 }
 
-function formatearMoneda(valor) {
+function formatearMoneda(valor, moneda = "UYU") {
     return new Intl.NumberFormat("es-UY", {
         style: "currency",
-        currency: "UYU",
+        currency: moneda === "USD" ? "USD" : "UYU",
         minimumFractionDigits: 2
     }).format(Number(valor) || 0);
 }
@@ -1949,4 +2195,124 @@ function escapeHtml(value) {
 
 function escapeAttribute(value) {
     return escapeHtml(value);
+}
+
+/* ------------------------------------------------------------------ */
+/* PORCENTAJE FIJO POR OBRA (criterio Por_Porcentaje)                  */
+/* ------------------------------------------------------------------ */
+
+function configurarPorcentajes() {
+    const controles = document.querySelector(".distribution-controls");
+    const criterio = document.getElementById("criterioDistribucion");
+
+    if (!controles || !criterio || document.getElementById("panelPorcentajes")) {
+        return;
+    }
+
+    const panel = document.createElement("div");
+
+    panel.id = "panelPorcentajes";
+    panel.className = "hidden";
+    panel.innerHTML = `
+        <p style="margin:12px 0 8px;font-size:14px">
+            Porcentaje de los gastos generales que absorbe cada obra activa.
+            Deben sumar 100%.
+        </p>
+        <div id="listaPorcentajes"
+             style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:10px">
+            <strong id="sumaPorcentajes">Total: 0%</strong>
+            <button type="button" id="btnGuardarPorcentajes" class="btn-secondary">
+                <i class="fa-solid fa-floppy-disk"></i>
+                Guardar porcentajes
+            </button>
+        </div>
+    `;
+
+    controles.insertAdjacentElement("afterend", panel);
+
+    criterio.addEventListener("change", actualizarPanelPorcentajes);
+
+    panel.addEventListener("input", e => {
+        if (e.target.classList.contains("pct-obra")) {
+            actualizarSumaPorcentajes();
+        }
+    });
+
+    document.getElementById("btnGuardarPorcentajes")
+        .addEventListener("click", guardarPorcentajes);
+
+    actualizarPanelPorcentajes();
+}
+
+async function actualizarPanelPorcentajes() {
+    const panel = document.getElementById("panelPorcentajes");
+    const esPorcentaje =
+        document.getElementById("criterioDistribucion").value === "Por_Porcentaje";
+
+    panel.classList.toggle("hidden", !esPorcentaje || modoDemo);
+
+    if (!esPorcentaje || modoDemo) return;
+
+    try {
+        const data = await llamarAPI(`${API_URL}?accion=porcentajes`);
+
+        document.getElementById("listaPorcentajes").innerHTML =
+            (data.obras || []).map(obra => `
+                <div class="field">
+                    <label>${escapeHtml(obra.nombre)}</label>
+                    <input type="number"
+                           class="pct-obra"
+                           data-id="${Number(obra.id_obra)}"
+                           min="0"
+                           max="100"
+                           step="0.01"
+                           value="${Number(obra.porcentaje) || 0}">
+                </div>
+            `).join("");
+
+        actualizarSumaPorcentajes();
+
+    } catch (error) {
+        mostrarFeedback(error.message, "error");
+    }
+}
+
+function actualizarSumaPorcentajes() {
+    const suma = [...document.querySelectorAll(".pct-obra")]
+        .reduce((total, input) => total + (Number(input.value) || 0), 0);
+
+    const etiqueta = document.getElementById("sumaPorcentajes");
+    const correcto = Math.abs(suma - 100) <= 0.01;
+
+    etiqueta.textContent = `Total: ${formatearNumero(suma)}%`;
+    etiqueta.style.color = correcto ? "#15803d" : "#b54747";
+}
+
+async function guardarPorcentajes() {
+    const porcentajes = [...document.querySelectorAll(".pct-obra")].map(input => ({
+        id_obra: Number(input.dataset.id),
+        porcentaje: Number(input.value) || 0
+    }));
+
+    if (!porcentajes.length) {
+        mostrarFeedback("No hay obras activas para configurar.", "warning");
+        return;
+    }
+
+    try {
+        await llamarAPI(
+            `${API_URL}?accion=guardar_porcentajes`,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ porcentajes })
+            }
+        );
+
+        mostrarFeedback("Porcentajes guardados.", "success");
+
+    } catch (error) {
+        mostrarFeedback(error.message, "error");
+    }
 }

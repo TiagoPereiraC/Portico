@@ -569,6 +569,104 @@ function accionAnular(PDO $pdo): void
 }
 
 /* ------------------------------------------------------------------ */
+/* PORCENTAJE FIJO POR OBRA                                            */
+/* ------------------------------------------------------------------ */
+
+function accionPorcentajes(PDO $pdo): void
+{
+    exigirMetodo('GET');
+
+    $obras = $pdo->query(
+        'SELECT id_obra, nombre, porcentaje_gastos_generales AS porcentaje
+           FROM obras
+          WHERE activo = 1
+          ORDER BY nombre'
+    )->fetchAll();
+
+    foreach ($obras as &$obra) {
+        $obra['id_obra'] = (int) $obra['id_obra'];
+        $obra['porcentaje'] = (float) $obra['porcentaje'];
+    }
+    unset($obra);
+
+    responder(['success' => true, 'obras' => $obras]);
+}
+
+function accionGuardarPorcentajes(PDO $pdo): void
+{
+    exigirMetodo('POST');
+
+    $entrada = leerJson();
+    $lista = $entrada['porcentajes'] ?? null;
+
+    if (!is_array($lista) || count($lista) === 0) {
+        fallar('No se recibieron porcentajes.');
+    }
+
+    $activas = array_map(
+        'intval',
+        $pdo->query('SELECT id_obra FROM obras WHERE activo = 1')->fetchAll(PDO::FETCH_COLUMN)
+    );
+
+    $valores = [];
+    $suma = 0.0;
+
+    foreach ($lista as $fila) {
+        if (!is_array($fila)) {
+            fallar('Hay porcentajes u obras inválidos.');
+        }
+
+        $id = (int) ($fila['id_obra'] ?? 0);
+        $pct = $fila['porcentaje'] ?? null;
+
+        if (
+            !in_array($id, $activas, true)
+            || !numeroValido($pct)
+            || (float) $pct < 0
+            || (float) $pct > 100
+        ) {
+            fallar('Hay porcentajes u obras inválidos.');
+        }
+
+        $valores[$id] = round((float) $pct, 2);
+    }
+
+    if (count($valores) !== count($activas)) {
+        fallar('Indicá el porcentaje de todas las obras activas.');
+    }
+
+    $suma = round(array_sum($valores), 2);
+
+    if (abs($suma - 100) > 0.01) {
+        fallar('Los porcentajes deben sumar 100 (ahora suman ' . $suma . ').');
+    }
+
+    $pdo->beginTransaction();
+
+    try {
+        $st = $pdo->prepare(
+            'UPDATE obras SET porcentaje_gastos_generales = ? WHERE id_obra = ?'
+        );
+
+        foreach ($valores as $id => $pct) {
+            $st->execute([number_format($pct, 2, '.', ''), $id]);
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        throw $e;
+    }
+
+    registrarAuditoria($pdo, 'porcentajes', 'obras', 0, $valores);
+
+    responder(['success' => true, 'message' => 'Porcentajes guardados.']);
+}
+
+/* ------------------------------------------------------------------ */
 /* COBERTURA DE GASTOS                                                 */
 /* ------------------------------------------------------------------ */
 
@@ -637,6 +735,7 @@ function accionDistribuir(PDO $pdo): void
     /* Base de reparto según el criterio */
 
     $bases = [];
+    $avisoPorcentaje = '';
 
     if ($criterio === 'Por_Horas') {
         $st = $pdo->prepare(
@@ -665,23 +764,33 @@ function accionDistribuir(PDO $pdo): void
             $bases[(int) $fila['id_obra']] = (float) $fila['base'];
         }
     } else {
-        /* Porcentaje fijo: partes iguales entre las obras activas del período */
+        /* Porcentaje fijo: el porcentaje guardado en cada obra activa del período */
         $st = $pdo->prepare(
-            'SELECT id_obra FROM obras
+            'SELECT id_obra, porcentaje_gastos_generales AS porcentaje FROM obras
               WHERE activo = 1
                 AND (fecha_inicio IS NULL OR fecha_inicio <= ?)
                 AND (fecha_fin IS NULL OR fecha_fin >= ?)'
         );
         $st->execute([$hasta, $desde]);
 
-        $activas = $st->fetchAll(PDO::FETCH_COLUMN);
+        $activas = $st->fetchAll();
 
-        if (count($activas) > 0) {
+        foreach ($activas as $fila) {
+            if ((float) $fila['porcentaje'] > 0) {
+                $bases[(int) $fila['id_obra']] = (float) $fila['porcentaje'];
+            }
+        }
+
+        /* Sin porcentajes definidos: partes iguales entre las obras activas */
+        if (count($bases) === 0 && count($activas) > 0) {
             $parte = 100 / count($activas);
 
-            foreach ($activas as $idObra) {
-                $bases[(int) $idObra] = $parte;
+            foreach ($activas as $fila) {
+                $bases[(int) $fila['id_obra']] = $parte;
             }
+
+            $avisoPorcentaje = 'No hay porcentajes definidos: se repartió en partes iguales '
+                . 'entre las obras activas. Cargalos en el panel de porcentajes.';
         }
     }
 
@@ -760,6 +869,8 @@ function accionDistribuir(PDO $pdo): void
         $advertencia = 'No hay datos para repartir los gastos generales con este criterio '
             . 'en el período (sin horas, obreros u obras activas). '
             . 'Solo se muestran los gastos directos de cada obra.';
+    } elseif ($avisoPorcentaje !== '') {
+        $advertencia = $avisoPorcentaje;
     }
 
     responder([
@@ -818,6 +929,14 @@ try {
 
         case 'anular':
             accionAnular($pdo);
+            break;
+
+        case 'porcentajes':
+            accionPorcentajes($pdo);
+            break;
+
+        case 'guardar_porcentajes':
+            accionGuardarPorcentajes($pdo);
             break;
 
         case 'distribuir':
