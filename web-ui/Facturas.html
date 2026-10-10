@@ -18,81 +18,112 @@
 <body>
 
     <nav class="main-top-nav">
-        <div class="logo-wrap">
-            <img src="assets/img/logo.png"
-                 alt="Pórtico Construcciones y Servicios">
-        </div>
+            <div class="logo-wrap">
+                <img
+                    src="assets/img/logo.png"
+                    alt="Pórtico Construcciones y Servicios"
+                />
+            </div>
+            <div class="nav-user-actions">
+                    <div class="notifications-wrapper" id="notificationsWrapper">
+                        <button type="button" class="notifications-btn" id="btnNotifications" aria-label="Notificaciones del sistema" title="Ver alertas de vencimiento">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                            </svg>
+                            <span class="notifications-badge" id="notificationsBadge" style="display: none;">0</span>
+                        </button>
 
-        <div class="user-pill">
-            <svg viewBox="0 0 24 24" width="18" height="18"
-                 fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-            </svg>
-            <span class="user-pill-name">Admin</span>
-        </div>
-    </nav>
+                        <div class="notifications-dropdown" id="notificationsDropdown" style="display: none;">
+                            <div class="notif-dropdown-header">
+                                <div class="notif-header-title">
+                                    <h4>Alertas y Vencimientos</h4>
+                                    <span class="notif-count-tag" id="notifCountTag">0 alertas</span>
+                                </div>
+                                <div class="notif-header-actions">
+                                    <button type="button" class="btn-mark-all-read" id="btnMarcarTodasLeidas" title="Marcar todas las alertas actuales como leídas">
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                        <span>Marcar todas como leídas</span>
+                                    </button>
+                                </div>
+                                <div class="notif-tabs">
+                                    <button type="button" class="notif-tab active" id="tabNotifMaq">Maquinaria</button>
+                                    <button type="button" class="notif-tab" id="tabNotifObr">Contratos Obreros</button>
+                                </div>
+                            </div>
+                            <div class="notif-list-body" id="notifListBody">
+                                <p class="empty-hint">Cargando alertas del sistema...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-pill">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span class="user-pill-name">Admin</span>
+            </div>
+                </div>
+        </nav>
 
     <nav class="dashboard-nav-tabs" aria-label="Navegación principal">
-        <div class="nav-tabs-container">
+    <div class="nav-tabs-container">
 
-            <a href="PanelInicio.html" class="nav-tab-item">
-                <i class="fa-solid fa-house"></i>
-                <span>Panel</span>
-            </a>
+        <a href="PanelInicio.html" class="nav-tab-item">
+            <i class="fa-solid fa-house"></i>
+            <span>Panel</span>
+        </a>
 
-            <a href="Obras.html" class="nav-tab-item">
-                <i class="fa-solid fa-helmet-safety"></i>
-                <span>Obras</span>
-            </a>
+        <a href="Obras.html" class="nav-tab-item">
+            <i class="fa-solid fa-helmet-safety"></i>
+            <span>Obras</span>
+        </a>
 
-            <a href="RegistrarObrero.html" class="nav-tab-item">
-                <i class="fa-solid fa-users"></i>
-                <span>Obreros</span>
-            </a>
+        <a href="RegistrarObrero.html" class="nav-tab-item">
+            <i class="fa-solid fa-users"></i>
+            <span>Obreros</span>
+        </a>
 
-            <a href="Maquinaria.html" class="nav-tab-item">
-                <i class="fa-solid fa-truck"></i>
-                <span>Maquinaria</span>
-            </a>
+        <a href="Maquinaria.html" class="nav-tab-item">
+            <i class="fa-solid fa-truck"></i>
+            <span>Maquinaria</span>
+        </a>
 
-            <a href="Asistencia.html" class="nav-tab-item">
-                <i class="fa-solid fa-clipboard-check"></i>
-                <span>Asistencias</span>
-            </a>
+        <a href="Asistencia.html" class="nav-tab-item">
+            <i class="fa-solid fa-clipboard-check"></i>
+            <span>Asistencias</span>
+        </a>
 
-            <a href="Facturas.html" class="nav-tab-item active">
-                <i class="fa-solid fa-file-invoice-dollar"></i>
-                <span>Facturas</span>
-            </a>
+        <a href="Facturas.html" class="nav-tab-item active">
+            <i class="fa-solid fa-file-invoice-dollar"></i>
+            <span>Facturas</span>
+        </a>
 
-            <a href="Consultas.html" class="nav-tab-item">
-                <i class="fa-solid fa-chart-column"></i>
-                <span>Consultas</span>
-            </a>
+        <a href="Consultas.html" class="nav-tab-item">
+            <i class="fa-solid fa-chart-column"></i>
+            <span>Consultas</span>
+        </a>
 
-            <a href="LogsAuditoria.html" class="nav-tab-item">
-                <i class="fa-solid fa-file-lines"></i>
-                <span>Logs</span>
-            </a>
+        <a href="LogsAuditoria.html" class="nav-tab-item">
+            <i class="fa-solid fa-file-lines"></i>
+            <span>Logs</span>
+        </a>
 
-            <a href="ExportarDatos.html" class="nav-tab-item">
-                <i class="fa-solid fa-download"></i>
-                <span>Exportar</span>
-            </a>
+        <a href="ExportarDatos.html" class="nav-tab-item">
+            <i class="fa-solid fa-download"></i>
+            <span>Exportar</span>
+        </a>
 
-            <a href="TablaUsuarios.html" class="nav-tab-item">
-                <i class="fa-solid fa-user"></i>
-                <span>Usuarios</span>
-            </a>
+        <a href="TablaUsuarios.html" class="nav-tab-item">
+            <i class="fa-solid fa-user"></i>
+            <span>Usuarios</span>
+        </a>
 
-            <a href="Login.html" class="nav-tab-item nav-tab-logout">
-                <i class="fa-solid fa-right-from-bracket"></i>
-                <span>Salir</span>
-            </a>
+        <a href="Login.html" class="nav-tab-item nav-tab-logout">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Salir</span>
+        </a>
 
-        </div>
-    </nav>
+    </div>
+</nav>
 
     <main>
 
@@ -464,5 +495,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="assets/js/facturas.js"></script>
 
-</body>
+        <script src="assets/js/notificaciones.js"></script>
+    </body>
 </html>

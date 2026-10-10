@@ -677,7 +677,8 @@ document.addEventListener(
 
                 message:
                     `¿Eliminar la obra "${obra.nombre}"? ` +
-                    "Esta acción no se puede deshacer.",
+                    "Esta acción no se puede deshacer. " +
+                    "Los registros de combustible de la maquinaria se conservan.",
 
                 acceptLabel:
                     "Eliminar",
@@ -3673,7 +3674,8 @@ if (detailTareasTotalTexto) {
 
                     message:
                         `¿Eliminar la obra "${obra.nombre}"? ` +
-                        "Esta acción no se puede deshacer.",
+                        "Esta acción no se puede deshacer. " +
+                        "Los registros de combustible de la maquinaria se conservan.",
 
                     acceptLabel:
                         "Eliminar",

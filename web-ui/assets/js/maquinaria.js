@@ -34,9 +34,6 @@ const certSubirBtn = document.getElementById("certSubirBtn");
 const certCancelarBtn = document.getElementById("certCancelarBtn");
 const certLista = document.getElementById("certLista");
 const certListaWrap = document.getElementById("certListaWrap");
-const alertasVencimiento = document.getElementById("alertasVencimiento");
-const alertasLista = document.getElementById("alertasLista");
-const alertasCerrar = document.getElementById("alertasCerrar");
 const certSection = document.getElementById("certSection");
 const certArchivoForm = document.getElementById("certArchivoForm");
 const certVencimientoForm = document.getElementById("certVencimientoForm");
@@ -121,9 +118,6 @@ paginationPrev.addEventListener("click", () => cambiarPagina(-1));
 paginationNext.addEventListener("click", () => cambiarPagina(1));
 
 certCancelarBtn.addEventListener("click", cerrarCertModal);
-alertasCerrar.addEventListener("click", () => {
-  alertasVencimiento.classList.add("hidden");
-});
 
 certSubirBtn.addEventListener("click", async () => {
   if (!certModal.dataset.idMaquinaria) return;
@@ -305,9 +299,6 @@ async function inicializarVista() {
       csrfToken = await obtenerCsrf();
     }
     await cargarMaquinaria();
-    if (apiBase) {
-      cargarAlertas().catch(err => console.error('Error cargando alertas:', err));
-    }
   } finally {
     setLoading(false);
   }
@@ -536,7 +527,7 @@ function renderMaquinaria() {
     const row = document.createElement("tr");
 
     let certIcono = "";
-    let vencimiento = '<span style="color:#9ca3af;">No asignado</span>';
+    let vencimiento = '<span style="color:#6b7280;">No asignado</span>';
 
     if (
       item.vencimiento !== null &&
@@ -1082,35 +1073,6 @@ function formatDate(value) {
     return `${day}/${month}/${year}`;
 }
 
-async function cargarAlertas() {
-  try {
-    const data = await fetchJson(`${apiBase}/alertas_certificados.php?dias=30`);
-    const alertas = data.alertas || [];
-    if (!alertas.length) {
-      alertasVencimiento.classList.add("hidden");
-      return;
-    }
-    alertasVencimiento.classList.remove("hidden");
-    alertasLista.innerHTML = alertas.map((a) => {
-      const diasRestantes = parseInt(a.dias_restantes, 10);
-      let claseBadge = "";
-      if (diasRestantes < 0) claseBadge = "expirado";
-      else if (diasRestantes <= 15) claseBadge = "critico";
-      else claseBadge = "advertencia";
-      const textoDias = diasRestantes < 0
-        ? `Expirado (${Math.abs(diasRestantes)} día(s))`
-        : `Vence en ${diasRestantes} día(s)`;
-      return `<li>
-        <span class="alerta-badge ${claseBadge}">${textoDias}</span>
-        <strong>${escapeHtml(a.nombre_maquinaria)}</strong>${a.marca ? " (" + escapeHtml(a.marca) + ")" : ""}
-        — ${escapeHtml(a.nombre_archivo || "Certificado")}
-        <span style="margin-left:auto;font-size:11px;color:#9ca3af;">${formatDate(a.fecha_vencimiento)}</span>
-      </li>`;
-    }).join("");
-  } catch (e) {
-    console.error("Error cargando alertas:", e);
-  }
-}
 
 async function editarFechaCertificado(idCertificado, fecha) {
   if (apiBase) {

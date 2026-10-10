@@ -133,12 +133,16 @@ main {
 }
 
 .card h2 {
-  color: #666;
-  margin-bottom: 12px;
+  color: var(--text-strong);
+  text-align: left;
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 20px;
 }
 
 .form-helper {
-  color: #777;
+  color: #4b5563;
+  text-align: left;
   font-size: 14px;
   line-height: 1.4;
   margin-bottom: 18px;
@@ -306,7 +310,7 @@ main {
   width: 100%;
   padding: 12px;
   border-radius: 12px;
-  background: #888;
+  background: #6b7280;
   color: white;
   font-size: 14px;
   text-decoration: none;

@@ -14,51 +14,6 @@
         <link rel="stylesheet" href="assets/css/nav-sidebar.css" />
         <script src="assets/js/auth.js" data-role="Administrador"></script>
         <style>
-            .alertas-vencimiento {
-                background: #fef2f2;
-                border: 1px solid #fca5a5;
-                border-radius: 12px;
-                padding: 16px 20px;
-                margin-bottom: 20px;
-                box-shadow: 0 2px 8px rgba(220, 38, 38, 0.10);
-            }
-            .alertas-vencimiento.hidden { display: none; }
-            .alertas-header {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                color: #b91c1c;
-                font-size: 15px;
-                margin-bottom: 10px;
-            }
-            .alertas-header i { font-size: 18px; }
-            .alertas-close {
-                margin-left: auto;
-                background: none;
-                border: none;
-                color: #b91c1c;
-                cursor: pointer;
-                font-size: 16px;
-                padding: 2px 6px;
-                border-radius: 4px;
-                transition: background 0.2s;
-            }
-            .alertas-close:hover { background: #fecaca; }
-            #alertasLista {
-                list-style: none;
-                padding: 0;
-                margin: 0;
-            }
-            #alertasLista li {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                padding: 8px 10px;
-                border-radius: 8px;
-                font-size: 13px;
-                color: #7f1d1d;
-            }
-            #alertasLista li + li { border-top: 1px solid #fecaca; }
             .alerta-badge {
                 display: inline-block;
                 font-size: 11px;
@@ -274,10 +229,44 @@
                     alt="Pórtico Construcciones y Servicios"
                 />
             </div>
-            <div class="user-pill">
+            <div class="nav-user-actions">
+                    <div class="notifications-wrapper" id="notificationsWrapper">
+                        <button type="button" class="notifications-btn" id="btnNotifications" aria-label="Notificaciones del sistema" title="Ver alertas de vencimiento">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                            </svg>
+                            <span class="notifications-badge" id="notificationsBadge" style="display: none;">0</span>
+                        </button>
+
+                        <div class="notifications-dropdown" id="notificationsDropdown" style="display: none;">
+                            <div class="notif-dropdown-header">
+                                <div class="notif-header-title">
+                                    <h4>Alertas y Vencimientos</h4>
+                                    <span class="notif-count-tag" id="notifCountTag">0 alertas</span>
+                                </div>
+                                <div class="notif-header-actions">
+                                    <button type="button" class="btn-mark-all-read" id="btnMarcarTodasLeidas" title="Marcar todas las alertas actuales como leídas">
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                        <span>Marcar todas como leídas</span>
+                                    </button>
+                                </div>
+                                <div class="notif-tabs">
+                                    <button type="button" class="notif-tab active" id="tabNotifMaq">Maquinaria</button>
+                                    <button type="button" class="notif-tab" id="tabNotifObr">Contratos Obreros</button>
+                                </div>
+                            </div>
+                            <div class="notif-list-body" id="notifListBody">
+                                <p class="empty-hint">Cargando alertas del sistema...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-pill">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 <span class="user-pill-name">Admin</span>
             </div>
+                </div>
         </nav>
 
         <!-- Barra de Navegación Horizontal (Sub-header) -->
@@ -314,7 +303,7 @@
             <span>Facturas</span>
         </a>
 
-        <a href="Consultas.html" class="nav-tab-item ">
+        <a href="Consultas.html" class="nav-tab-item">
             <i class="fa-solid fa-chart-column"></i>
             <span>Consultas</span>
         </a>
@@ -429,23 +418,8 @@
                 </div>
 
                 <section id="panelListado" class="panel-view active">
-                    <div
-                        id="alertasVencimiento"
-                        class="alertas-vencimiento hidden"
-                        role="alert"
-                        aria-live="polite"
-                    >
-                        <div class="alertas-header">
-                            <i class="fas fa-triangle-exclamation"></i>
-                            <strong>Certificados por vencer</strong>
-                            <button type="button" class="alertas-close" id="alertasCerrar" aria-label="Cerrar alerta">
-                                <i class="fas fa-xmark"></i>
-                            </button>
-                        </div>
-                        <ul id="alertasLista"></ul>
-                    </div>
 
-                    <div class="panel-head panel-head-spread">
+<div class="panel-head panel-head-spread">
                         <h2>Maquinaria</h2>
                         <span class="results-count" id="resultsCount">0 equipos</span>
                     </div>
@@ -601,5 +575,6 @@
         </main>
 
         <script src="assets/js/maquinaria.js"></script>
+            <script src="assets/js/notificaciones.js"></script>
     </body>
 </html>

@@ -5,7 +5,7 @@
     --card-bg: #e8e3df;
     --input-border: #e0e0e0;
     --text-dark: #666;
-    --text-muted: #888;
+    --text-muted: #5f6673;
     --btn-bg: #b54747;
     --btn-hover: #9e3c3c;
     --accent: #b54747;
@@ -88,8 +88,10 @@ main {
 }
 
 .header-row h2 {
-    color: var(--text-dark);
-    margin-bottom: 8px;
+    color: var(--text-strong);
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
 }
 
 .header-row p {
@@ -207,7 +209,7 @@ td {
 
 .table-status {
     text-align: center;
-    color: #777;
+    color: #6b7280;
     padding: 24px 12px;
 }
 
@@ -223,7 +225,7 @@ tbody tr:hover {
     display: inline-flex;
     align-items: center;
     background: #f5e4e4;
-    color: var(--btn-bg);
+    color: #9e3c3c;
     border-radius: 999px;
     padding: 4px 10px;
     font-size: 12px;
@@ -325,4 +327,8 @@ tbody tr:hover {
     .pagination-actions {
         justify-content: center;
     }
+}
+/* Contraste WCAG 1.4.3: cabecera de tabla sobre fondo rojo */
+thead th {
+    color: #fff;
 }

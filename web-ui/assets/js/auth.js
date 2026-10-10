@@ -55,12 +55,19 @@
 
         if (isHttp) {
             var apiBase = resolveApiBase();
-            fetch(apiBase + '/logout.php', {
-                method: 'POST',
-                credentials: 'include'
-            }).catch(function () {}).finally(function () {
-                window.location.href = 'Login.html';
-            });
+            fetch(apiBase + '/csrf.php', { credentials: 'include' })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    return fetch(apiBase + '/logout.php', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'X-CSRF-Token': (d && d.token) || '' }
+                    });
+                })
+                .catch(function () {})
+                .finally(function () {
+                    window.location.href = 'Login.html';
+                });
         } else {
             window.location.href = 'Login.html';
         }

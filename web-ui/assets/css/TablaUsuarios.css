@@ -13,7 +13,7 @@
   --input-bg:     #f5f5f5;
   --input-border: #e0e0e0;
   --text-dark:    #666;
-  --text-muted:   #888;
+  --text-muted: #5f6673;
   --btn-bg:       #b54747;
   --btn-hover:    #9e3c3c;
   --accent:       #b54747;
@@ -86,9 +86,11 @@ main {
 }
 
 .card h2 {
-    text-align: center;
+    text-align: left;
+    font-size: 22px;
+    font-weight: 600;
     margin-bottom: 20px;
-    color: var(--text-dark);
+    color: var(--text-strong);
 }
 
 .toolbar {
@@ -185,7 +187,7 @@ tbody tr:hover {
 }
 
 .btn-delete {
-    background: #e74c3c;
+    background: #c0392b;
     color: white;
 }
 
@@ -267,7 +269,7 @@ tbody tr:hover {
 
 .modal-content h3 {
     font-size: 22px;
-    color: #666;
+    color: var(--text-strong);
     margin-bottom: 12px;
 }
 
@@ -296,17 +298,17 @@ tbody tr:hover {
 }
 
 .modal-cancel {
-    background: #aaa;
+    background: #6b7280;
     color: white;
 }
 
 .modal-cancel:hover {
-    background: #888;
+    background: #565f6d;
     transform: scale(1.02);
 }
 
 .modal-delete {
-    background: #e74c3c;
+    background: #c0392b;
     color: white;
 }
 

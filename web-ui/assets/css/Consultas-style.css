@@ -14,7 +14,7 @@
     --input-bg: #f5f5f5;
     --input-border: #e0e0e0;
     --text-dark: #666;
-    --text-muted: #888;
+    --text-muted: #5f6673;
     --text-strong: #444;
     --btn-bg: #b54747;
     --btn-hover: #9e3c3c;
@@ -100,9 +100,9 @@ main {
 
 /* TÍTULO */
 .card h1 {
-    text-align: center;
+    text-align: left;
     margin-bottom: 20px;
-    color: var(--text-dark);
+    color: var(--text-strong);
     font-size: 22px;
     font-weight: 600;
     letter-spacing: 0.4px;
@@ -410,7 +410,7 @@ select:focus {
 }
 
 .resumen-card h3 {
-    color: #666;
+    color: var(--text-strong);
     font-size: 14px;
     margin-bottom: 10px;
 }

@@ -13,7 +13,7 @@
     --input-bg: #f5f5f5;
     --input-border: #e0e0e0;
     --text-dark: #666;
-    --text-muted: #888;
+    --text-muted: #5f6673;
     --text-strong: #444;
     --btn-bg: #b54747;
     --btn-hover: #9e3c3c;
@@ -106,9 +106,9 @@ main {
 }
 
 .form-section > h1 {
-    text-align: center;
-    margin-bottom: 24px;
-    color: var(--text-dark);
+    text-align: left;
+    margin-bottom: 20px;
+    color: var(--text-strong);
     font-size: 22px;
     font-weight: 600;
     letter-spacing: 0.4px;
@@ -174,7 +174,7 @@ main {
 }
 
 .upload-box small {
-    color: #999;
+    color: #6b7280;
     font-size: 11.5px;
     margin-bottom: 6px;
 }
@@ -301,7 +301,7 @@ main {
 }
 
 .empty-detail {
-    color: #888;
+    color: #6b7280;
     font-style: italic;
 }
 
@@ -432,7 +432,7 @@ main {
     align-items: center;
     gap: 10px;
     margin: 18px 0 2px;
-    color: #999;
+    color: #4b5563;
     font-size: 11px;
 }
 
@@ -498,13 +498,13 @@ main {
 }
 
 .result-header h2 {
-    color: var(--text-dark);
+    color: var(--text-strong);
     font-size: 20px;
     font-weight: 600;
 }
 
 .result-header p {
-    color: #888;
+    color: #4b5563;
     font-size: 12px;
     margin-top: 4px;
 }
@@ -557,7 +557,7 @@ main {
 }
 
 .resumen-card h3 {
-    color: #777;
+    color: var(--text-strong);
     font-size: 10.5px;
     font-weight: 600;
     margin-bottom: 5px;
@@ -762,7 +762,7 @@ main {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    color: #888;
+    color: #6b7280;
     font-size: 12px;
     box-shadow: var(--input-shadow);
 }
@@ -788,7 +788,7 @@ main {
 
 .distribution-summary-card span {
     display: block;
-    color: #888;
+    color: #6b7280;
     font-size: 10px;
     margin-bottom: 5px;
 }

@@ -1,9 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     inicializarFecha();
-    inicializarDropdownNotificaciones();
     inicializarColapsableAnaliticas();
-    inicializarTabsAlertas();
-    inicializarMarcarLeidas();
     cargarMetricasDashboard();
 });
 
@@ -89,31 +86,6 @@ function redimensionarGraficos() {
     }
 }
 
-function inicializarDropdownNotificaciones() {
-    const btn = document.getElementById("btnNotifications");
-    const dropdown = document.getElementById("notificationsDropdown");
-    const wrapper = document.getElementById("notificationsWrapper");
-
-    if (!btn || !dropdown) return;
-
-    btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const estaAbierto = dropdown.style.display === "block";
-        dropdown.style.display = estaAbierto ? "none" : "block";
-    });
-
-    document.addEventListener("click", (e) => {
-        if (wrapper && !wrapper.contains(e.target)) {
-            dropdown.style.display = "none";
-        }
-    });
-
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && dropdown.style.display === "block") {
-            dropdown.style.display = "none";
-        }
-    });
-}
 
 function inicializarColapsableAnaliticas() {
     const btn = document.getElementById("btnToggleAnalytics");
@@ -143,17 +115,6 @@ function inicializarColapsableAnaliticas() {
     });
 }
 
-function inicializarTabsAlertas() {
-    const btnMaq = document.getElementById("tabNotifMaq") || document.getElementById("tabAlertasMaq");
-    const btnObr = document.getElementById("tabNotifObr") || document.getElementById("tabAlertasObr");
-
-    if (btnMaq) {
-        btnMaq.addEventListener("click", () => cambiarTabAlertas("maquinaria"));
-    }
-    if (btnObr) {
-        btnObr.addEventListener("click", () => cambiarTabAlertas("obreros"));
-    }
-}
 
 // Paleta ejecutiva moderna para gráficos (libre de saturación en rojo)
 const COLORES_PORTICO = [
@@ -171,9 +132,6 @@ const COLORES_PORTICO = [
 
 let chartCargosInstance = null;
 let chartHorasInstance = null;
-let alertasMaquinariaCache = [];
-let alertasContratosCache = [];
-let tabAlertaActual = "maquinaria";
 
 function inicializarFecha() {
     const el = document.getElementById("currentDateDisplay");
@@ -203,14 +161,10 @@ async function cargarMetricasDashboard() {
         }
 
         if (datos && datos.data) {
-            alertasMaquinariaCache = datos.data.alertas_recientes || [];
-            alertasContratosCache = datos.data.alertas_contratos || [];
-
             renderizarKPIs(datos.data.kpis);
             renderizarResumenOperativo(datos.data.kpis);
             renderizarGraficoCargos(datos.data.distribucion_cargos || []);
             renderizarGraficoHoras(datos.data.horas_por_obra || []);
-            renderizarAlertas();
         }
     } catch (error) {
         console.error("Error cargando dashboard:", error);
@@ -325,21 +279,6 @@ function renderizarResumenOperativo(kpis) {
     animarNumero("subKpiRecursos", totalRecursos, false, "", " items");
 }
 
-function cambiarTabAlertas(tipo) {
-    tabAlertaActual = tipo;
-    const btnMaq = document.getElementById("tabNotifMaq") || document.getElementById("tabAlertasMaq");
-    const btnObr = document.getElementById("tabNotifObr") || document.getElementById("tabAlertasObr");
-
-    if (tipo === "maquinaria") {
-        if (btnMaq) btnMaq.classList.add("active");
-        if (btnObr) btnObr.classList.remove("active");
-    } else {
-        if (btnMaq) btnMaq.classList.remove("active");
-        if (btnObr) btnObr.classList.add("active");
-    }
-
-    renderizarAlertas();
-}
 
 function renderizarGraficoCargos(cargos) {
     const canvas = document.getElementById("chartCargos");
@@ -509,167 +448,10 @@ function renderizarGraficoHoras(obras) {
     }
 }
 
-function renderizarAlertas() {
-    const container = document.getElementById("notifListBody") || document.getElementById("alertsList");
-    const badge = document.getElementById("notificationsBadge");
-    const countTag = document.getElementById("notifCountTag");
 
-    const noLeidasMaq = alertasMaquinariaCache.filter(a => !a.leido).length;
-    const noLeidasObr = alertasContratosCache.filter(a => !a.leido).length;
-    const totalAlertas = noLeidasMaq + noLeidasObr;
 
-    if (badge) {
-        if (totalAlertas > 0) {
-            badge.textContent = totalAlertas > 99 ? "99+" : String(totalAlertas);
-            badge.style.display = "inline-flex";
-        } else {
-            badge.style.display = "none";
-        }
-    }
 
-    if (countTag) {
-        countTag.textContent = `${totalAlertas} alerta${totalAlertas === 1 ? "" : "s"}`;
-    }
 
-    if (!container) return;
-
-    const lista = (tabAlertaActual === "maquinaria") ? alertasMaquinariaCache : alertasContratosCache;
-
-    if (!lista || !lista.length) {
-        const mensajeVacio = (tabAlertaActual === "maquinaria")
-            ? "Todos los certificados y documentación técnica de maquinaria se encuentran al día."
-            : "Todos los contratos de personal se encuentran vigentes y al día.";
-
-        container.innerHTML = `
-            <div class="alert-empty-notice">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                <span>${mensajeVacio}</span>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = lista.map(a => {
-        const dias = Number(a.dias_restantes);
-        let badgeText, badgeClass;
-
-        if (dias < 0) {
-            badgeText = `Venció hace ${Math.abs(dias)}d`;
-            badgeClass = "vencido";
-        } else if (dias === 0) {
-            badgeText = "Vence hoy";
-            badgeClass = "vencido";
-        } else {
-            badgeText = `Vence en ${dias}d`;
-            badgeClass = "por_vencer";
-        }
-
-        const titulo = a.tipo_alerta === "obrero"
-            ? escapeHtml(a.nombre_obrero || "Obrero")
-            : `${escapeHtml(a.nombre_maquinaria || "Equipo")} ${a.marca ? `(${escapeHtml(a.marca)})` : ''}`;
-
-        const subtitulo = a.tipo_alerta === "obrero"
-            ? `DNI: ${escapeHtml(a.documento || "S/D")} · Vencimiento contrato: ${escapeHtml(a.fecha_vencimiento || "")}`
-            : `${escapeHtml(a.nombre_archivo || "Certificado técnico")} · Vencimiento: ${escapeHtml(a.fecha_vencimiento || "")}`;
-
-        const idRef = a.tipo_alerta === "obrero" ? a.id_contrato_obrero : a.id_certificado;
-        const estaLeida = Boolean(Number(a.leido));
-
-        const readActionHtml = estaLeida
-            ? `<span class="alert-badge-tag leido">Visto</span>`
-            : `<button type="button" class="btn-mark-single-read" data-tipo="${a.tipo_alerta}" data-id="${idRef}" title="Marcar como visto">
-                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                 <span>Visto</span>
-               </button>`;
-
-        return `
-            <div class="alert-row ${estaLeida ? 'is-read' : ''}">
-                <div class="alert-left">
-                    <svg class="alert-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                    <div class="alert-text-wrap">
-                        <div class="alert-item-title">${titulo}</div>
-                        <div class="alert-item-subtitle">${subtitulo}</div>
-                    </div>
-                </div>
-                <div class="alert-actions-col">
-                    <span class="alert-badge-tag ${badgeClass}">${badgeText}</span>
-                    ${readActionHtml}
-                </div>
-            </div>
-        `;
-    }).join("");
-}
-
-function inicializarMarcarLeidas() {
-    const btnTodas = document.getElementById("btnMarcarTodasLeidas");
-    if (btnTodas) {
-        btnTodas.addEventListener("click", (e) => {
-            e.stopPropagation();
-            marcarTodasNotificacionesLeidas();
-        });
-    }
-
-    const container = document.getElementById("notifListBody");
-    if (container) {
-        container.addEventListener("click", (e) => {
-            const btn = e.target.closest(".btn-mark-single-read");
-            if (!btn) return;
-            e.stopPropagation();
-            const tipo = btn.dataset.tipo;
-            const id = Number(btn.dataset.id);
-            if (tipo && id) {
-                marcarNotificacionLeida(tipo, id);
-            }
-        });
-    }
-}
-
-async function marcarNotificacionLeida(tipo, idReferencia) {
-    if (tipo === "maquinaria") {
-        const item = alertasMaquinariaCache.find(x => Number(x.id_certificado) === idReferencia);
-        if (item) item.leido = 1;
-    } else if (tipo === "obrero") {
-        const item = alertasContratosCache.find(x => Number(x.id_contrato_obrero) === idReferencia);
-        if (item) item.leido = 1;
-    }
-    renderizarAlertas();
-
-    try {
-        if (window.chrome && window.chrome.webview) {
-            await sendDesktopRequest("notificacion_marcar_leida", { tipo, id_referencia: idReferencia }, "notificacion_marcar_leida_response");
-        } else {
-            await fetch(`${API_BASE}/marcar_notificacion.php`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ tipo, id_referencia: idReferencia })
-            });
-        }
-    } catch (err) {
-        console.error("Error al marcar notificación como leída:", err);
-    }
-}
-
-async function marcarTodasNotificacionesLeidas() {
-    alertasMaquinariaCache.forEach(x => x.leido = 1);
-    alertasContratosCache.forEach(x => x.leido = 1);
-    renderizarAlertas();
-
-    try {
-        if (window.chrome && window.chrome.webview) {
-            await sendDesktopRequest("notificacion_marcar_leida", { tipo: "todas" }, "notificacion_marcar_leida_response");
-        } else {
-            await fetch(`${API_BASE}/marcar_notificacion.php`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ tipo: "todas" })
-            });
-        }
-    } catch (err) {
-        console.error("Error al marcar todas las notificaciones como leídas:", err);
-    }
-}
 
 function escapeHtml(str) {
     if (!str) return "";
