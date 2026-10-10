@@ -20,7 +20,23 @@ const API_URL = `${API_BASE}/facturas.php`;
 const OCR_IDIOMA = "spa";
 const PDFJS_WORKER =
     "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-const CLAVE_TIPO_CAMBIO = "portico_tipo_cambio_usd";
+const CLAVE_TIPO_CAMBIO = "portico_tipo_cambio_";
+
+const MONEDAS = {
+    UYU: { nombre: "pesos uruguayos", extranjera: false },
+    USD: { nombre: "dólares", extranjera: true },
+    BRL: { nombre: "reales", extranjera: true }
+};
+
+function normalizarMoneda(moneda) {
+    return Object.prototype.hasOwnProperty.call(MONEDAS, moneda)
+        ? moneda
+        : "UYU";
+}
+
+function esMonedaExtranjera(moneda) {
+    return MONEDAS[normalizarMoneda(moneda)].extranjera;
+}
 
 const OBRAS_DEMO = [
     { id_obra: 1, nombre: "Obra Rivera Centro" },
@@ -53,15 +69,47 @@ function inicializar() {
     configurarBotones();
     configurarFiltros();
 
-    agregarItem();
+    vaciarCampos();
 
-    document.getElementById("fechaEmision").value = hoyLocal();
-    document.getElementById("periodoDistribucion").value =
-        hoyLocal().slice(0, 7);
+    agregarItem();
 
     cargarObras();
     cargarFacturas();
 }
+
+/* Deja todos los campos vacíos, también cuando el navegador restaura
+   los valores al recargar la página */
+function vaciarCampos() {
+    document.querySelectorAll("input, select, textarea").forEach(campo => {
+        campo.setAttribute("autocomplete", "off");
+
+        if (campo.tagName === "SELECT") {
+            campo.selectedIndex = 0;
+        } else {
+            campo.value = "";
+        }
+    });
+
+    ["tipoGasto", "monedaFactura", "criterioDistribucion"].forEach(id => {
+        const campo = document.getElementById(id);
+
+        if (campo) campo.dispatchEvent(new Event("change"));
+    });
+
+    const archivo = document.getElementById("archivoSeleccionado");
+
+    archivo.classList.add("hidden");
+    archivo.textContent = "";
+
+    ocrUsado = false;
+    ocrTexto = "";
+
+    actualizarTotales();
+}
+
+window.addEventListener("pageshow", e => {
+    if (e.persisted) window.location.reload();
+});
 
 function hoyLocal() {
     const d = new Date();
@@ -233,9 +281,10 @@ function informarResultadoOCR(resultado) {
         return;
     }
 
-    if (resultado.moneda === "USD") {
+    if (esMonedaExtranjera(resultado.moneda)) {
         mostrarFeedback(
-            "Factura en dólares leída. Ingresá el tipo de cambio y revisá " +
+            `Factura en ${MONEDAS[resultado.moneda].nombre} leída. ` +
+            "Ingresá el tipo de cambio y revisá " +
             "los datos antes de guardar.",
             "warning",
             8000
@@ -437,6 +486,8 @@ function interpretarTextoFactura(texto) {
 }
 
 function detectarMoneda(plano) {
+    if (/\bBRL\b|R\$|\bREAIS\b/i.test(plano)) return "BRL";
+
     return /\bUSD\b|U\$S|\bD[ÓO]LAR(?:ES)?\b/i.test(plano) ? "USD" : "UYU";
 }
 
@@ -812,6 +863,7 @@ function configurarMoneda() {
         <select id="monedaFactura">
             <option value="UYU">Pesos uruguayos (UYU)</option>
             <option value="USD">Dólares (USD)</option>
+            <option value="BRL">Reales brasileños (BRL)</option>
         </select>
     `;
 
@@ -820,7 +872,7 @@ function configurarMoneda() {
     campoCambio.className = "field hidden";
     campoCambio.id = "tipoCambioField";
     campoCambio.innerHTML = `
-        <label for="tipoCambio">Tipo de cambio (UYU por USD) *</label>
+        <label for="tipoCambio" id="tipoCambioLabel">Tipo de cambio (UYU por USD) *</label>
         <input type="number"
                id="tipoCambio"
                min="0"
@@ -834,16 +886,20 @@ function configurarMoneda() {
 
     document.getElementById("monedaFactura")
         .addEventListener("change", () => {
-            const esUSD = obtenerMoneda() === "USD";
+            const moneda = obtenerMoneda();
+            const extranjera = esMonedaExtranjera(moneda);
 
-            campoCambio.classList.toggle("hidden", !esUSD);
+            campoCambio.classList.toggle("hidden", !extranjera);
 
-            if (esUSD && !obtenerTipoCambio()) {
-                const recordado = leerTipoCambioRecordado();
+            if (extranjera) {
+                document.getElementById("tipoCambioLabel").textContent =
+                    `Tipo de cambio (UYU por ${moneda}) *`;
 
-                if (recordado) {
-                    document.getElementById("tipoCambio").value = recordado;
-                }
+                document.getElementById("tipoCambio").placeholder =
+                    moneda === "BRL" ? "Ej.: 7.50" : "Ej.: 40.50";
+
+                document.getElementById("tipoCambio").value =
+                    leerTipoCambioRecordado(moneda);
             }
 
             actualizarTotales();
@@ -856,7 +912,7 @@ function configurarMoneda() {
 function obtenerMoneda() {
     const select = document.getElementById("monedaFactura");
 
-    return select && select.value === "USD" ? "USD" : "UYU";
+    return select ? normalizarMoneda(select.value) : "UYU";
 }
 
 function establecerMoneda(moneda) {
@@ -864,7 +920,7 @@ function establecerMoneda(moneda) {
 
     if (!select) return;
 
-    select.value = moneda === "USD" ? "USD" : "UYU";
+    select.value = normalizarMoneda(moneda);
     select.dispatchEvent(new Event("change"));
 }
 
@@ -874,17 +930,17 @@ function obtenerTipoCambio() {
     return input ? Number(input.value) || 0 : 0;
 }
 
-function leerTipoCambioRecordado() {
+function leerTipoCambioRecordado(moneda) {
     try {
-        return window.localStorage.getItem(CLAVE_TIPO_CAMBIO) || "";
+        return window.localStorage.getItem(CLAVE_TIPO_CAMBIO + moneda) || "";
     } catch (error) {
         return "";
     }
 }
 
-function recordarTipoCambio(valor) {
+function recordarTipoCambio(moneda, valor) {
     try {
-        window.localStorage.setItem(CLAVE_TIPO_CAMBIO, String(valor));
+        window.localStorage.setItem(CLAVE_TIPO_CAMBIO + moneda, String(valor));
     } catch (error) {
         /* sin almacenamiento disponible: se ignora */
     }
@@ -1058,7 +1114,7 @@ function actualizarTotales() {
         const tc = obtenerTipoCambio();
 
         equivalente.textContent =
-            moneda === "USD" && tc > 0
+            esMonedaExtranjera(moneda) && tc > 0
                 ? `Equivale a ${formatearMoneda((subtotal + iva) * tc, "UYU")}`
                 : "";
     }
@@ -1189,18 +1245,18 @@ async function guardarFactura() {
     }
 
     const moneda = obtenerMoneda();
-    const tipoCambio = moneda === "USD" ? obtenerTipoCambio() : 1;
+    const tipoCambio = esMonedaExtranjera(moneda) ? obtenerTipoCambio() : 1;
 
-    if (moneda === "USD" && !(tipoCambio > 0)) {
+    if (esMonedaExtranjera(moneda) && !(tipoCambio > 0)) {
         mostrarFeedback(
-            "La factura está en dólares: ingresá el tipo de cambio.",
+            `La factura está en ${MONEDAS[moneda].nombre}: ingresá el tipo de cambio.`,
             "warning"
         );
 
         return;
     }
 
-    // Todo se guarda en pesos: si la factura es en USD se convierte.
+    // Todo se guarda en pesos: si la factura es en otra moneda se convierte.
     const convertir = valor => redondear2(Number(valor) * tipoCambio);
 
     const itemsGuardar = itemsFactura.map(item => ({
@@ -1225,8 +1281,8 @@ async function guardarFactura() {
     const total = redondear2(subtotal + iva);
 
     const textoGuardar =
-        moneda === "USD"
-            ? `${ocrTexto}\n[Factura en USD convertida a UYU. Tipo de cambio: ${tipoCambio}]`.trim()
+        esMonedaExtranjera(moneda)
+            ? `${ocrTexto}\n[Factura en ${moneda} convertida a UYU. Tipo de cambio: ${tipoCambio}]`.trim()
             : ocrTexto;
 
     const estado = ocrUsado ? "Pendiente" : "Verificada";
@@ -1257,7 +1313,7 @@ async function guardarFactura() {
 
         facturas.unshift(factura);
 
-        if (moneda === "USD") recordarTipoCambio(tipoCambio);
+        if (esMonedaExtranjera(moneda)) recordarTipoCambio(moneda, tipoCambio);
 
         aplicarFiltros();
         limpiarFormulario();
@@ -1297,10 +1353,10 @@ async function guardarFactura() {
             { method: "POST", body: formData }
         );
 
-        if (moneda === "USD") recordarTipoCambio(tipoCambio);
+        if (esMonedaExtranjera(moneda)) recordarTipoCambio(moneda, tipoCambio);
 
         mostrarFeedback(
-            moneda === "USD"
+            esMonedaExtranjera(moneda)
                 ? `Factura guardada y convertida a pesos (${formatearMoneda(total, "UYU")}).`
                 : "Factura guardada correctamente.",
             "success"
@@ -1532,15 +1588,24 @@ function actualizarResumen(lista) {
 /* ------------------------------------------------------------------ */
 
 async function calcularDistribucion() {
-    const periodo =
-        document.getElementById("periodoDistribucion").value;
+    const desde = document.getElementById("distDesde").value;
+    const hasta = document.getElementById("distHasta").value;
 
     const criterio =
         document.getElementById("criterioDistribucion").value;
 
-    if (!periodo) {
+    if (!desde || !hasta) {
         mostrarFeedback(
-            "Seleccioná el período que querés procesar.",
+            "Seleccioná la fecha desde y la fecha hasta del rango que querés procesar.",
+            "warning"
+        );
+
+        return;
+    }
+
+    if (desde > hasta) {
+        mostrarFeedback(
+            "La fecha desde no puede ser posterior a la fecha hasta.",
             "warning"
         );
 
@@ -1548,7 +1613,9 @@ async function calcularDistribucion() {
     }
 
     if (modoDemo) {
-        renderizarDistribucion(generarDistribucionDemo(periodo, criterio));
+        renderizarDistribucion(
+            generarDistribucionDemo(desde, hasta, criterio)
+        );
 
         mostrarFeedback(
             "Distribución calculada en modo demostración.",
@@ -1564,7 +1631,7 @@ async function calcularDistribucion() {
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ periodo, criterio })
+                body: JSON.stringify({ desde, hasta, criterio })
             }
         );
 
@@ -1586,11 +1653,16 @@ async function calcularDistribucion() {
  *   - su parte del resto de los gastos, según el criterio elegido.
  * Una factura de obra sin obra válida se prorratea, así no queda nada afuera.
  */
-function generarDistribucionDemo(periodo, criterio) {
-    const delPeriodo = facturas.filter(f =>
-        f.estado !== "Anulada" &&
-        String(f.fecha_emision || "").startsWith(periodo)
-    );
+function generarDistribucionDemo(desde, hasta, criterio) {
+    const delPeriodo = facturas.filter(f => {
+        const fecha = String(f.fecha_emision || "");
+
+        return (
+            f.estado !== "Anulada" &&
+            fecha >= desde &&
+            fecha <= hasta
+        );
+    });
 
     const idsObras = OBRAS_DEMO.map(o => o.id_obra);
 
@@ -1639,7 +1711,8 @@ function generarDistribucionDemo(periodo, criterio) {
     );
 
     return {
-        periodo,
+        desde,
+        hasta,
         criterio,
         total_general: totalGeneral,
         total_directo: totalDirecto,
@@ -1684,7 +1757,38 @@ function renderizarDistribucion(data) {
 
     const criterio = nombreCriterio[data.criterio] || data.criterio;
 
+    const baseTotal = Number(data.base_total) || 0;
+
+    const sumaParticipacion = filas.reduce(
+        (sum, f) => sum + (Number(f.porcentaje) || 0),
+        0
+    );
+
+    const rango = data.desde && data.hasta
+        ? `${formatearFecha(data.desde)} al ${formatearFecha(data.hasta)}`
+        : "";
+
+    const sinDatos =
+        filas.length === 0 && totalGeneral === 0 && totalDirecto === 0;
+
     container.innerHTML = `
+        ${rango ? `
+        <p class="distribution-range">
+            <i class="fa-solid fa-calendar-days"></i>
+            Período analizado: <strong>${escapeHtml(rango)}</strong>
+        </p>
+        ` : ""}
+
+        ${sinDatos ? `
+        <div class="distribution-empty">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>
+                No hay facturas ni registros de horas dentro de este rango.
+                Probá con otras fechas.
+            </span>
+        </div>
+        ` : ""}
+
         <div class="distribution-summary">
 
             <div class="distribution-summary-card">
@@ -1734,8 +1838,8 @@ function renderizarDistribucion(data) {
 
                     <tr>
                         <td>TOTAL</td>
-                        <td>${formatearNumero(data.base_total)}</td>
-                        <td>100%</td>
+                        <td>${formatearNumero(baseTotal)}</td>
+                        <td>${baseTotal > 0 ? Math.round(sumaParticipacion) : 0}%</td>
                         <td>${formatearMoneda(totalDirecto)}</td>
                         <td>${formatearMoneda(totalGeneral)}</td>
                         <td>${formatearMoneda(totalOperacion)}</td>
@@ -2048,12 +2152,12 @@ function limpiarFormulario() {
     document.getElementById("numeroFactura").value = "";
     document.getElementById("proveedor").value = "";
     document.getElementById("rutProveedor").value = "";
-    document.getElementById("fechaEmision").value = hoyLocal();
+    document.getElementById("fechaEmision").value = "";
 
     document.getElementById("tipoGasto").value = "General";
     document.getElementById("tipoGasto").dispatchEvent(new Event("change"));
 
-    document.getElementById("ivaFactura").value = "0";
+    document.getElementById("ivaFactura").value = "";
     document.getElementById("archivoFactura").value = "";
 
     establecerMoneda("UYU");
@@ -2162,7 +2266,7 @@ async function llamarAPI(url, opciones = {}) {
 function formatearMoneda(valor, moneda = "UYU") {
     return new Intl.NumberFormat("es-UY", {
         style: "currency",
-        currency: moneda === "USD" ? "USD" : "UYU",
+        currency: normalizarMoneda(moneda),
         minimumFractionDigits: 2
     }).format(Number(valor) || 0);
 }
