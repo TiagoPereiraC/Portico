@@ -137,7 +137,9 @@ contratoModal.addEventListener("click", (event) => {
 });
 contratoFileInput.addEventListener("change", () => {
   const file = contratoFileInput.files?.[0];
-  contratoFileName.textContent = file ? file.name : "Ningún archivo seleccionado";
+  if (contratoFileName) {
+    contratoFileName.textContent = file ? file.name : "Ningún archivo seleccionado";
+  }
 });
 contratoAccept.addEventListener("click", async () => {
   const idObrero = Number(contratoAccept.dataset.idObrero);

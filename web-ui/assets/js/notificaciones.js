@@ -200,7 +200,8 @@
 
         if (!container) return;
 
-        const lista = tabActual === "maquinaria" ? alertasMaquinaria : alertasContratos;
+        const lista = (tabActual === "maquinaria" ? alertasMaquinaria : alertasContratos)
+            .filter(function (a) { return !Number(a.leido); });
 
         if (!lista || !lista.length) {
             const mensajeVacio = (tabActual === "maquinaria")
@@ -239,16 +240,13 @@
                 : escapeHtml(a.nombre_archivo || "Certificado técnico") + " · Vencimiento: " + escapeHtml(a.fecha_vencimiento || "");
 
             const idRef = a.tipo_alerta === "obrero" ? a.id_contrato_obrero : a.id_certificado;
-            const estaLeida = Boolean(Number(a.leido));
 
-            const readActionHtml = estaLeida
-                ? '<span class="alert-badge-tag leido">Visto</span>'
-                : '<button type="button" class="btn-mark-single-read" data-tipo="' + a.tipo_alerta + '" data-id="' + idRef + '" title="Marcar como visto">' +
-                  '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' +
-                  "<span>Visto</span>" +
-                  "</button>";
+            const readActionHtml = '<button type="button" class="btn-mark-single-read" data-tipo="' + a.tipo_alerta + '" data-id="' + idRef + '" title="Marcar como visto">' +
+                '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' +
+                "<span>Visto</span>" +
+                "</button>";
 
-            return '<div class="alert-row ' + (estaLeida ? "is-read" : "") + '">' +
+            return '<div class="alert-row">' +
                 '<div class="alert-left">' +
                     '<svg class="alert-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
                     '<div class="alert-text-wrap">' +
