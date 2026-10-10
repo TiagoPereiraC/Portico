@@ -498,6 +498,18 @@ nav.dashboard-nav-tabs {
     animation: pulseDot 2s infinite;
 }
 
+.system-status-pill.is-down {
+    color: #b91c1c;
+    background: #fee2e2;
+    border-color: #fca5a5;
+}
+
+.system-status-pill.is-down .status-dot {
+    background-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+    animation: none;
+}
+
 @keyframes pulseDot {
     0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
     70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }

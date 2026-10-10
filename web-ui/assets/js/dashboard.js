@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
     inicializarFecha();
     inicializarColapsableAnaliticas();
     cargarMetricasDashboard();
+    iniciarChequeoEstadoSistema();
 });
 
 function sendDesktopRequest(type, payload, responseType) {
@@ -165,10 +166,47 @@ async function cargarMetricasDashboard() {
             renderizarResumenOperativo(datos.data.kpis);
             renderizarGraficoCargos(datos.data.distribucion_cargos || []);
             renderizarGraficoHoras(datos.data.horas_por_obra || []);
+            actualizarEstadoSistema(true);
         }
     } catch (error) {
         console.error("Error cargando dashboard:", error);
+        actualizarEstadoSistema(false);
     }
+}
+
+/* ------------------------------------------------------------------ */
+/* ESTADO DEL SISTEMA (pill "Sistema Operativo")                       */
+/* ------------------------------------------------------------------ */
+
+let healthTimer = null;
+
+function actualizarEstadoSistema(operativo) {
+    const pill = document.getElementById("systemStatusPill");
+    const texto = document.getElementById("systemStatusText");
+
+    if (!pill || !texto) return;
+
+    pill.classList.toggle("is-down", !operativo);
+    texto.textContent = operativo ? "Sistema Operativo" : "Base de datos sin conexión";
+}
+
+async function chequearEstadoSistema() {
+    // En escritorio el estado se deduce de la carga de métricas por IPC
+    if (window.chrome && window.chrome.webview) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/health.php`, { credentials: "include" });
+        actualizarEstadoSistema(res.ok);
+    } catch (error) {
+        actualizarEstadoSistema(false);
+    }
+}
+
+function iniciarChequeoEstadoSistema() {
+    chequearEstadoSistema();
+
+    if (healthTimer) clearInterval(healthTimer);
+    healthTimer = setInterval(chequearEstadoSistema, 30000);
 }
 
 function animarNumero(elementoId, valorFinal, esDecimal = false, prefijo = "", sufijo = "") {
