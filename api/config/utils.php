@@ -83,3 +83,13 @@ function normalizarFecha(mixed $value): ?string
 
     return $date->format('Y-m-d');
 }
+
+function validarExtensionContrato(string $nombreArchivo): void
+{
+    $extension = strtolower(pathinfo($nombreArchivo, PATHINFO_EXTENSION));
+    $permitidas = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+
+    if (!in_array($extension, $permitidas, true)) {
+        throw new InvalidArgumentException('Formato de archivo no permitido. Solo se aceptan PDF, DOC, DOCX, JPG o PNG.');
+    }
+}

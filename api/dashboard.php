@@ -101,7 +101,16 @@ try {
             FROM combustible
             GROUP BY nombre_combustible
         ");
-        $resCombustible['por_tipo'] = $stmtCombTipo->fetchAll() ?: [];
+        $porTipo = $stmtCombTipo->fetchAll() ?: [];
+
+        foreach ($porTipo as &$tipoComb) {
+            $tipoComb['tipo'] = (string) $tipoComb['tipo'];
+            $tipoComb['litros'] = (float) $tipoComb['litros'];
+            $tipoComb['gasto'] = (float) $tipoComb['gasto'];
+        }
+        unset($tipoComb);
+
+        $resCombustible['por_tipo'] = $porTipo;
     } catch (Throwable $e) {
         // La tabla se creará con el primer registro de asistencia
     }
@@ -221,6 +230,12 @@ try {
         LIMIT 5
     ');
     $horasPorObra = $stmtHorasObras->fetchAll();
+
+    foreach ($horasPorObra as &$obraHoras) {
+        $obraHoras['nombre'] = (string) $obraHoras['nombre'];
+        $obraHoras['total_horas'] = (float) $obraHoras['total_horas'];
+    }
+    unset($obraHoras);
 
     // 12. Próximos vencimientos de certificados de maquinaria con estado de lectura por usuario
     $stmtVencimientos = $pdo->prepare('

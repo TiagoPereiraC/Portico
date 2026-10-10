@@ -446,17 +446,19 @@ try {
     ], JSON_UNESCAPED_UNICODE);
 
 
-} catch (RuntimeException $e) {
-
-    http_response_code(404);
-
-    echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE);
-
-
 } catch (PDOException $e) {
+
+    if ((int) ($e->errorInfo[1] ?? 0) === 1062) {
+
+        http_response_code(409);
+
+        echo json_encode([
+            'success' => false,
+            'error' => 'Ya existe una obra con ese número de contrata.'
+        ], JSON_UNESCAPED_UNICODE);
+
+        exit;
+    }
 
     error_log(
         'OBRAS.PHP PDO ERROR [' .
@@ -470,6 +472,16 @@ try {
     echo json_encode([
         'success' => false,
         'error' => 'Error de base de datos.'
+    ], JSON_UNESCAPED_UNICODE);
+
+
+} catch (RuntimeException $e) {
+
+    http_response_code(404);
+
+    echo json_encode([
+        'success' => false,
+        'error' => $e->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 
 
@@ -1787,6 +1799,19 @@ function responderCompletarTarea(
     );
 
 
+    $stmtFecha = $pdo->prepare(
+        'SELECT fecha_completada
+         FROM contrato_tareas
+         WHERE id_tarea = ?'
+    );
+
+    $stmtFecha->execute([
+        $idTarea
+    ]);
+
+    $fechaCompletadaDb =
+        (string) $stmtFecha->fetchColumn();
+
     echo json_encode([
 
         'success' =>
@@ -1802,7 +1827,7 @@ function responderCompletarTarea(
             'Completada',
 
         'fecha_completada' =>
-            date('Y-m-d')
+            $fechaCompletadaDb
 
     ], JSON_UNESCAPED_UNICODE);
 }
@@ -3429,12 +3454,11 @@ function validarTareas(
                 /*
                 |--------------------------------------------------------------------------
                 | Si se marca como completada pero no llega fecha,
-                | el servidor registra la fecha actual.
+                | guardarTareas registra la fecha actual de la base.
                 |--------------------------------------------------------------------------
                 */
 
-                $fechaCompletada =
-                    date('Y-m-d');
+                $fechaCompletada = null;
             }
         }
 
@@ -3525,6 +3549,8 @@ function guardarTareas(
     array $tareas,
     bool $sincronizarPendientes = false
 ): void {
+
+    $hoyDb = (string) $pdo->query('SELECT CURDATE()')->fetchColumn();
 
     /*
     |--------------------------------------------------------------------------
@@ -3653,7 +3679,7 @@ function guardarTareas(
 
                 if (strtolower((string) $tareaExistente['estado']) === 'completada') {
                     $estado = 'Completada';
-                    $fechaCompletada = $tareaExistente['fecha_completada'] ?: date('Y-m-d');
+                    $fechaCompletada = $tareaExistente['fecha_completada'] ?: $hoyDb;
                 }
 
                 /*
@@ -3667,7 +3693,7 @@ function guardarTareas(
                 }
 
                 if ($estado === 'Completada' && empty($fechaCompletada)) {
-                    $fechaCompletada = date('Y-m-d');
+                    $fechaCompletada = $hoyDb;
                 }
 
                 $stmt = $pdo->prepare(
@@ -3707,7 +3733,7 @@ function guardarTareas(
         if ($estado === 'Pendiente') {
             $fechaCompletada = null;
         } elseif ($estado === 'Completada' && empty($fechaCompletada)) {
-            $fechaCompletada = date('Y-m-d');
+            $fechaCompletada = $hoyDb;
         }
 
         $stmt = $pdo->prepare(

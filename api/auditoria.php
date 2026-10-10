@@ -41,9 +41,9 @@ try {
     $limit = (int) ($_GET['limit'] ?? 20);
     $limit = max(1, min($limit, 100));
 
-    $usuario = trim((string) ($_GET['usuario'] ?? ''));
-    $accion = trim((string) ($_GET['accion'] ?? ''));
-    $entidad = trim((string) ($_GET['entidad'] ?? ''));
+    $usuario = is_string($_GET['usuario'] ?? null) ? trim($_GET['usuario']) : '';
+    $accion = is_string($_GET['accion'] ?? null) ? trim($_GET['accion']) : '';
+    $entidad = is_string($_GET['entidad'] ?? null) ? trim($_GET['entidad']) : '';
     $fechaDesde = normalizarFechaFiltro($_GET['fecha_desde'] ?? null);
     $fechaHasta = normalizarFechaFiltro($_GET['fecha_hasta'] ?? null);
 
@@ -139,6 +139,10 @@ try {
 
 function normalizarFechaFiltro(mixed $value): ?string
 {
+    if ($value !== null && !is_scalar($value)) {
+        throw new InvalidArgumentException('Formato de fecha inválido.');
+    }
+
     $text = trim((string) ($value ?? ''));
     if ($text === '') {
         return null;

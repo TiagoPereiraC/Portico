@@ -3,6 +3,7 @@
 require_once __DIR__ . '/config/session.php';
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/config/auditoria.php';
+require_once __DIR__ . '/config/utils.php';
 
 $origin = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
     . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
@@ -18,7 +19,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit(json_encode(['error' => 'Método no permitido']));
+}
+
 iniciarSesion();
+
+validarCsrf();
 
 $userId = $_SESSION['user_id'] ?? null;
 $usuario = $_SESSION['usuario'] ?? null;

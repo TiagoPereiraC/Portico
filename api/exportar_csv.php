@@ -103,9 +103,9 @@ function construirCsv(array $columnas, array $filas): string
 {
     $fh = fopen('php://temp', 'r+');
     fwrite($fh, "\xEF\xBB\xBF"); // BOM para que Excel detecte UTF-8
-    fputcsv($fh, $columnas);
+    fputcsv($fh, $columnas, ',', '"', '\\');
     foreach ($filas as $fila) {
-        fputcsv($fh, $fila);
+        fputcsv($fh, $fila, ',', '"', '\\');
     }
     rewind($fh);
     $csv = stream_get_contents($fh);
@@ -180,7 +180,7 @@ try {
     $pdo = conectar();
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
-    $entidad = trim((string) ($_GET['entidad'] ?? ''));
+    $entidad = is_string($_GET['entidad'] ?? null) ? trim($_GET['entidad']) : '';
 
     if ($entidad === 'todas') {
         $archivos = [];
@@ -241,9 +241,12 @@ try {
 
 function construirConsultaRegistros(): array
 {
-    $idObrero = (int) ($_GET['id_obrero'] ?? 0);
-    $fechaDesde = trim((string) ($_GET['fecha_desde'] ?? ''));
-    $fechaHasta = trim((string) ($_GET['fecha_hasta'] ?? ''));
+    $idObreroCrudo = $_GET['id_obrero'] ?? 0;
+    $idObrero = (is_int($idObreroCrudo) || (is_string($idObreroCrudo) && ctype_digit($idObreroCrudo)))
+        ? (int) $idObreroCrudo
+        : 0;
+    $fechaDesde = is_string($_GET['fecha_desde'] ?? null) ? trim($_GET['fecha_desde']) : '';
+    $fechaHasta = is_string($_GET['fecha_hasta'] ?? null) ? trim($_GET['fecha_hasta']) : '';
 
     $where = [];
     $params = [];

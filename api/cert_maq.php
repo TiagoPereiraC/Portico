@@ -83,13 +83,19 @@ try {
 } catch (InvalidArgumentException $e) {
     http_response_code(400);
     echo json_encode(['error' => $e->getMessage()]);
-} catch (RuntimeException $e) {
-    http_response_code(404);
-    echo json_encode(['error' => $e->getMessage()]);
 } catch (PDOException $e) {
+    if ((int) ($e->errorInfo[1] ?? 0) === 1452) {
+        http_response_code(400);
+        echo json_encode(['error' => 'La maquinaria indicada no existe.']);
+        exit;
+    }
+
     error_log('cert_maq.php PDO error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Error interno del servidor.']);
+} catch (RuntimeException $e) {
+    http_response_code(404);
+    echo json_encode(['error' => $e->getMessage()]);
 } catch (Throwable $e) {
     error_log('cert_maq.php error: ' . $e->getMessage());
     http_response_code(500);
@@ -294,8 +300,24 @@ function leerJson(): array
 
 function normalizarFecha($v): ?string
 {
+    if (!is_scalar($v)) {
+        throw new InvalidArgumentException('Formato de fecha inválido.');
+    }
+
     $v = trim((string) $v);
-    return $v === '' ? null : substr($v, 0, 10);
+
+    if ($v === '') {
+        return null;
+    }
+
+    $date = DateTime::createFromFormat('Y-m-d', substr($v, 0, 10));
+    $errors = DateTime::getLastErrors();
+
+    if (!$date || ($errors['warning_count'] ?? 0) > 0 || ($errors['error_count'] ?? 0) > 0) {
+        throw new InvalidArgumentException('Formato de fecha inválido.');
+    }
+
+    return $date->format('Y-m-d');
 }
 
 function guessMimeType(string $nombreArchivo): string

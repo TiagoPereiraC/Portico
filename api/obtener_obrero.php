@@ -36,14 +36,23 @@ try {
     $pdo = conectar();
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
-    $search = trim((string) ($_GET['search'] ?? ''));
-    $limit = (int) ($_GET['limit'] ?? 0);
+    $searchCrudo = $_GET['search'] ?? '';
+    $search = is_string($searchCrudo) ? trim($searchCrudo) : '';
+
+    $limitCrudo = $_GET['limit'] ?? 0;
+    $limit = (is_int($limitCrudo) || (is_string($limitCrudo) && ctype_digit($limitCrudo))) ? (int) $limitCrudo : 0;
     $limit = max(0, min($limit, 100));
+
+    $idCrudo = $_GET['id'] ?? ($_GET['id_obrero'] ?? 0);
+    $idObrero = (is_int($idCrudo) || (is_string($idCrudo) && ctype_digit($idCrudo))) ? (int) $idCrudo : 0;
 
     $where = ['activo = 1'];
     $params = [];
 
-    if ($search !== '') {
+    if ($idObrero > 0) {
+        $where[] = 'id_obrero = ?';
+        $params[] = $idObrero;
+    } elseif ($search !== '') {
         $where[] = '(nombre LIKE ? OR apellido LIKE ? OR documento LIKE ? OR cargo LIKE ?)';
         $searchLike = '%' . $search . '%';
         $params = [$searchLike, $searchLike, $searchLike, $searchLike];

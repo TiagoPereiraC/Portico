@@ -3,6 +3,7 @@
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/config/session.php';
 require_once __DIR__ . '/config/auditoria.php';
+require_once __DIR__ . '/config/utils.php';
 
 $origin = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
     . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
@@ -90,19 +91,27 @@ try {
 } catch (InvalidArgumentException $e) {
     http_response_code(400);
     echo json_encode(['error' => $e->getMessage()]);
-} catch (RuntimeException $e) {
-    http_response_code(404);
-    echo json_encode(['error' => $e->getMessage()]);
 } catch (PDOException $e) {
-    if ((int) $e->getCode() === 23000) {
+    $mysqlCode = (int) ($e->errorInfo[1] ?? 0);
+
+    if ($mysqlCode === 1062) {
         http_response_code(409);
         echo json_encode(['error' => 'Ya existe un obrero con ese documento.']);
+        exit;
+    }
+
+    if ($mysqlCode === 1452) {
+        http_response_code(400);
+        echo json_encode(['error' => 'El obrero indicado no existe.']);
         exit;
     }
 
     error_log('obreros.php PDO error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Error interno del servidor.']);
+} catch (RuntimeException $e) {
+    http_response_code(404);
+    echo json_encode(['error' => $e->getMessage()]);
 } catch (Throwable $e) {
     error_log('obreros.php error: ' . $e->getMessage());
     http_response_code(500);
@@ -267,7 +276,18 @@ function responderEliminacion(PDO $pdo, array $body): void
         throw new RuntimeException('El obrero indicado no existe.');
     }
 
-    $pdo->prepare('UPDATE obreros SET activo = 0 WHERE id_obrero = ?')->execute([$idObrero]);
+    $pdo->beginTransaction();
+
+    try {
+        $pdo->prepare('UPDATE obreros SET activo = 0 WHERE id_obrero = ?')->execute([$idObrero]);
+        $pdo->prepare('DELETE FROM contrato_obrero WHERE id_obrero = ?')->execute([$idObrero]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
 
     registrarAuditoria($pdo, 'eliminar', 'obreros', $idObrero, ['nombre' => $obrero['nombre'], 'apellido' => $obrero['apellido']]);
 
@@ -332,59 +352,6 @@ function responderSubirContrato(PDO $pdo): void
         'success' => true,
         'message' => 'Contrato subido correctamente.',
     ]);
-}
-
-function validarCsrf(): void
-{
-    $csrfRecibido = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    $csrfGuardado = $_SESSION['csrf_token'] ?? '';
-
-    if ($csrfGuardado === '' || !hash_equals($csrfGuardado, $csrfRecibido)) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Token de seguridad inválido. Recargá la página.']);
-        exit;
-    }
-}
-
-function leerJson(): array
-{
-    $body = json_decode(file_get_contents('php://input'), true);
-    if (!is_array($body)) {
-        throw new InvalidArgumentException('Cuerpo de solicitud inválido.');
-    }
-    return $body;
-}
-
-function limpiarTexto(mixed $value, int $maxLength, bool $required = true): ?string
-{
-    $text = trim((string) $value);
-    if ($text === '') {
-        return $required ? '' : null;
-    }
-
-    $length = function_exists('mb_strlen') ? mb_strlen($text) : strlen($text);
-    if ($length > $maxLength) {
-        throw new InvalidArgumentException('Uno de los campos supera la longitud permitida.');
-    }
-
-    return $text;
-}
-
-function normalizarFecha(mixed $value): ?string
-{
-    $text = trim((string) ($value ?? ''));
-    if ($text === '') {
-        return null;
-    }
-
-    $date = DateTime::createFromFormat('Y-m-d', $text);
-    $errors = DateTime::getLastErrors();
-
-    if (!$date || ($errors['warning_count'] ?? 0) > 0 || ($errors['error_count'] ?? 0) > 0) {
-        throw new InvalidArgumentException('Formato de fecha inválido.');
-    }
-
-    return $date->format('Y-m-d');
 }
 
 function obtenerObrero(PDO $pdo, int $idObrero): array

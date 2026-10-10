@@ -1,7 +1,8 @@
-﻿<?php
+<?php
 
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/config/session.php';
+require_once __DIR__ . '/config/utils.php';
 
 $origin = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
     . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
@@ -31,12 +32,19 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
+validarCsrf();
+
 $idUsuario = (int)$_SESSION['user_id'];
 $raw = file_get_contents('php://input');
 $body = json_decode($raw, true) ?: [];
 
-$tipo = trim($body['tipo'] ?? '');
-$idReferencia = (int)($body['id_referencia'] ?? 0);
+$tipoCrudo = $body['tipo'] ?? '';
+$tipo = is_string($tipoCrudo) ? trim($tipoCrudo) : '';
+
+$referenciaCruda = $body['id_referencia'] ?? 0;
+$idReferencia = (is_int($referenciaCruda) || (is_string($referenciaCruda) && ctype_digit($referenciaCruda)))
+    ? (int) $referenciaCruda
+    : 0;
 
 try {
     $pdo = conectar();

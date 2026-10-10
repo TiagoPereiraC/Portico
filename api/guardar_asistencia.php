@@ -51,6 +51,10 @@ try {
 
     validarEntradaAsistencia($id_obra, $fecha);
 
+    if (empty($_POST['obreros']) || !is_array($_POST['obreros'])) {
+        throw new InvalidArgumentException("Seleccioná al menos un obrero.");
+    }
+
     guardarObreros($pdo, $fecha, $id_obra, $id_usuario);
     guardarMateriales($pdo, $fecha, $id_obra);
     guardarHerramientas($pdo, $fecha, $id_obra);
@@ -110,10 +114,12 @@ $tareasCompletadas = count(
         $pdo->rollBack();
     }
 
+    error_log('guardar_asistencia.php error: ' . $e->getMessage());
+
     http_response_code(500);
     echo json_encode([
         "success" => false,
-        "error" => $e->getMessage()
+        "error" => "Error interno del servidor."
     ]);
 }
 
@@ -121,6 +127,12 @@ function validarEntradaAsistencia(?int $id_obra, ?string $fecha): void
 {
     if (!$id_obra || !$fecha || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
         throw new InvalidArgumentException("Datos incompletos o inválidos.");
+    }
+
+    [$anio, $mes, $dia] = array_map('intval', explode('-', $fecha));
+
+    if (!checkdate($mes, $dia, $anio)) {
+        throw new InvalidArgumentException("La fecha ingresada no es válida.");
     }
 }
 
@@ -292,10 +304,20 @@ function guardarCombustible(PDO $pdo, string $fecha, int $id_obra): void
             ? trim((string) $_POST['nombre_combustible'][$id_maquinaria])
             : 'Diesel';
 
-        $precio_total = isset($_POST['precio_total'][$id_maquinaria])
-            && is_numeric($_POST['precio_total'][$id_maquinaria])
-            ? (float) $_POST['precio_total'][$id_maquinaria]
-            : 0.0;
+        $precio_total = 0.0;
+
+        if (
+            is_array($_POST['precio_total'] ?? null)
+            && array_key_exists($id_maquinaria, $_POST['precio_total'])
+        ) {
+            $precioCrudo = $_POST['precio_total'][$id_maquinaria];
+
+            if (!is_numeric($precioCrudo) || (float) $precioCrudo < 0) {
+                throw new InvalidArgumentException("El precio del combustible de la máquina {$id_maquinaria} es inválido.");
+            }
+
+            $precio_total = (float) $precioCrudo;
+        }
 
         $precio_unitario = round($precio_total / $litros, 2);
 
@@ -323,7 +345,7 @@ function finalizarObra(PDO $pdo, string $fecha, int $id_obra): void
 
         $stmt = $pdo->prepare("
             UPDATE obras
-            SET fecha_fin = ?
+            SET fecha_fin = ?, activo = 0
             WHERE id_obra = ?
         ");
 

@@ -170,15 +170,6 @@ try {
     ]);
 
 
-} catch (RuntimeException $e) {
-
-    http_response_code(404);
-
-    echo json_encode([
-        'error' => $e->getMessage()
-    ]);
-
-
 } catch (PDOException $e) {
 
     error_log(
@@ -190,6 +181,15 @@ try {
 
     echo json_encode([
         'error' => 'Error al procesar la operación.'
+    ]);
+
+
+} catch (RuntimeException $e) {
+
+    http_response_code(404);
+
+    echo json_encode([
+        'error' => $e->getMessage()
     ]);
 
 
