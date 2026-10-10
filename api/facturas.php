@@ -683,19 +683,21 @@ function accionDistribuir(PDO $pdo): void
     exigirMetodo('POST');
 
     $entrada = leerJson();
-    $periodo = (string) ($entrada['periodo'] ?? '');
+    $desde = (string) ($entrada['desde'] ?? '');
+    $hasta = (string) ($entrada['hasta'] ?? '');
     $criterio = (string) ($entrada['criterio'] ?? '');
 
-    if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $periodo)) {
-        fallar('El período no es válido.');
+    if (!fechaValida($desde) || !fechaValida($hasta)) {
+        fallar('Las fechas del rango no son válidas.');
+    }
+
+    if ($desde > $hasta) {
+        fallar('La fecha desde no puede ser posterior a la fecha hasta.');
     }
 
     if (!in_array($criterio, ['Por_Horas', 'Por_Obreros', 'Por_Porcentaje'], true)) {
         fallar('El criterio de distribución no es válido.');
     }
-
-    $desde = $periodo . '-01';
-    $hasta = date('Y-m-t', strtotime($desde));
 
     /* Gastos generales del período */
 
@@ -869,13 +871,18 @@ function accionDistribuir(PDO $pdo): void
         $advertencia = 'No hay datos para repartir los gastos generales con este criterio '
             . 'en el período (sin horas, obreros u obras activas). '
             . 'Solo se muestran los gastos directos de cada obra.';
+    } elseif ($baseTotal <= 0 && $totalGeneral <= 0 && $totalDirecto <= 0) {
+        $advertencia = 'No hay facturas ni registros de horas entre el '
+            . date('d/m/Y', strtotime($desde)) . ' y el '
+            . date('d/m/Y', strtotime($hasta)) . '. Probá con otro rango de fechas.';
     } elseif ($avisoPorcentaje !== '') {
         $advertencia = $avisoPorcentaje;
     }
 
     responder([
         'success' => true,
-        'periodo' => $periodo,
+        'desde' => $desde,
+        'hasta' => $hasta,
         'criterio' => $criterio,
         'total_facturas_generales' => $totalFacturasGenerales,
         'total_costos_manuales' => $totalManuales,

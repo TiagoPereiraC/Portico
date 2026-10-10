@@ -442,7 +442,7 @@
                             <h2>Cobertura de gastos generales</h2>
                             <p>
                                 Calculá cuánto debe absorber cada obra para cubrir
-                                los gastos generales del período.
+                                los gastos generales del rango de fechas elegido.
                             </p>
                         </div>
                     </div>
@@ -450,8 +450,13 @@
                     <div class="distribution-controls">
 
                         <div class="field">
-                            <label for="periodoDistribucion">Período</label>
-                            <input type="month" id="periodoDistribucion">
+                            <label for="distDesde">Desde</label>
+                            <input type="date" id="distDesde">
+                        </div>
+
+                        <div class="field">
+                            <label for="distHasta">Hasta</label>
+                            <input type="date" id="distHasta">
                         </div>
 
                         <div class="field">
@@ -478,7 +483,7 @@
                         <div class="distribution-empty">
                             <i class="fa-solid fa-calculator"></i>
                             <span>
-                                Seleccioná un período y calculá la cobertura.
+                                Seleccioná un rango de fechas y calculá la cobertura.
                             </span>
                         </div>
 
