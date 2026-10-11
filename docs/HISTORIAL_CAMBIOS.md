@@ -17,8 +17,11 @@ Documento técnico de control de versiones y registro de cambios arquitectónico
    - [Detalle de Módulos y Cambios Implementados](#detalle-de-módulos-y-cambios-implementados-sprint-ii)
    - [Diagramas de Flujo y Procesos](#diagramas-de-flujo-y-procesos-sprint-ii)
    - [Impacto en Base de Datos y Arquitectura](#impacto-en-base-de-datos-y-arquitectura-sprint-ii)
-4. [Diagrama Entidad-Relación Consolidado](#diagrama-entidad-relación-consolidado)
-5. [Guía para Futura Documentación Técnica](#guía-para-futura-documentación-técnica)
+4. [Sprint III (07/10/2026 - 10/10/2026)](#sprint-iii-07102026---10102026)
+   - [Registro Cronológico de Commits](#registro-cronológico-de-commits-sprint-iii)
+   - [Detalle de Módulos y Cambios Implementados](#detalle-de-módulos-y-cambios-implementados-sprint-iii)
+5. [Diagrama Entidad-Relación Consolidado](#diagrama-entidad-relación-consolidado)
+6. [Guía para Futura Documentación Técnica](#guía-para-futura-documentación-técnica)
 
 ---
 
@@ -322,6 +325,62 @@ flowchart TD
         ObraDetail --> ModalDetalle[Modal de Obra: Tabla con Badges de Maquinaria y Gasto]
     end
 ```
+
+---
+
+# Sprint III
+
+> **Periodo:** 07 de Octubre de 2026 al 10 de Octubre de 2026  
+> **Alcance:** corrección de bugs detectados por auditoría de QA (API + SQL), unificación visual de todas las secciones, menú de notificaciones compartido y monitoreo de estado del sistema. Este sprint documenta únicamente los cambios propios (los aportes de otros colaboradores integrados previamente no se contabilizan aquí).
+
+### Registro Cronológico de Commits (Sprint III)
+
+| Commit | Fecha | Mensaje Resumido | Componentes Modificados |
+| :--- | :--- | :--- | :--- |
+| `bd9bb4c` | 2026-10-10 | `fix(api): corrige bugs de QA en obreros, exportación CSV/ZIP, CSRF de logout/notificaciones, fechas y fugas de SQLSTATE; agrega esquema del módulo de facturas` | 16 archivos: `api/*.php`, `api/config/utils.php`, `schema.sql`, `seed_data.sql`, `migracion_facturas.sql` |
+| `a3a91fc` | 2026-10-10 | `feat(ui): unifica navbar, cajas, títulos, espaciado y contraste WCAG en todas las secciones; campana de notificaciones global y limpieza de archivos sueltos` | 40 archivos: 12 vistas HTML, 10 CSS, `notificaciones.js` (nuevo), `dashboard.js` / `auth.js` / `maquinaria.js` / `Obras.js`; eliminación de 11 duplicados de la raíz y 2 ZIP |
+| `c3a3bc8` | 2026-10-10 | `merge: integra el rango de fechas del módulo de facturas conservando la campana de notificaciones` | `api/facturas.php`, `web-ui/Facturas.html`, `web-ui/assets/js/facturas.js` |
+| `ed4576b` | 2026-10-10 | `fix(ui): la alerta marcada como vista desaparece del menú de notificaciones para ese usuario; null-guard al subir contrato de obrero` | `web-ui/assets/js/notificaciones.js`, `web-ui/assets/js/obreros.js` |
+| `a5e482e` | 2026-10-10 | `feat(panel): indicador de estado del sistema con api/health.php; el pill se pone en rojo si la BD no responde y vuelve solo a verde al recuperarse` | `api/health.php` (nuevo), `web-ui/PanelInicio.html`, `web-ui/assets/css/inicio.css`, `web-ui/assets/js/dashboard.js` |
+
+---
+
+### Detalle de Módulos y Cambios Implementados (Sprint III)
+
+#### 1. API — Bugs corregidos
+- **`obreros.php`:** el POST devolvía 500 siempre (faltaba incluir `config/utils.php` y no existía `validarExtensionContrato()`); ahora valida la extensión de los contratos, el documento duplicado responde 409 y una FK inexistente 400.
+- **`exportar_csv.php`:** CSV/ZIP corruptos en PHP 8.4+ (`fputcsv()` sin parámetro `$escape`); además, parámetros escalares (sin warnings con arrays).
+- **Orden de `catch`:** `PDOException` antes de `RuntimeException` en `Obras/obreros/cert_maq/maquinaria` (evita fuga de `SQLSTATE`); contrata duplicada → 409.
+- **`logout.php` y `marcar_notificacion.php`:** POST + CSRF obligatorio; se quitó el BOM del archivo.
+- **`guardar_asistencia.php`:** exige ≥ 1 obrero, valida fecha real (antes podía guardar `0000-00-00`), rechaza combustible con precio negativo, al finalizar obra deja `activo = 0` y el error 500 ya no filtra internals.
+- **`cert_maq.php`:** valida fecha real; FK inexistente → 400.
+- **`Obras.php`:** fechas con fuente única (BD) en `completar_tarea` / `guardarTareas`.
+- **`obreros.php` (DELETE):** baja lógica + borrado de `contrato_obrero` en una transacción.
+- **`obtener_obrero.php`:** soporte `?id=` y guards de parámetros.
+- **`dashboard.php`:** datasets numéricos (`float`) en `por_tipo` y `horas_por_obra`.
+- **`auditoria.php`:** parámetros escalares y fecha inválida controlada.
+- **`facturas`:** modelo reparado → tablas `facturas` / `factura_detalle` y columnas `obras.porcentaje_gastos_generales` / `costos_generales.origen` (`migracion_facturas.sql`); `texto_ocr` pasa de `TEXT` a `MEDIUMTEXT`.
+- **Migración pendiente de `combustible`** aplicada (`id_obra` NULL + `ON DELETE SET NULL`).
+
+#### 2. UI — Unificación y nuevas features
+- **Navbar idéntico en las 12 páginas:** alineado a la caja de 1380 px (antes 72 px en 3 páginas y 32 px en 8), misma sombra y mismo color del pill de usuario.
+- **Campana de notificaciones en TODAS las secciones:** componente compartido `notificaciones.js` (web + escritorio), CSS global y `dashboard.js` depurado (se retiraron las funciones antiguas).
+- **Alerta leída desaparece para ese usuario:** el menú filtra las notificaciones ya vistas (persistente por usuario en `notificaciones_leidas`); el badge se oculta y queda el mensaje "Todos al día".
+- **Indicador "Sistema Operativo" con estado real:** nuevo `api/health.php` (autenticado, `SELECT 1`); el pill se pone **rojo** con "Base de datos sin conexión" si la BD o el sistema fallan (chequeo al cargar y cada 30 s) y vuelve solo a verde al recuperarse. Con `role="status" aria-live="polite"`.
+- **PanelInicio:** textos "Panel de Control" y "Visión general…" dentro de la card.
+- **ExportarDatos:** cabecera dentro de la card.
+- **Espaciado unificado:** `main` 48/16 px en todas (separación navbar → caja de 48 px) y márgenes automáticos.
+- **Títulos:** todos 22 px / 600, alineados a la izquierda y color `#444` (antes 18/22/24/26 px, centrados y en 5 colores distintos).
+- **Contraste WCAG 2.2 AA:** 0 fallas en las 11 páginas (grises, rojos, botones Volver/Cancelar/Confirmar y "Seleccionar archivo" 1.08:1 → OK).
+- **Maquinaria:** se quitó el panel viejo "Certificados por vencer".
+- **RegistrarObrero:** se quitaron los filtros viejos "Vencidos / Por vencer (30 días)".
+- **`obreros.js`:** null-guard de `contratoFileName` (lanzaba `TypeError` al elegir archivo para subir contrato).
+- **`theme.css`:** bloque `.empty-hint` sin llave de cierre corregido.
+
+#### 3. Verificación
+- **Suite QA:** 290/290 tests (auth, obras, personal, asistencia, dashboard/export/auditoría, facturas) + módulo de usuarios 10/10 por API.
+- **E2E con navegador real:** login (fallo/éxito), usuarios (crear/eliminar por UI), asistencia (jornada completa verificada en BD), subida de contrato de obrero, OCR con factura real, búsqueda/filtros de tablas, descargas CSV/ZIP (BOM y firma PK), responsive a 800 px y monitoreo de estado con la BD caída y recuperada.
+- **Contraste WCAG 2.2 AA:** 0 fallas en las 11 páginas (con gráficos expandidos y modales abiertos). Sin excepciones JS en los flujos verificados.
 
 ---
 
